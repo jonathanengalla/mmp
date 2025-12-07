@@ -11,11 +11,21 @@ import {
   DuesSummaryResponse,
 } from "../../../../libs/shared/src/models";
 
-const API_BASE_URL =
-  (import.meta as any).env?.VITE_API_BASE_URL
-    ? ((import.meta as any).env.VITE_API_BASE_URL as string).replace(/\/$/, "")
-    : "/api";
-const BASE_URL = API_BASE_URL;
+const normalizeApiBaseUrl = (raw?: string): string => {
+  if (!raw) return "/api";
+  let base = raw.trim();
+  if (!base) return "/api";
+  base = base.replace(/\/+$/, "");
+  const lower = base.toLowerCase();
+  if (lower.endsWith("/api")) {
+    base = base.slice(0, -4);
+    base = base.replace(/\/+$/, "");
+  }
+  return base || "/api";
+};
+
+const rawEnvBase = (import.meta as any).env?.VITE_API_BASE_URL as string | undefined;
+export const API_BASE_URL = normalizeApiBaseUrl(rawEnvBase);
 
 const json = async (res: Response) => {
   if (res.status === 401 || res.status === 403) {
@@ -54,7 +64,7 @@ export interface RegisterMemberPayload {
 }
 
 export const registerMember = async (payload: RegisterMemberPayload) => {
-  const res = await fetch(`${BASE_URL}/membership/members/registrations`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/registrations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -63,7 +73,7 @@ export const registerMember = async (payload: RegisterMemberPayload) => {
 };
 
 export const verifyEmail = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/membership/members/verify`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/verify`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ token }),
@@ -72,7 +82,7 @@ export const verifyEmail = async (token: string) => {
 };
 
 export const requestVerification = async (email: string) => {
-  const res = await fetch(`${BASE_URL}/membership/members/verify-request`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/verify-request`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
@@ -83,13 +93,13 @@ export const requestVerification = async (email: string) => {
 export const login = async (payload: { email: string; password: string; mfa_code?: string }) => {
   const body = { email: payload.email, password: payload.password, mfaCode: payload.mfa_code };
   try {
-    const res = await fetch(`${BASE_URL}/auth/login`, {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     const data = await res.json().catch(() => ({}));
-    console.log("[client] /api/auth/login", res.status, data);
+    console.log("[client] auth/login", res.status, data);
     return {
       success: res.ok && data?.success !== false,
       token: data?.token,
@@ -102,27 +112,27 @@ export const login = async (payload: { email: string; password: string; mfa_code
       error: data?.error,
     };
   } catch (err: any) {
-    console.error("[client] /api/auth/login network error", err);
+    console.error("[client] auth/login network error", err);
     return { success: false, error: err?.message || "Network error" };
   }
 };
 
 export const getSession = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/auth/session`, {
+  const res = await fetch(`${API_BASE_URL}/auth/session`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const getProfile = async (token: string, memberId: string) => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const updateProfile = async (token: string, memberId: string, payload: any) => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -135,14 +145,14 @@ export const listInvoices = async (token: string, filters: { status?: string; pa
   if (filters.status) params.set("status", filters.status);
   if (filters.page) params.set("page", String(filters.page));
   if (filters.page_size) params.set("page_size", String(filters.page_size));
-  const res = await fetch(`${BASE_URL}/billing/invoices?${params.toString()}`, {
+  const res = await fetch(`${API_BASE_URL}/billing/invoices?${params.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const downloadInvoicePdf = async (token: string, invoiceId: string) => {
-  const res = await fetch(`${BASE_URL}/billing/invoices/${invoiceId}/pdf`, {
+  const res = await fetch(`${API_BASE_URL}/billing/invoices/${invoiceId}/pdf`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   if (res.status === 401 || res.status === 403) {
@@ -172,7 +182,7 @@ export interface CreateEventPayload {
 }
 
 export const createEventDraft = async (token: string, payload: CreateEventPayload): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events`, {
+  const res = await fetch(`${API_BASE_URL}/events`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -181,7 +191,7 @@ export const createEventDraft = async (token: string, payload: CreateEventPayloa
 };
 
 export const publishEvent = async (token: string, eventId: string): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/publish`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/publish`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
@@ -189,7 +199,7 @@ export const publishEvent = async (token: string, eventId: string): Promise<Even
 };
 
 export const updateEventCapacity = async (token: string, eventId: string, capacity: number | null): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/capacity`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/capacity`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ capacity }),
@@ -202,7 +212,7 @@ export const updateEventPricing = async (
   eventId: string,
   payload: { priceCents: number | null; currency: string | null }
 ): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/pricing`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/pricing`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -215,7 +225,7 @@ export const updateEventBasics = async (
   eventId: string,
   payload: { title?: string; description?: string; startDate?: string; endDate?: string | null; location?: string | null }
 ): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -224,7 +234,7 @@ export const updateEventBasics = async (
 };
 
 export const listUpcomingEvents = async (token: string): Promise<UpcomingEventDto[]> => {
-  const res = await fetch(`${BASE_URL}/events/upcoming`, {
+  const res = await fetch(`${API_BASE_URL}/events/upcoming`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   const data = await json(res);
@@ -233,9 +243,9 @@ export const listUpcomingEvents = async (token: string): Promise<UpcomingEventDt
 
 export const getEventDetail = async (token: string | null, idOrSlug: string): Promise<EventDetailDto> => {
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-  let res = await fetch(`${BASE_URL}/events/slug/${idOrSlug}`, { headers });
+  let res = await fetch(`${API_BASE_URL}/events/slug/${idOrSlug}`, { headers });
   if (res.status === 404) {
-    res = await fetch(`${BASE_URL}/events/${idOrSlug}`, { headers });
+    res = await fetch(`${API_BASE_URL}/events/${idOrSlug}`, { headers });
   }
   return json(res);
 };
@@ -245,7 +255,7 @@ export const registerForEvent = async (
   eventId: string,
   mode?: "rsvp" | "pay_now"
 ): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/register`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/register`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(mode ? { mode } : {}),
@@ -254,7 +264,7 @@ export const registerForEvent = async (
 };
 
 export const cancelEventRegistration = async (token: string, eventId: string): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/register`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/register`, {
     method: "DELETE",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
@@ -262,7 +272,7 @@ export const cancelEventRegistration = async (token: string, eventId: string): P
 };
 
 export const eventCheckout = async (token: string, eventId: string): Promise<EventCheckoutResponse> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/checkout`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/checkout`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
@@ -270,7 +280,7 @@ export const eventCheckout = async (token: string, eventId: string): Promise<Eve
 };
 
 export const listMyInvoices = async (token: string): Promise<Invoice[]> => {
-  const res = await fetch(`${BASE_URL}/invoices/me`, {
+  const res = await fetch(`${API_BASE_URL}/invoices/me`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   const data = await json(res);
@@ -282,7 +292,7 @@ export const recordInvoicePayment = async (
   invoiceId: string,
   payload: RecordInvoicePaymentPayload
 ): Promise<Invoice> => {
-  const res = await fetch(`${BASE_URL}/invoices/${encodeURIComponent(invoiceId)}/record-payment`, {
+  const res = await fetch(`${API_BASE_URL}/invoices/${encodeURIComponent(invoiceId)}/record-payment`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -327,7 +337,7 @@ export interface DevEmailLogResponse {
 }
 
 export const fetchDevEmailLog = async (token: string): Promise<DevEmailLogEntry[]> => {
-  const res = await fetch(`${BASE_URL}/dev/email-log`, {
+  const res = await fetch(`${API_BASE_URL}/dev/email-log`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -339,7 +349,7 @@ export const fetchDevEmailLog = async (token: string): Promise<DevEmailLogEntry[
 };
 
 export const createDuesRun = async (token: string, payload: CreateDuesRunPayload): Promise<CreateDuesRunResult> => {
-  const res = await fetch(`${BASE_URL}/billing/dues/runs`, {
+  const res = await fetch(`${API_BASE_URL}/billing/dues/runs`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -352,7 +362,7 @@ export const createDuesRun = async (token: string, payload: CreateDuesRunPayload
 };
 
 export const getDuesSummary = async (token: string): Promise<DuesSummaryResponse> => {
-  const res = await fetch(`${BASE_URL}/billing/dues/summary`, {
+  const res = await fetch(`${API_BASE_URL}/billing/dues/summary`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   if (!res.ok) {
@@ -367,7 +377,7 @@ export const updateEventBanner = async (
   eventId: string,
   bannerImageUrl: string | null
 ): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/banner`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/banner`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ bannerImageUrl }),
@@ -376,7 +386,7 @@ export const updateEventBanner = async (
 };
 
 export const updateEventTags = async (token: string, eventId: string, tags: string[]): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/tags`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/tags`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ tags }),
@@ -389,7 +399,7 @@ export const updateEventRegistrationMode = async (
   eventId: string,
   mode: "rsvp" | "pay_now"
 ): Promise<EventDetailDto> => {
-  const res = await fetch(`${BASE_URL}/events/${eventId}/registration-mode`, {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/registration-mode`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ mode }),
@@ -398,7 +408,7 @@ export const updateEventRegistrationMode = async (
 };
 
 export const checkInByCode = async (token: string, code: string): Promise<EventCheckInResult> => {
-  const res = await fetch(`${BASE_URL}/events/checkin`, {
+  const res = await fetch(`${API_BASE_URL}/events/checkin`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ code }),
@@ -407,7 +417,7 @@ export const checkInByCode = async (token: string, code: string): Promise<EventC
 };
 
 export const listEventsAdmin = async (token: string): Promise<EventDetailDto[]> => {
-  const res = await fetch(`${BASE_URL}/events`, {
+  const res = await fetch(`${API_BASE_URL}/events`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   const data = await json(res);
@@ -416,7 +426,7 @@ export const listEventsAdmin = async (token: string): Promise<EventDetailDto[]> 
 
 // Communications
 export const createBroadcastDraft = async (token: string, payload: { subject: string; body: string; audience_segment_id?: string; tags?: string[] }) => {
-  const res = await fetch(`${BASE_URL}/communications/broadcasts`, {
+  const res = await fetch(`${API_BASE_URL}/communications/broadcasts`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -429,14 +439,14 @@ export const listBroadcastDrafts = async (token: string, params: { page?: number
   if (params.status) search.set("status", params.status);
   if (params.page) search.set("page", String(params.page));
   if (params.page_size) search.set("page_size", String(params.page_size));
-  const res = await fetch(`${BASE_URL}/communications/broadcasts?${search.toString()}`, {
+  const res = await fetch(`${API_BASE_URL}/communications/broadcasts?${search.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const listSegments = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/communications/segments`, {
+  const res = await fetch(`${API_BASE_URL}/communications/segments`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -447,7 +457,7 @@ export const updateBroadcastDraft = async (
   id: string,
   payload: { subject: string; body: string; audience_segment_id?: string; tags?: string[] }
 ) => {
-  const res = await fetch(`${BASE_URL}/communications/broadcasts/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/communications/broadcasts/${id}`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -456,7 +466,7 @@ export const updateBroadcastDraft = async (
 };
 
 export const getBroadcastPreview = async (token: string, id: string) => {
-  const res = await fetch(`${BASE_URL}/communications/broadcasts/${id}/preview`, {
+  const res = await fetch(`${API_BASE_URL}/communications/broadcasts/${id}/preview`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -468,14 +478,14 @@ export const listMembersReport = async (token: string, params: { page?: number; 
   if (params.status) search.set("status", params.status);
   if (params.page) search.set("page", String(params.page));
   if (params.page_size) search.set("page_size", String(params.page_size));
-  const res = await fetch(`${BASE_URL}/reporting/reports/members?${search.toString()}`, {
+  const res = await fetch(`${API_BASE_URL}/reporting/reports/members?${search.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const listDuesSummary = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/reporting/reports/dues-summary`, {
+  const res = await fetch(`${API_BASE_URL}/reporting/reports/dues-summary`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -489,7 +499,7 @@ export const listEventAttendanceReport = async (
   if (params.status) search.set("status", params.status);
   if (params.page) search.set("page", String(params.page));
   if (params.page_size) search.set("page_size", String(params.page_size));
-  const res = await fetch(`${BASE_URL}/reporting/reports/events/attendance?${search.toString()}`, {
+  const res = await fetch(`${API_BASE_URL}/reporting/reports/events/attendance?${search.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -497,7 +507,7 @@ export const listEventAttendanceReport = async (
 
 // Config Center
 export const getOrgProfile = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/config/org-profile`, {
+  const res = await fetch(`${API_BASE_URL}/config/org-profile`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -507,7 +517,7 @@ export const updateOrgProfile = async (
   token: string,
   payload: { name: string; description?: string; logoUrl?: string; timezone?: string; locale?: string }
 ) => {
-  const res = await fetch(`${BASE_URL}/config/org-profile`, {
+  const res = await fetch(`${API_BASE_URL}/config/org-profile`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -519,7 +529,7 @@ export const createMembershipType = async (
   token: string,
   payload: { name: string; description?: string; price: number; period: "monthly" | "annual" }
 ) => {
-  const res = await fetch(`${BASE_URL}/config/membership-types`, {
+  const res = await fetch(`${API_BASE_URL}/config/membership-types`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -528,14 +538,14 @@ export const createMembershipType = async (
 };
 
 export const listMembershipTypes = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/config/membership-types`, {
+  const res = await fetch(`${API_BASE_URL}/config/membership-types`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const getApprovalWorkflow = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/config/approval-workflow`, {
+  const res = await fetch(`${API_BASE_URL}/config/approval-workflow`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -545,7 +555,7 @@ export const updateApprovalWorkflow = async (
   token: string,
   payload: { requireApproval: boolean; approverRoles?: string[] }
 ) => {
-  const res = await fetch(`${BASE_URL}/config/approval-workflow`, {
+  const res = await fetch(`${API_BASE_URL}/config/approval-workflow`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -554,7 +564,7 @@ export const updateApprovalWorkflow = async (
 };
 
 export const listPaymentCategories = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/config/payment-categories`, {
+  const res = await fetch(`${API_BASE_URL}/config/payment-categories`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -564,7 +574,7 @@ export const createPaymentCategory = async (
   token: string,
   payload: { code: string; name: string; type: "dues" | "event" | "other"; description?: string }
 ) => {
-  const res = await fetch(`${BASE_URL}/config/payment-categories`, {
+  const res = await fetch(`${API_BASE_URL}/config/payment-categories`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -577,7 +587,7 @@ export const updatePaymentCategory = async (
   id: string,
   payload: { name?: string; description?: string; type?: "dues" | "event" | "other"; active?: boolean }
 ) => {
-  const res = await fetch(`${BASE_URL}/config/payment-categories/${id}`, {
+  const res = await fetch(`${API_BASE_URL}/config/payment-categories/${id}`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -586,14 +596,14 @@ export const updatePaymentCategory = async (
 };
 
 export const getInvoiceTemplate = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/config/invoice-template`, {
+  const res = await fetch(`${API_BASE_URL}/config/invoice-template`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const updateInvoiceTemplate = async (token: string, payload: { subject?: string; body?: string }) => {
-  const res = await fetch(`${BASE_URL}/config/invoice-template`, {
+  const res = await fetch(`${API_BASE_URL}/config/invoice-template`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -602,14 +612,14 @@ export const updateInvoiceTemplate = async (token: string, payload: { subject?: 
 };
 
 export const getFeatureFlags = async (token: string) => {
-  const res = await fetch(`${BASE_URL}/config/feature-flags`, {
+  const res = await fetch(`${API_BASE_URL}/config/feature-flags`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const updateFeatureFlags = async (token: string, payload: { payments?: boolean; events?: boolean; communications?: boolean; reporting?: boolean }) => {
-  const res = await fetch(`${BASE_URL}/config/feature-flags`, {
+  const res = await fetch(`${API_BASE_URL}/config/feature-flags`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -622,14 +632,14 @@ export const listPendingMembers = async (token: string, params: { page?: number;
   const search = new URLSearchParams();
   if (params.page) search.set("page", String(params.page));
   if (params.page_size) search.set("page_size", String(params.page_size));
-  const res = await fetch(`${BASE_URL}/membership/members/pending?${search.toString()}`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/pending?${search.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const approveMember = async (token: string, memberId: string) => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}/approve`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}/approve`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
@@ -637,7 +647,7 @@ export const approveMember = async (token: string, memberId: string) => {
 };
 
 export const rejectMember = async (token: string, memberId: string, reason?: string) => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}/reject`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}/reject`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ reason }),
@@ -684,14 +694,14 @@ export interface UpdateMemberProfilePayload {
 }
 
 export const getCurrentMember = async (token: string): Promise<MemberProfile> => {
-  const res = await fetch(`${BASE_URL}/membership/members/me`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/me`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
 
 export const updateCurrentMember = async (token: string, payload: UpdateMemberProfilePayload): Promise<MemberProfile> => {
-  const res = await fetch(`${BASE_URL}/membership/members/me`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/me`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -736,7 +746,7 @@ export const searchDirectoryMembers = async (
   if (params.limit !== undefined) search.set("limit", String(params.limit));
   if (params.offset !== undefined) search.set("offset", String(params.offset));
 
-  const res = await fetch(`${BASE_URL}/membership/members/search?${search.toString()}`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/search?${search.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -770,7 +780,7 @@ export interface CreateMemberPaymentMethodRequest {
 }
 
 export const getMemberPaymentMethods = async (token: string): Promise<MemberPaymentMethodsResponse> => {
-  const res = await fetch(`${BASE_URL}/membership/members/me/payment-methods`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/me/payment-methods`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -780,7 +790,7 @@ export const createMemberPaymentMethod = async (
   token: string,
   payload: CreateMemberPaymentMethodRequest
 ): Promise<MemberPaymentMethodsResponse> => {
-  const res = await fetch(`${BASE_URL}/membership/members/me/payment-methods`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/me/payment-methods`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -818,7 +828,7 @@ export const createMemberAdmin = async (
   token: string,
   payload: CreateMemberAdminPayload
 ): Promise<CreateMemberAdminResponse> => {
-  const res = await fetch(`${BASE_URL}/membership/members/admin`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/admin`, {
     method: "POST",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -848,7 +858,7 @@ export const updateMemberRoles = async (
   memberId: string,
   roles: Role[]
 ): Promise<UpdateMemberRolesResponse> => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}/roles`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}/roles`, {
     method: "PUT",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ roles }),
@@ -873,7 +883,7 @@ export interface MemberWithRoles {
 }
 
 export const getMemberById = async (token: string, memberId: string): Promise<MemberWithRoles> => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -896,7 +906,7 @@ export const updateMyAvatar = async (
   token: string,
   payload: UpdateAvatarPayload
 ): Promise<MemberAvatarResponse> => {
-  const res = await fetch(`${BASE_URL}/membership/members/me/avatar`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/me/avatar`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -909,7 +919,7 @@ export const adminUpdateMemberAvatar = async (
   memberId: string,
   payload: UpdateAvatarPayload
 ): Promise<MemberAvatarResponse> => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}/avatar`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}/avatar`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -993,7 +1003,7 @@ export interface MemberCustomFieldsWithSchema {
 
 /** Get the profile custom field schema */
 export const getProfileCustomFieldSchema = async (token: string): Promise<ProfileCustomFieldSchema> => {
-  const res = await fetch(`${BASE_URL}/membership/custom-fields/profile-schema`, {
+  const res = await fetch(`${API_BASE_URL}/membership/custom-fields/profile-schema`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -1004,7 +1014,7 @@ export const saveProfileCustomFieldSchema = async (
   token: string,
   schema: { groups: CustomFieldGroup[]; fields: CustomFieldDefinition[] }
 ): Promise<ProfileCustomFieldSchema> => {
-  const res = await fetch(`${BASE_URL}/membership/custom-fields/profile-schema`, {
+  const res = await fetch(`${API_BASE_URL}/membership/custom-fields/profile-schema`, {
     method: "PUT",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(schema),
@@ -1014,7 +1024,7 @@ export const saveProfileCustomFieldSchema = async (
 
 /** Get current member's custom fields */
 export const getMyCustomFields = async (token: string): Promise<MemberCustomFieldsResponse> => {
-  const res = await fetch(`${BASE_URL}/membership/members/me/custom-fields`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/me/custom-fields`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -1025,7 +1035,7 @@ export const updateMyCustomFields = async (
   token: string,
   customFields: ProfileCustomFieldValues
 ): Promise<MemberCustomFieldsResponse> => {
-  const res = await fetch(`${BASE_URL}/membership/members/me/custom-fields`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/me/custom-fields`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ customFields }),
@@ -1038,7 +1048,7 @@ export const adminGetMemberCustomFields = async (
   token: string,
   memberId: string
 ): Promise<MemberCustomFieldsWithSchema> => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}/custom-fields`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}/custom-fields`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
@@ -1050,7 +1060,7 @@ export const adminUpdateMemberCustomFields = async (
   memberId: string,
   customFields: ProfileCustomFieldValues
 ): Promise<MemberCustomFieldsWithSchema> => {
-  const res = await fetch(`${BASE_URL}/membership/members/${memberId}/custom-fields`, {
+  const res = await fetch(`${API_BASE_URL}/membership/members/${memberId}/custom-fields`, {
     method: "PATCH",
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ customFields }),
