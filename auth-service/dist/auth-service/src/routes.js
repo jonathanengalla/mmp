@@ -8,6 +8,9 @@ const users = [
         id: "1",
         email: "admin@test.local",
         password: "password123",
+        roles: ["admin", "member", "event_manager", "finance_manager", "communications_manager"],
+        tenantId: "t1",
+        memberId: "m-dev",
     },
 ];
 router.post("/login", (req, res) => {
@@ -33,10 +36,14 @@ router.post("/login", (req, res) => {
         return res.json({
             success: true,
             token: "dev-token-123",
+            roles: user.roles,
             user: {
                 id: user.id,
                 email: user.email,
+                roles: user.roles,
             },
+            tenant_id: user.tenantId || "t1",
+            member_id: user.memberId || "m-dev",
         });
     }
     catch (err) {

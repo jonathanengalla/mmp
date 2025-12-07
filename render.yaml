@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: oneledger
+    env: node
+    plan: free
+    rootDir: auth-service
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # If you want to pin Node version explicitly, uncomment the next lines:
+      # - key: NODE_VERSION
+      #   value: "22"
+
