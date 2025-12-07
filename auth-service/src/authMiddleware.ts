@@ -1,18 +1,19 @@
-import type { Request } from "express";
-import { Response, NextFunction } from "express";
+import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { JWT_ACCESS_SECRET } from "./config";
 import { findUserById } from "./store";
 
-export interface AuthRequest extends Request {
-  user?: {
-    memberId?: string;
-    tenantId?: string;
-    roles?: string[];
-    email?: string;
-    name?: string;
-  };
-}
+export type AuthRequest = Request & {
+  user?:
+    | {
+        memberId?: string;
+        tenantId?: string;
+        roles?: string[];
+        email?: string;
+        [key: string]: any;
+      }
+    | null;
+};
 
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
