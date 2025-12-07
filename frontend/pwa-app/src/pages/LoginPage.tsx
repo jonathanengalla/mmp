@@ -49,7 +49,21 @@ export const LoginPage: React.FC = () => {
       setSubmitting(true);
       const resp = await login({ email: form.email, password: form.password, mfa_code: form.mfa_code || undefined });
       if (!resp.success) {
-        setToast({ msg: resp.error || "Login failed", type: "error" });
+        const err = resp.error as any;
+        let msg = "Sign in failed. Please check your email and password.";
+        if (typeof err === "string" && err.trim().length > 0) {
+          msg = err;
+        } else if (err && typeof err === "object") {
+          const message = typeof err.message === "string" ? err.message.trim() : "";
+          const code = typeof err.code === "string" ? err.code.trim() : "";
+          if (message) {
+            msg = message;
+          } else if (code) {
+            msg = code === "invalid_credentials" ? "Invalid email or password. Please try again." : code;
+          }
+        }
+        console.log("[login] failed", resp);
+        setToast({ msg, type: "error" });
         return;
       }
       const access_token = resp.access_token || resp.token;
@@ -66,7 +80,9 @@ export const LoginPage: React.FC = () => {
       }
       navigate(redirect, { replace: true });
     } catch (err: any) {
-      setToast({ msg: err?.error?.message || "Login failed", type: "error" });
+      const fallback = typeof err?.message === "string" && err.message.trim().length > 0 ? err.message : "Login failed. Please try again.";
+      console.error("[login] unexpected error", err);
+      setToast({ msg: fallback, type: "error" });
     } finally {
       setSubmitting(false);
     }
