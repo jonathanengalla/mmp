@@ -12,7 +12,9 @@ import {
 } from "../../../../libs/shared/src/models";
 
 const API_BASE_URL =
-  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_URL) || "/api";
+  (import.meta as any).env?.VITE_API_BASE_URL
+    ? ((import.meta as any).env.VITE_API_BASE_URL as string).replace(/\/$/, "")
+    : "/api";
 const BASE_URL = API_BASE_URL;
 
 const json = async (res: Response) => {
