@@ -1,0 +1,133 @@
+openapi: 3.1.0
+info:
+  title: OneLedger Events API (MVP)
+  version: 0.1.0
+servers:
+  - url: https://api.oneledger.example.com/api/events
+paths:
+  /:
+    post:
+      summary: Create event draft
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+  /{id}/publish:
+    post:
+      summary: Publish event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Published }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /{id}:
+    patch:
+      summary: Update event
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /{id}/agenda:
+    post:
+      summary: Attach/replace agenda
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Saved }
+        "400": { description: Validation }
+        "404": { description: Not found }
+  /upcoming:
+    get:
+      summary: List upcoming events
+      responses:
+        "200": { description: Paginated list }
+  /{id}/register:
+    post:
+      summary: Member registration
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "201": { description: Registered }
+        "400": { description: Validation }
+        "404": { description: Not found }
+        "409": { description: Capacity reached }
+  /{id}/cancel-registration:
+    post:
+      summary: Cancel registration
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Cancelled }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /{id}/promote-waitlist:
+    post:
+      summary: Promote next waitlisted
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Promoted }
+        "404": { description: Not found }
+        "409": { description: None waiting }
+  /{id}/check-in:
+    post:
+      summary: Check-in attendee
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                member_id: { type: string }
+              required: [member_id]
+      responses:
+        "200": { description: Checked in }
+        "404": { description: Not found }
+  /{id}/attendees:
+    get:
+      summary: List attendees/registrations
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Paginated list }
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200": { description: OK }
+  /status:
+    get:
+      summary: Readiness probe
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+

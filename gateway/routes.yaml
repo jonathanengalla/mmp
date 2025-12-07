@@ -1,0 +1,26 @@
+routes:
+  - prefix: /api/auth
+    service: auth-service
+    auth_required: false_for_login_and_reset
+  - prefix: /api/membership
+    service: membership-service
+    auth_required: true
+  - prefix: /api/payments
+    service: payments-billing-service
+    auth_required: true
+  - prefix: /api/billing
+    service: payments-billing-service
+    auth_required: true
+  - prefix: /api/events
+    service: events-service
+    auth_required: true
+  - prefix: /api/communications
+    service: communications-service
+    auth_required: true
+  - prefix: /api/config
+    service: config-center-service
+    auth_required: true
+health:
+  - path: /api/health
+  - path: /api/status
+

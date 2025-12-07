@@ -1,0 +1,171 @@
+openapi: 3.1.0
+info:
+  title: OneLedger Config Center API (MVP)
+  version: 0.1.0
+servers:
+  - url: https://api.oneledger.example.com/api/config
+paths:
+  /org-profile:
+    get:
+      summary: Get org profile
+      responses:
+        "200": { description: OK }
+    patch:
+      summary: Update org profile/branding/timezone/locale
+      responses:
+        "200": { description: Updated }
+        "400": { description: Validation }
+  /membership-types:
+    post:
+      summary: Create membership type
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List membership types
+      responses:
+        "200": { description: List }
+  /membership-types/{id}:
+    patch:
+      summary: Update membership type
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated }
+        "404": { description: Not found }
+  /approval-workflow:
+    post:
+      summary: Set member approval mode
+      responses:
+        "200": { description: Updated }
+  /profile-fields:
+    post:
+      summary: Add custom profile field
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List custom profile fields
+      responses:
+        "200": { description: List }
+  /payment-categories:
+    post:
+      summary: Define payment category
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List payment categories
+      responses:
+        "200": { description: List }
+  /invoice-templates:
+    post:
+      summary: Set invoice template
+      responses:
+        "200": { description: Saved }
+        "400": { description: Validation }
+  /dues-rules:
+    post:
+      summary: Configure recurring dues rules
+      responses:
+        "200": { description: Saved }
+  /payment-gateways:
+    post:
+      summary: Enable/configure gateway
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+  /feature-flags:
+    post:
+      summary: Set feature flag
+      responses:
+        "200": { description: Saved }
+        "201": { description: Created }
+    get:
+      summary: List feature flags
+      responses:
+        "200": { description: List }
+  /email-senders:
+    post:
+      summary: Configure sender identity
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+  /reminder-schedules:
+    post:
+      summary: Configure reminder offsets
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+  /email-templates:
+    post:
+      summary: Create/update email template
+      responses:
+        "200": { description: Saved }
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List email templates
+      responses:
+        "200": { description: List }
+  /event-defaults:
+    post:
+      summary: Set event defaults
+      responses:
+        "200": { description: Saved }
+  /project-templates:
+    post:
+      summary: Create project template
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List project templates
+      responses:
+        "200": { description: List }
+  /directory-visibility:
+    post:
+      summary: Set directory visibility and field rules
+      responses:
+        "200": { description: Saved }
+  /roles:
+    post:
+      summary: Create role definition
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List roles
+      responses:
+        "200": { description: List }
+  /roles/{id}:
+    patch:
+      summary: Update role definition
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated }
+        "404": { description: Not found }
+  /mfa-policy:
+    post:
+      summary: Set MFA requirement for admin roles
+      responses:
+        "200": { description: Saved }
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200": { description: OK }
+  /status:
+    get:
+      summary: Readiness probe
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+

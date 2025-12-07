@@ -1,0 +1,140 @@
+openapi: 3.1.0
+info:
+  title: OneLedger Auth & Session API (MVP)
+  version: 0.1.0
+servers:
+  - url: https://api.oneledger.example.com/api/auth
+paths:
+  /login:
+    post:
+      summary: Authenticate user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+                mfa_code: { type: string, nullable: true }
+              required: [email, password]
+      responses:
+        "200":
+          description: Tokens issued
+        "401":
+          description: Invalid credentials
+        "403":
+          description: MFA required/failed
+  /refresh:
+    post:
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token: { type: string }
+              required: [refresh_token]
+      responses:
+        "200":
+          description: Tokens refreshed
+        "401":
+          description: Invalid/expired
+  /logout:
+    post:
+      summary: Invalidate refresh token/session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token: { type: string }
+              required: [refresh_token]
+      responses:
+        "204":
+          description: Logged out
+  /session:
+    get:
+      summary: Session introspection
+      responses:
+        "200":
+          description: Session data
+        "401":
+          description: Invalid session
+  /password/change:
+    post:
+      summary: Change password (self)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                current_password: { type: string }
+                new_password: { type: string }
+              required: [current_password, new_password]
+      responses:
+        "200": { description: Changed }
+        "400": { description: Validation }
+        "401": { description: Unauthorized }
+  /password/reset/request:
+    post:
+      summary: Request reset email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+              required: [email]
+      responses:
+        "202": { description: Accepted }
+  /password/reset/confirm:
+    post:
+      summary: Complete reset with token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string }
+                new_password: { type: string }
+              required: [token, new_password]
+      responses:
+        "200": { description: Reset }
+        "400": { description: Invalid }
+        "410": { description: Expired }
+  /users/{id}/password/reset:
+    post:
+      summary: Admin-triggered reset email
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "202": { description: Sent }
+        "404": { description: Not found }
+        "403": { description: Forbidden }
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200": { description: OK }
+  /status:
+    get:
+      summary: Readiness probe
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+

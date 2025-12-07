@@ -1,0 +1,160 @@
+openapi: 3.1.0
+info:
+  title: OneLedger Membership API (MVP)
+  version: 0.1.0
+servers:
+  - url: https://api.oneledger.example.com/api/membership
+paths:
+  /members/registrations:
+    post:
+      summary: Member self-registration (public)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, firstName, lastName]
+              properties:
+                email: { type: string, format: email }
+                firstName: { type: string }
+                lastName: { type: string }
+                phone: { type: string, nullable: true }
+                address: { type: string, nullable: true }
+                linkedinUrl: { type: string, format: uri, nullable: true }
+                otherSocials: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Created (pending)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, example: reg_123 }
+                  email: { type: string, format: email }
+                  status: { type: string, enum: [pending] }
+        "400": { description: Validation error }
+        "409": { description: Duplicate registration or active member }
+  /registrations/{token}/verify:
+    post:
+      summary: Verify registration via email token
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Verified }
+        "400": { description: Invalid }
+        "410": { description: Expired }
+  /members:
+    post:
+      summary: Admin create member
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation error }
+  /members/{id}/approve:
+    post:
+      summary: Approve pending member
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Approved }
+        "404": { description: Not found }
+        "409": { description: Invalid state }
+  /members/{id}/reject:
+    post:
+      summary: Reject pending member
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Rejected }
+        "404": { description: Not found }
+        "409": { description: Invalid state }
+  /members/{id}:
+    patch:
+      summary: Update member profile
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated }
+        "400": { description: Validation }
+        "404": { description: Not found }
+  /members/{id}/photo:
+    post:
+      summary: Upload/replace profile photo
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Uploaded }
+        "400": { description: Validation }
+        "404": { description: Not found }
+  /members/search:
+    get:
+      summary: Search directory
+      responses:
+        "200": { description: Paginated list }
+  /members/{id}/deactivate:
+    post:
+      summary: Deactivate member
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Deactivated }
+        "404": { description: Not found }
+  /members/{id}/roles:
+    put:
+      summary: Replace member roles
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated }
+        "400": { description: Validation }
+        "404": { description: Not found }
+  /members/import:
+    post:
+      summary: Bulk import members via CSV
+      responses:
+        "202": { description: Accepted (job_id) }
+        "400": { description: Validation }
+  /members/{id}/audit:
+    get:
+      summary: Audit log for member
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Entries }
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200": { description: OK }
+  /status:
+    get:
+      summary: Readiness probe
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+

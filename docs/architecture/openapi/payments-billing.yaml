@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  title: OneLedger Payments & Billing API (MVP)
+  version: 0.1.0
+servers:
+  - url: https://api.oneledger.example.com/api
+paths:
+  /payments/payment-methods:
+    post:
+      summary: Save payment method
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+  /payments/payment-methods/{id}:
+    delete:
+      summary: Remove payment method
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /payments/payments:
+    post:
+      summary: One-time payment (dues/event)
+      responses:
+        "201": { description: Created (pending/succeeded) }
+        "400": { description: Validation }
+        "409": { description: Already paid }
+  /payments/payments/{id}:
+    get:
+      summary: Payment detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Detail }
+        "404": { description: Not found }
+  /payments/payments/{id}/refund:
+    post:
+      summary: Refund payment (full/partial)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Refunded }
+        "400": { description: Validation }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /payments/payments/{id}/resend-receipt:
+    post:
+      summary: Resend receipt
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "202": { description: Queued }
+        "404": { description: Not found }
+        "409": { description: Not successful }
+  /payments/transactions:
+    get:
+      summary: List transactions
+      responses:
+        "200": { description: Paginated list }
+  /billing/invoices:
+    post:
+      summary: Create manual invoice
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List invoices
+      responses:
+        "200": { description: Paginated list }
+  /billing/invoices/{id}:
+    get:
+      summary: Invoice detail
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Detail }
+        "404": { description: Not found }
+  /billing/invoices/{id}/send:
+    post:
+      summary: Send invoice
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Sent }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /billing/invoices/{id}/void:
+    post:
+      summary: Void invoice
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Voided }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /billing/invoices/{id}/pdf:
+    get:
+      summary: Download invoice PDF
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: File }
+        "404": { description: Not found }
+  /billing/schedules/dues:
+    post:
+      summary: Create recurring dues schedule
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+  /billing/schedules/dues/{id}:
+    delete:
+      summary: Cancel dues schedule
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "204": { description: Deleted }
+        "404": { description: Not found }
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200": { description: OK }
+  /status:
+    get:
+      summary: Readiness probe
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+

@@ -1,0 +1,219 @@
+openapi: 3.1.0
+info:
+  title: OneLedger Communications API (MVP)
+  version: 0.1.0
+servers:
+  - url: https://api.oneledger.example.com/api/communications
+paths:
+  /broadcasts:
+    post:
+      summary: Create draft broadcast
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List broadcasts
+      responses:
+        "200": { description: Paginated list }
+  /broadcasts/{id}/send:
+    post:
+      summary: Send broadcast now
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Sent }
+        "404": { description: Not found }
+        "409": { description: Already sent }
+  /broadcasts/{id}/schedule:
+    post:
+      summary: Schedule broadcast
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Scheduled }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /broadcasts/{id}/pause:
+    post:
+      summary: Pause scheduled broadcast
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Paused }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /broadcasts/{id}/resume:
+    post:
+      summary: Resume paused broadcast
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Resumed }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /templates:
+    post:
+      summary: Create template
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List templates
+      responses:
+        "200": { description: Paginated list }
+  /templates/{id}:
+    patch:
+      summary: Update template
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated }
+        "404": { description: Not found }
+  /reminders/payments:
+    post:
+      summary: Trigger payment reminder
+      responses:
+        "202": { description: Accepted }
+  /reminders/events:
+    post:
+      summary: Trigger event reminder
+      responses:
+        "202": { description: Accepted }
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200": { description: OK }
+  /status:
+    get:
+      summary: Readiness probe
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+openapi: 3.1.0
+info:
+  title: OneLedger Communications API (MVP)
+  version: 0.1.0
+servers:
+  - url: https://api.oneledger.example.com/api/communications
+paths:
+  /broadcasts:
+    post:
+      summary: Create draft broadcast
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    get:
+      summary: List broadcasts
+      responses:
+        "200": { description: Paginated list }
+  /broadcasts/{id}/send:
+    post:
+      summary: Send broadcast now
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Sent }
+        "404": { description: Not found }
+        "409": { description: Already sent }
+  /broadcasts/{id}/schedule:
+    post:
+      summary: Schedule broadcast
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Scheduled }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /broadcasts/{id}/pause:
+    post:
+      summary: Pause scheduled broadcast
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Paused }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /broadcasts/{id}/resume:
+    post:
+      summary: Resume paused broadcast
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Resumed }
+        "404": { description: Not found }
+        "409": { description: Conflict }
+  /templates:
+    post:
+      summary: Create template
+      responses:
+        "201": { description: Created }
+        "400": { description: Validation }
+    patch:
+      summary: Update template (use /templates/{id})
+      responses:
+        "405": { description: Use id-specific path }
+    get:
+      summary: List templates
+      responses:
+        "200": { description: Paginated list }
+  /templates/{id}:
+    patch:
+      summary: Update template
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated }
+        "404": { description: Not found }
+  /reminders/payments:
+    post:
+      summary: Trigger payment reminder
+      responses:
+        "202": { description: Accepted }
+  /reminders/events:
+    post:
+      summary: Trigger event reminder
+      responses:
+        "202": { description: Accepted }
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        "200": { description: OK }
+  /status:
+    get:
+      summary: Readiness probe
+      responses:
+        "200": { description: Ready }
+        "503": { description: Not ready }
+
