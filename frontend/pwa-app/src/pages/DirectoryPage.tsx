@@ -116,7 +116,7 @@ export const DirectoryPage: React.FC = () => {
                   left: "var(--space-3)", 
                   top: "50%", 
                   transform: "translateY(-50%)",
-                  color: "var(--color-text-muted)",
+                  color: "var(--app-color-text-muted)",
                 }}
               >
                 <circle cx="11" cy="11" r="8" />
@@ -145,8 +145,8 @@ export const DirectoryPage: React.FC = () => {
                 width: 56,
                 height: 56,
                 borderRadius: "var(--radius-full)",
-                background: "var(--color-error-soft)",
-                color: "var(--color-error)",
+                background: "var(--app-color-error-soft)",
+                color: "var(--app-color-state-error)",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -165,7 +165,7 @@ export const DirectoryPage: React.FC = () => {
               }}>
                 Search failed
               </h3>
-              <p style={{ color: "var(--color-text-secondary)", marginBottom: "var(--space-4)" }}>
+              <p style={{ color: "var(--app-color-text-secondary)", marginBottom: "var(--space-4)" }}>
                 {loadError}
               </p>
               <Button variant="secondary" onClick={() => doSearch(query, offset)}>
@@ -181,7 +181,7 @@ export const DirectoryPage: React.FC = () => {
             <div style={{ 
               padding: "var(--space-8)", 
               textAlign: "center",
-              color: "var(--color-text-muted)",
+              color: "var(--app-color-text-muted)",
             }}>
               <svg 
                 width="48" 
@@ -205,7 +205,7 @@ export const DirectoryPage: React.FC = () => {
         {/* Loading state */}
         {loading && (
           <Card>
-            <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--color-text-muted)" }}>
+            <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
               <div className="pr-skeleton" style={{ 
                 width: 40, 
                 height: 40, 
@@ -223,7 +223,7 @@ export const DirectoryPage: React.FC = () => {
             <div style={{ 
               padding: "var(--space-8)", 
               textAlign: "center",
-              color: "var(--color-text-muted)",
+              color: "var(--app-color-text-muted)",
             }}>
               <svg 
                 width="48" 
@@ -243,7 +243,7 @@ export const DirectoryPage: React.FC = () => {
                 fontSize: "var(--font-h3)", 
                 margin: "0 0 var(--space-2) 0",
                 fontWeight: "var(--font-weight-semibold)",
-                color: "var(--color-text-primary)",
+                color: "var(--app-color-text-primary)",
               }}>
                 No members found
               </h3>
@@ -257,8 +257,8 @@ export const DirectoryPage: React.FC = () => {
         {/* Results list */}
         {!loadError && !loading && results.length > 0 && (
           <Card padding="none">
-            <div style={{ padding: "var(--space-4)", borderBottom: "1px solid var(--color-border)" }}>
-              <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+            <div style={{ padding: "var(--space-4)", borderBottom: "1px solid var(--app-color-border-subtle)" }}>
+              <span style={{ color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
                 Showing {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total} members
               </span>
             </div>
@@ -294,8 +294,8 @@ export const DirectoryPage: React.FC = () => {
                             width: 32,
                             height: 32,
                             borderRadius: "var(--radius-full)",
-                            background: "var(--color-primary-soft)",
-                            color: "var(--color-primary)",
+                            background: "var(--app-color-primary-soft)",
+                            color: "var(--app-color-primary)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -314,13 +314,13 @@ export const DirectoryPage: React.FC = () => {
                     <TableCell>
                       <a 
                         href={`mailto:${member.email}`}
-                        style={{ color: "var(--color-primary)" }}
+                        style={{ color: "var(--app-color-primary)" }}
                       >
                         {member.email}
                       </a>
                     </TableCell>
                     <TableCell>
-                      {member.phone || <span style={{ color: "var(--color-text-muted)" }}>—</span>}
+                      {member.phone || <span style={{ color: "var(--app-color-text-muted)" }}>—</span>}
                     </TableCell>
                     <TableCell>
                       <Tag variant={member.status === "active" ? "success" : "warning"}>
@@ -336,12 +336,12 @@ export const DirectoryPage: React.FC = () => {
             {totalPages > 1 && (
               <div style={{ 
                 padding: "var(--space-4)", 
-                borderTop: "1px solid var(--color-border)",
+                borderTop: "1px solid var(--app-color-border-subtle)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
               }}>
-                <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+                <span style={{ color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
                   Page {currentPage} of {totalPages}
                 </span>
                 <div style={{ display: "flex", gap: "var(--space-2)" }}>

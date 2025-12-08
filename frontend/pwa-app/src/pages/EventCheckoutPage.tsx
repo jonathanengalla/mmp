@@ -62,7 +62,7 @@ export const EventCheckoutPage: React.FC = () => {
           <div>Amount: {formatAmount(invoice.amountCents, invoice.currency)}</div>
           <div>Due date: {invoice.dueDate ? new Date(invoice.dueDate).toLocaleString() : "Not set"}</div>
           {invoice.eventTitle && <div>Event: {invoice.eventTitle}</div>}
-          <div style={{ color: "var(--color-text-muted)" }}>
+          <div style={{ color: "var(--app-color-text-muted)" }}>
             Your registration is confirmed. An invoice has been created for this event. You can view it anytime under Invoices.
           </div>
         </div>
@@ -80,20 +80,20 @@ export const EventCheckoutPage: React.FC = () => {
             <Tag variant="info">{event.registrationMode === "pay_now" ? "Payment required" : "RSVP"}</Tag>
           </div>
           <div>
-            <div style={{ color: "var(--color-text-muted)" }}>Title</div>
+            <div style={{ color: "var(--app-color-text-muted)" }}>Title</div>
             <div style={{ fontWeight: 600 }}>{event.title}</div>
           </div>
           <div>
-            <div style={{ color: "var(--color-text-muted)" }}>Date / Time</div>
+            <div style={{ color: "var(--app-color-text-muted)" }}>Date / Time</div>
             <div>{new Date(event.startDate).toLocaleString()}</div>
             {event.endDate && <div>{new Date(event.endDate).toLocaleString()}</div>}
           </div>
           <div>
-            <div style={{ color: "var(--color-text-muted)" }}>Location</div>
+            <div style={{ color: "var(--app-color-text-muted)" }}>Location</div>
             <div>{event.location || "TBA"}</div>
           </div>
           <div>
-            <div style={{ color: "var(--color-text-muted)" }}>Price</div>
+            <div style={{ color: "var(--app-color-text-muted)" }}>Price</div>
             <div>{event.priceCents != null ? formatAmount(event.priceCents, event.currency || undefined) : "Free"}</div>
           </div>
         </div>
@@ -106,7 +106,7 @@ export const EventCheckoutPage: React.FC = () => {
     if (error) {
       return (
         <Card>
-          <div style={{ color: "var(--color-error)" }}>{error}</div>
+          <div style={{ color: "var(--app-color-state-error)" }}>{error}</div>
           <Button style={{ marginTop: "var(--space-sm)" }} onClick={load}>
             Retry
           </Button>
@@ -141,7 +141,7 @@ export const EventCheckoutPage: React.FC = () => {
         <Card>
           <div style={{ display: "grid", gap: "var(--space-sm)" }}>
             <div style={{ fontWeight: 600 }}>Next steps</div>
-            <div style={{ color: "var(--color-text-muted)" }}>
+            <div style={{ color: "var(--app-color-text-muted)" }}>
               Please complete payment before the event. You can view this invoice anytime under Invoices.
             </div>
             <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>

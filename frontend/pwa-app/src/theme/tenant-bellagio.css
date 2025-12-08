@@ -41,9 +41,9 @@
   --bellagio-text-primary: #F2F2F7;
   --bellagio-text-secondary: #B4B6C2;
   --bellagio-text-tertiary: #8B8E99;
-  --bellagio-primary: #B43459;
-  --bellagio-primary-hover: #E879A7;
-  --bellagio-primary-muted: #4C0519;
+  --bellagio-primary: #E85C5C;
+  --bellagio-primary-hover: #d64f4f;
+  --bellagio-primary-muted: rgba(232, 92, 92, 0.18);
   --bellagio-border: #3A3C41;
   --bellagio-border-focus: #E879A7;
   --bellagio-success: #4ADE80;
@@ -82,6 +82,7 @@
   --app-color-text-primary: var(--rcme-color-text-primary);
   --app-color-text-secondary: var(--rcme-color-text-secondary);
   --app-color-text-muted: var(--rcme-color-text-muted);
+  --app-color-on-primary: #ffffff;
   --app-color-border: var(--bellagio-border);
   --app-color-border-subtle: var(--bellagio-border);
   --app-color-border-strong: var(--bellagio-border);

@@ -25,6 +25,9 @@
   color: var(--app-color-on-primary, #ffffff);
   border-color: var(--app-color-brand-primary);
 }
+.app-button--primary:hover {
+  filter: brightness(1.03);
+}
 .app-button--primary:hover { transform: translateY(-1px); }
 
 .app-button--secondary {

@@ -301,7 +301,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             display: "flex", 
             alignItems: "center", 
             gap: "var(--space-2)",
-              color: "var(--app-color-text-secondary)",
+            color: "var(--app-color-text-secondary)",
             fontSize: "var(--font-body-sm)",
           }}>
             <span style={{ color: "var(--app-color-text-muted)" }}>
@@ -318,7 +318,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
           {/* Right side actions */}
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            <TenantThemeSwitcher />
+            {isAdmin && <TenantThemeSwitcher />}
           </div>
         </header>
 

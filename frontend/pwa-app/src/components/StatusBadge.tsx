@@ -9,11 +9,11 @@ interface StatusBadgeProps {
 
 // Color palette using CSS variables from theme system
 const toneStyles: Record<StatusTone, { bg: string; text: string }> = {
-  success: { bg: "rgba(34, 197, 94, 0.12)", text: "var(--color-success, #22c55e)" },
-  warning: { bg: "rgba(245, 158, 11, 0.12)", text: "var(--color-warning, #f59e0b)" },
-  danger: { bg: "rgba(239, 68, 68, 0.12)", text: "var(--color-error, #ef4444)" },
-  info: { bg: "rgba(37, 99, 235, 0.12)", text: "var(--color-info, #2563eb)" },
-  neutral: { bg: "var(--color-surface2, #f1f5f9)", text: "var(--color-text-secondary, #64748b)" },
+  success: { bg: "var(--app-color-success-soft)", text: "var(--app-color-state-success)" },
+  warning: { bg: "var(--app-color-warning-soft)", text: "var(--app-color-state-warning)" },
+  danger: { bg: "var(--app-color-error-soft)", text: "var(--app-color-state-error)" },
+  info: { bg: "var(--app-color-info-soft)", text: "var(--app-color-state-info)" },
+  neutral: { bg: "var(--app-color-surface-2)", text: "var(--app-color-text-secondary)" },
 };
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ tone, label }) => {

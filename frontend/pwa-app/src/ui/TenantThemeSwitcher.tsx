@@ -53,8 +53,8 @@ export const TenantThemeSwitcher: React.FC = () => {
         gap: "var(--space-2)",
         padding: "var(--space-2)",
         borderRadius: "var(--radius-md)",
-        border: "1px solid var(--color-border)",
-        background: "var(--color-surface-1)",
+        border: "1px solid var(--app-color-border-subtle)",
+        background: "var(--app-color-surface-1)",
       }}
     >
       <label
@@ -63,7 +63,7 @@ export const TenantThemeSwitcher: React.FC = () => {
           alignItems: "center",
           gap: "var(--space-2)",
           fontSize: "var(--font-body-sm)",
-          color: "var(--color-text-secondary)",
+          color: "var(--app-color-text-secondary)",
         }}
       >
         Tenant
@@ -71,9 +71,9 @@ export const TenantThemeSwitcher: React.FC = () => {
           value={tenant}
           onChange={(e) => handleTenantChange(e.target.value as TenantId)}
           style={{
-            background: "var(--color-surface)",
-            color: "var(--color-text-primary)",
-            border: "1px solid var(--color-border)",
+            background: "var(--app-color-surface-0)",
+            color: "var(--app-color-text-primary)",
+            border: "1px solid var(--app-color-border-subtle)",
             borderRadius: "var(--radius-sm)",
             padding: "6px 10px",
             fontSize: "var(--font-body-sm)",
@@ -98,7 +98,7 @@ export const TenantThemeSwitcher: React.FC = () => {
         <span
           style={{
             fontSize: "var(--font-body-sm)",
-            color: "var(--color-text-secondary)",
+          color: "var(--app-color-text-secondary)",
           }}
         >
           Theme

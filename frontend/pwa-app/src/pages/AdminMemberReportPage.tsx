@@ -285,8 +285,8 @@ export const AdminMemberReportPage: React.FC = () => {
                 width: 36,
                 height: 36,
                 borderRadius: "var(--radius-full)",
-                background: "var(--color-primary-soft)",
-                color: "var(--color-primary)",
+                background: "var(--app-color-primary-soft)",
+                color: "var(--app-color-primary)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -322,7 +322,7 @@ export const AdminMemberReportPage: React.FC = () => {
       {customFieldSchema && customFieldSchema.fields.length > 0 && (
         <TableCell>
           {m.customFields && Object.keys(m.customFields).length > 0 ? (
-            <div style={{ fontSize: "var(--font-caption)", color: "var(--color-text-secondary)" }}>
+            <div style={{ fontSize: "var(--font-caption)", color: "var(--app-color-text-secondary)" }}>
               {Object.entries(m.customFields)
                 .filter(([_, v]) => v !== null && v !== "" && v !== undefined)
                 .slice(0, 3) // Show first 3 fields
@@ -337,11 +337,11 @@ export const AdminMemberReportPage: React.FC = () => {
                   );
                 })}
               {Object.keys(m.customFields).filter((k) => m.customFields![k] !== null && m.customFields![k] !== "").length > 3 && (
-                <span style={{ color: "var(--color-text-muted)" }}>+{Object.keys(m.customFields).filter((k) => m.customFields![k] !== null && m.customFields![k] !== "").length - 3} more</span>
+                <span style={{ color: "var(--app-color-text-muted)" }}>+{Object.keys(m.customFields).filter((k) => m.customFields![k] !== null && m.customFields![k] !== "").length - 3} more</span>
               )}
             </div>
           ) : (
-            <span style={{ color: "var(--color-text-muted)", fontSize: "var(--font-caption)" }}>—</span>
+            <span style={{ color: "var(--app-color-text-muted)", fontSize: "var(--font-caption)" }}>—</span>
           )}
         </TableCell>
       )}
@@ -384,7 +384,7 @@ export const AdminMemberReportPage: React.FC = () => {
         </div>
 
         {loading && (
-          <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--color-text-muted)" }}>
+          <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
             <div
               className="pr-skeleton"
               style={{
@@ -399,13 +399,13 @@ export const AdminMemberReportPage: React.FC = () => {
         )}
 
         {!loading && items.length === 0 && (
-          <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--color-text-muted)" }}>
+          <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
             <p style={{ margin: 0 }}>No members found.</p>
           </div>
         )}
 
         {!loading && items.length > 0 && (
-          <div style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+          <div style={{ border: "1px solid var(--app-color-border-subtle)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -453,7 +453,7 @@ export const AdminMemberReportPage: React.FC = () => {
         }
       >
         <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
-          <p style={{ margin: "0 0 var(--space-2)", color: "var(--color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+          <p style={{ margin: "0 0 var(--space-2)", color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
             Select one or more roles for this member:
           </p>
           {ALL_ROLES.map((role) => (
@@ -465,12 +465,12 @@ export const AdminMemberReportPage: React.FC = () => {
                 gap: "var(--space-3)",
                 padding: "var(--space-3)",
                 background: editRolesModal.selectedRoles.includes(role)
-                  ? "var(--color-primary-soft)"
-                  : "var(--color-surface-1)",
+                  ? "var(--app-color-primary-soft)"
+                  : "var(--app-color-surface-1)",
                 borderRadius: "var(--radius-md)",
                 border: editRolesModal.selectedRoles.includes(role)
-                  ? "1px solid var(--color-primary)"
-                  : "1px solid var(--color-border)",
+                  ? "1px solid var(--app-color-primary)"
+                  : "1px solid var(--app-color-border-subtle)",
                 cursor: "pointer",
                 transition: "all var(--motion-fast)",
               }}
@@ -482,13 +482,13 @@ export const AdminMemberReportPage: React.FC = () => {
                 style={{
                   width: 18,
                   height: 18,
-                  accentColor: "var(--color-primary)",
+                  accentColor: "var(--app-color-primary)",
                   cursor: "pointer",
                 }}
               />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: "var(--font-weight-medium)" }}>{ROLE_LABELS[role]}</div>
-                <div style={{ fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
+                <div style={{ fontSize: "var(--font-caption)", color: "var(--app-color-text-muted)" }}>
                   {getRoleDescription(role)}
                 </div>
               </div>
@@ -501,8 +501,8 @@ export const AdminMemberReportPage: React.FC = () => {
             <div
               style={{
                 padding: "var(--space-3)",
-                background: "var(--color-error-soft)",
-                color: "var(--color-error)",
+                background: "var(--app-color-error-soft)",
+                color: "var(--app-color-state-error)",
                 borderRadius: "var(--radius-md)",
                 fontSize: "var(--font-body-sm)",
               }}
@@ -553,7 +553,7 @@ export const AdminMemberReportPage: React.FC = () => {
                   height: 120,
                   borderRadius: "var(--radius-full)",
                   objectFit: "cover",
-                  border: "3px solid var(--color-border)",
+                  border: "3px solid var(--app-color-border-subtle)",
                 }}
               />
             ) : (
@@ -562,14 +562,14 @@ export const AdminMemberReportPage: React.FC = () => {
                   width: 120,
                   height: 120,
                   borderRadius: "var(--radius-full)",
-                  background: "var(--color-primary-soft)",
-                  color: "var(--color-primary)",
+                  background: "var(--app-color-primary-soft)",
+                  color: "var(--app-color-primary)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontWeight: "var(--font-weight-bold)",
                   fontSize: "var(--font-h2)",
-                  border: "3px solid var(--color-border)",
+                  border: "3px solid var(--app-color-border-subtle)",
                 }}
               >
                 {editAvatarModal.member?.first_name?.charAt(0)}
@@ -615,7 +615,7 @@ export const AdminMemberReportPage: React.FC = () => {
             )}
           </div>
 
-          <p style={{ color: "var(--color-text-muted)", fontSize: "var(--font-caption)", margin: 0 }}>
+          <p style={{ color: "var(--app-color-text-muted)", fontSize: "var(--font-caption)", margin: 0 }}>
             Recommended: Square image, max 2MB
           </p>
         </div>
