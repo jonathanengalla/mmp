@@ -3,9 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { listUpcomingEvents } from "../api/client";
 import { useSession } from "../hooks/useSession";
 import { Toast } from "../components/Toast";
-import { Page } from "../components/primitives/Page";
-import { Card } from "../components/primitives/Card";
-import { Button } from "../components/primitives/Button";
+import { PageShell, Card, Button, Input, Badge } from "../ui";
 import EventCard from "../components/EventCard";
 import { UpcomingEventDto } from "../../../../libs/shared/src/models";
 
@@ -52,19 +50,29 @@ export const UpcomingEventsPage: React.FC = () => {
   }, [items, tagFilter, query]);
 
   return (
-    <Page
+    <PageShell
       title="Upcoming Events"
       description="Browse what’s next and register with a single click. Invoice-first for paid events, RSVP for the rest."
       actions={
-        <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-          <input
-            className="pr-input"
+        <div style={{ display: "flex", gap: "var(--app-space-sm)", flexWrap: "wrap" }}>
+          <Input
             placeholder="Search by title"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             style={{ minWidth: 200 }}
           />
-          <select className="pr-input" style={{ minWidth: 160 }} value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+          <select
+            style={{
+              minWidth: 160,
+              padding: "10px 12px",
+              borderRadius: "var(--app-radius-md)",
+              border: "1px solid var(--app-color-border-subtle)",
+              background: "var(--app-color-surface-0)",
+              color: "var(--app-color-text-primary)",
+            }}
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+          >
             <option value="all">All tags</option>
             {availableTags.map((tag) => (
               <option key={tag} value={tag}>
@@ -81,8 +89,8 @@ export const UpcomingEventsPage: React.FC = () => {
       {loading && <Card>Loading events...</Card>}
       {!loading && error && (
         <Card>
-          <div style={{ color: "var(--color-error)" }}>{error}</div>
-          <Button style={{ marginTop: "var(--space-sm)" }} onClick={load}>
+          <div style={{ color: "var(--app-color-state-error)" }}>{error}</div>
+          <Button style={{ marginTop: "var(--app-space-sm)" }} onClick={load}>
             Retry
           </Button>
         </Card>
@@ -92,7 +100,7 @@ export const UpcomingEventsPage: React.FC = () => {
         <div
           style={{
             display: "grid",
-            gap: "var(--space-md)",
+            gap: "var(--app-space-md)",
             gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
           }}
         >
@@ -154,13 +162,24 @@ export const UpcomingEventsPage: React.FC = () => {
                       }
                     : undefined
                 }
+                footer={
+                  ev.tags && ev.tags.length > 0 ? (
+                    <div style={{ display: "flex", gap: "var(--app-space-xs)", flexWrap: "wrap" }}>
+                      {ev.tags.map((t) => (
+                        <Badge key={t} variant="info">
+                          {t}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : null
+                }
               />
             );
           })}
         </div>
       )}
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
-    </Page>
+    </PageShell>
   );
 };
 

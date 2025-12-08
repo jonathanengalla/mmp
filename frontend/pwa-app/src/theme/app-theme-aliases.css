@@ -1,0 +1,46 @@
+:root {
+  /* Brand */
+  --app-color-brand-primary: var(--rcme-color-brand-primary);
+  --app-color-brand-accent: var(--rcme-color-brand-accent);
+
+  /* Surfaces */
+  --app-color-bg: var(--rcme-color-bg);
+  --app-color-surface-0: var(--rcme-color-surface-0);
+  --app-color-surface-1: var(--rcme-color-surface-1);
+  --app-color-surface-2: var(--rcme-color-surface-2);
+
+  /* Text */
+  --app-color-text-primary: var(--rcme-color-text-primary);
+  --app-color-text-secondary: var(--rcme-color-text-secondary);
+  --app-color-text-muted: var(--rcme-color-text-muted);
+
+  /* Borders */
+  --app-color-border-subtle: var(--rcme-color-border-subtle);
+  --app-color-border-strong: var(--rcme-color-border-strong);
+
+  /* States */
+  --app-color-state-success: var(--rcme-color-state-success);
+  --app-color-state-warning: var(--rcme-color-state-warning);
+  --app-color-state-error: var(--rcme-color-state-error);
+  --app-color-state-info: var(--rcme-color-state-info);
+
+  /* Spacing */
+  --app-space-xs: var(--rcme-space-xs);
+  --app-space-sm: var(--rcme-space-sm);
+  --app-space-md: var(--rcme-space-md);
+  --app-space-lg: var(--rcme-space-lg);
+  --app-space-xl: var(--rcme-space-xl);
+  --app-space-xxl: var(--rcme-space-xxl);
+
+  /* Radii */
+  --app-radius-sm: var(--rcme-radius-sm);
+  --app-radius-md: var(--rcme-radius-md);
+  --app-radius-lg: var(--rcme-radius-lg);
+  --app-radius-pill: var(--rcme-radius-pill);
+
+  /* Shadows */
+  --app-shadow-sm: var(--rcme-shadow-sm);
+  --app-shadow-md: var(--rcme-shadow-md);
+  --app-shadow-lg: var(--rcme-shadow-lg);
+}
+

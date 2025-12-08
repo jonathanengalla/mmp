@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RCME Invoices · Variant 1</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-primary: #d6c7a2;
+      --brand-hover: #e3d7b6;
+      --brand-soft: #1f1a12;
+      --accent-green: #a4e084;
+      --accent-amber: #f0b35a;
+      --accent-blue: #7fb2ff;
+      --neutral-bg: #0c0a07;
+      --surface-0: #0f0d0a;
+      --surface-1: #15110c;
+      --surface-2: #1d1912;
+      --surface-3: #252018;
+      --text-primary: #f4eee0;
+      --text-secondary: #c9c0b1;
+      --text-muted: #9a8f7d;
+      --text-inverse: #0f0d0a;
+      --border-default: #1f1a13;
+      --border-strong: #2a2319;
+      --divider: #332a1e;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-pill: 9999px;
+      --shadow-card: 0 20px 60px rgba(0, 0, 0, 0.35);
+      --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.45);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-7: 32px;
+      --space-8: 40px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--neutral-bg);
+      color: var(--text-primary);
+    }
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: var(--space-7) var(--space-5);
+      display: grid;
+      gap: var(--space-6);
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+    }
+    .title-block h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: -0.01em;
+    }
+    .title-block p {
+      margin: 6px 0 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+    .filters {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-1);
+      border: 1px solid var(--border-strong);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .pill--primary {
+      background: var(--brand-primary);
+      border-color: var(--brand-primary);
+      color: var(--text-inverse);
+    }
+    .pill:hover { background: var(--surface-2); }
+    .pill--primary:hover { background: var(--brand-hover); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-4);
+    }
+    .stat {
+      background: var(--surface-1);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      display: grid;
+      gap: var(--space-2);
+      box-shadow: var(--shadow-subtle);
+    }
+    .stat .label {
+      color: var(--text-muted);
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+    .stat .value {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .stat .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border-strong);
+      background: var(--surface-2);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .stat--positive .value { color: var(--accent-green); }
+    .stat--warning .value { color: var(--accent-amber); }
+
+    .table-card {
+      background: var(--surface-1);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .table-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--border-default);
+      gap: var(--space-4);
+    }
+    .table-head h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .search {
+      min-width: 240px;
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-pill);
+      padding: 8px 12px;
+      color: var(--text-secondary);
+    }
+    .search input {
+      border: none;
+      background: transparent;
+      color: var(--text-primary);
+      width: 100%;
+      font-size: 14px;
+      outline: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+    thead {
+      background: var(--surface-2);
+      color: var(--text-muted);
+    }
+    th, td {
+      text-align: left;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-default);
+    }
+    tbody tr:hover { background: var(--surface-2); }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: var(--radius-pill);
+      font-weight: 600;
+      font-size: 12px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface-3);
+      color: var(--text-secondary);
+    }
+    .status--paid { color: var(--accent-green); border-color: rgba(164, 224, 132, 0.3); }
+    .status--due { color: var(--accent-amber); border-color: rgba(240, 179, 90, 0.35); }
+    .status--failed { color: #f58c8c; border-color: rgba(245, 140, 140, 0.35); }
+
+    .actions {
+      display: flex;
+      gap: var(--space-2);
+      justify-content: flex-end;
+    }
+    .btn {
+      border: 1px solid var(--border-strong);
+      background: var(--surface-1);
+      color: var(--text-primary);
+      border-radius: var(--radius-pill);
+      padding: 8px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 150ms ease, border-color 150ms ease, transform 120ms ease;
+    }
+    .btn:hover { background: var(--surface-2); }
+    .btn:active { transform: scale(0.99); }
+    .btn--primary {
+      background: var(--brand-primary);
+      border-color: var(--brand-primary);
+      color: var(--text-inverse);
+    }
+    .btn--primary:hover { background: var(--brand-hover); }
+
+    @media (max-width: 900px) {
+      .table-head { flex-direction: column; align-items: flex-start; }
+      .search { width: 100%; }
+    }
+    @media (max-width: 640px) {
+      .page { padding: var(--space-6) var(--space-4); }
+      th, td { padding: 12px 14px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="title-block">
+        <h1>Invoices</h1>
+        <p>Track billing history, statuses, and outstanding balances.</p>
+      </div>
+      <div class="filters">
+        <button class="pill">Last 90 days</button>
+        <button class="pill">Status: All</button>
+        <button class="pill pill--primary">New invoice</button>
+      </div>
+    </header>
+
+    <section class="stats">
+      <div class="stat stat--positive">
+        <div class="label">Paid this month</div>
+        <div class="value">$4,120.00</div>
+        <div class="tag">+8% vs last month</div>
+      </div>
+      <div class="stat stat--warning">
+        <div class="label">Open balance</div>
+        <div class="value">$1,240.00</div>
+        <div class="tag">3 invoices due</div>
+      </div>
+      <div class="stat">
+        <div class="label">Average payment time</div>
+        <div class="value">3.2 days</div>
+        <div class="tag">Net 15 terms</div>
+      </div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-head">
+        <h3>Recent invoices</h3>
+        <div class="search">
+          🔍
+          <input type="text" placeholder="Search invoices or members" />
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Date</th>
+            <th>Member</th>
+            <th>Status</th>
+            <th>Amount</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>#INV-2031</td>
+            <td>Dec 04, 2025</td>
+            <td>Kody Fisher</td>
+            <td><span class="status status--paid">Paid</span></td>
+            <td>$320.00</td>
+            <td class="actions">
+              <button class="btn">View</button>
+              <button class="btn">Receipt</button>
+            </td>
+          </tr>
+          <tr>
+            <td>#INV-2028</td>
+            <td>Dec 01, 2025</td>
+            <td>Jonathan Engalla</td>
+            <td><span class="status status--due">Due</span></td>
+            <td>$420.00</td>
+            <td class="actions">
+              <button class="btn btn--primary">Pay now</button>
+            </td>
+          </tr>
+          <tr>
+            <td>#INV-2020</td>
+            <td>Nov 21, 2025</td>
+            <td>Courtney Henry</td>
+            <td><span class="status status--failed">Failed</span></td>
+            <td>$180.00</td>
+            <td class="actions">
+              <button class="btn">Retry</button>
+              <button class="btn">Details</button>
+            </td>
+          </tr>
+          <tr>
+            <td>#INV-2014</td>
+            <td>Nov 10, 2025</td>
+            <td>Arlene McCoy</td>
+            <td><span class="status status--paid">Paid</span></td>
+            <td>$260.00</td>
+            <td class="actions">
+              <button class="btn">View</button>
+              <button class="btn">Receipt</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>
+

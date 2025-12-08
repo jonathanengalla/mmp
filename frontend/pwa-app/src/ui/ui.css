@@ -1,0 +1,236 @@
+.app-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--app-space-sm);
+  border: 1px solid transparent;
+  border-radius: var(--app-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 100ms ease;
+  text-decoration: none;
+  box-shadow: var(--app-shadow-sm);
+}
+
+.app-button--full {
+  width: 100%;
+}
+
+.app-button--sm { height: 32px; padding: 0 var(--app-space-md); font-size: 14px; }
+.app-button--md { height: 40px; padding: 0 var(--app-space-lg); font-size: 15px; }
+.app-button--lg { height: 44px; padding: 0 calc(var(--app-space-lg) + 4px); font-size: 15px; }
+
+.app-button--primary {
+  background: var(--app-color-brand-primary);
+  color: #ffffff;
+  border-color: var(--app-color-brand-primary);
+}
+.app-button--primary:hover { transform: translateY(-1px); }
+
+.app-button--secondary {
+  background: var(--app-color-surface-1);
+  color: var(--app-color-text-primary);
+  border-color: var(--app-color-border-subtle);
+}
+.app-button--secondary:hover { background: var(--app-color-surface-2); }
+
+.app-button--ghost {
+  background: transparent;
+  color: var(--app-color-text-primary);
+  border-color: var(--app-color-border-subtle);
+}
+.app-button--ghost:hover { background: var(--app-color-surface-1); }
+
+.app-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.app-card {
+  background: var(--app-color-surface-0);
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-lg);
+  padding: var(--app-space-lg);
+  box-shadow: var(--app-shadow-md);
+}
+
+.app-card--pad-sm { padding: var(--app-space-md); }
+.app-card--pad-lg { padding: var(--app-space-xl); }
+.app-card--elev-none { box-shadow: none; }
+.app-card--elev-sm { box-shadow: var(--app-shadow-sm); }
+.app-card--elev-md { box-shadow: var(--app-shadow-md); }
+.app-card--elev-lg { box-shadow: var(--app-shadow-lg); }
+
+.app-input {
+  width: 100%;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-md);
+  padding: 10px 12px;
+  background: var(--app-color-surface-0);
+  color: var(--app-color-text-primary);
+  font-size: 15px;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+.app-input:focus {
+  outline: none;
+  border-color: var(--app-color-brand-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--app-color-brand-primary) 20%, transparent);
+}
+.app-input--error {
+  border-color: var(--app-color-state-error);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--app-color-state-error) 20%, transparent);
+}
+
+.app-input__label {
+  display: block;
+  font-weight: 600;
+  color: var(--app-color-text-primary);
+  margin-bottom: var(--app-space-sm);
+  font-size: 14px;
+}
+.app-input__hint {
+  margin-top: var(--app-space-xs);
+  color: var(--app-color-text-muted);
+  font-size: 13px;
+}
+.app-input__error {
+  margin-top: var(--app-space-xs);
+  color: var(--app-color-state-error);
+  font-size: 13px;
+}
+
+.app-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--app-space-xs);
+  padding: 6px 10px;
+  border-radius: var(--app-radius-pill);
+  border: 1px solid var(--app-color-border-subtle);
+  font-weight: 600;
+  font-size: 12px;
+  background: var(--app-color-surface-1);
+  color: var(--app-color-text-secondary);
+}
+.app-badge--success { color: var(--app-color-state-success); border-color: color-mix(in srgb, var(--app-color-state-success) 35%, transparent); }
+.app-badge--warning { color: var(--app-color-state-warning); border-color: color-mix(in srgb, var(--app-color-state-warning) 35%, transparent); }
+.app-badge--error { color: var(--app-color-state-error); border-color: color-mix(in srgb, var(--app-color-state-error) 35%, transparent); }
+.app-badge--info { color: var(--app-color-state-info); border-color: color-mix(in srgb, var(--app-color-state-info) 35%, transparent); }
+
+.app-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-md);
+  overflow: hidden;
+  background: var(--app-color-surface-0);
+  color: var(--app-color-text-primary);
+}
+.app-table thead {
+  background: var(--app-color-surface-1);
+  color: var(--app-color-text-secondary);
+}
+.app-table th,
+.app-table td {
+  padding: var(--app-space-md);
+  border-bottom: 1px solid var(--app-color-border-subtle);
+  text-align: left;
+}
+.app-table tbody tr:hover {
+  background: var(--app-color-surface-2);
+}
+.app-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.app-page-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--app-space-xl);
+  background: var(--app-color-bg);
+  color: var(--app-color-text-primary);
+}
+.app-page-shell__header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--app-space-lg);
+  align-items: flex-start;
+  margin-bottom: var(--app-space-lg);
+}
+.app-page-shell__title {
+  margin: 0;
+  font-size: 24px;
+  color: var(--app-color-text-primary);
+}
+.app-page-shell__description {
+  margin: var(--app-space-xs) 0 0;
+  color: var(--app-color-text-secondary);
+}
+
+/* Layout shell */
+.app-shell {
+  background: var(--app-color-bg);
+  color: var(--app-color-text-primary);
+}
+
+.app-shell-sidebar {
+  background: var(--app-color-surface-1);
+  color: var(--app-color-text-primary);
+  border-right: 1px solid var(--app-color-border-subtle);
+}
+
+.app-shell-topbar {
+  background: var(--app-color-surface-0);
+  color: var(--app-color-text-primary);
+  border-bottom: 1px solid var(--app-color-border-subtle);
+}
+
+.app-shell-main {
+  background: var(--app-color-bg);
+  color: var(--app-color-text-primary);
+}
+
+/* Legacy/primitives overrides to align with app tokens */
+.pr-card {
+  background: var(--app-color-surface-1, var(--color-surface));
+  border: 1px solid var(--app-color-border-subtle, var(--color-border));
+  color: var(--app-color-text-primary, var(--color-text-primary));
+}
+.pr-card__title,
+.pr-card__description {
+  color: var(--app-color-text-primary, var(--color-text-primary));
+}
+.pr-page {
+  background: var(--app-color-bg, var(--color-bg));
+  color: var(--app-color-text-primary, var(--color-text-primary));
+}
+
+/* Global overrides for legacy content surfaces */
+.pr-page,
+.pr-content,
+.page-root {
+  background: var(--app-color-bg) !important;
+  color: var(--app-color-text-primary) !important;
+}
+
+.pr-card,
+.card,
+.section-card,
+.content-card {
+  background: var(--app-color-surface-1) !important;
+  border-color: var(--app-color-border) !important;
+  color: var(--app-color-text-primary) !important;
+}
+
+input,
+textarea,
+select {
+  background: var(--app-color-surface-0) !important;
+  color: var(--app-color-text-primary) !important;
+  border-color: var(--app-color-border) !important;
+}
+
+label {
+  color: var(--app-color-text-secondary) !important;
+}
+

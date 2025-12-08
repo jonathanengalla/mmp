@@ -1,21 +1,19 @@
 import React from "react";
-import { Tag } from "./primitives/Tag";
-import { Button } from "./primitives/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from "./ui/Table";
+import { Badge, Button, Table } from "../ui";
 import { Invoice } from "../../../../libs/shared/src/models";
 import { useNavigate } from "react-router-dom";
 
-const getStatusVariant = (status: Invoice["status"]): "success" | "warning" | "danger" | "default" => {
+const getStatusVariant = (status: Invoice["status"]): "success" | "warning" | "error" | "info" | "default" => {
   switch (status) {
     case "paid":
       return "success";
     case "pending":
-      return "warning";
+      return "info";
     case "cancelled":
     case "draft":
       return "default";
     default:
-      return "danger";
+      return "error";
   }
 };
 
@@ -30,55 +28,50 @@ export const InvoiceTable: React.FC<{ invoices: Invoice[]; onRecordPayment?: (in
 }) => {
   const navigate = useNavigate();
   return (
-    <div style={{ 
-      border: "1px solid var(--color-border-default)", 
-      borderRadius: "var(--radius-medium)", 
-      overflow: "hidden" 
-    }}>
+    <div
+      style={{
+        border: "1px solid var(--app-color-border-subtle)",
+        borderRadius: "var(--app-radius-md)",
+        overflow: "hidden",
+      }}
+    >
       <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHeadCell>Invoice</TableHeadCell>
-            <TableHeadCell>Description</TableHeadCell>
-            <TableHeadCell>Event</TableHeadCell>
-            <TableHeadCell>Due Date</TableHeadCell>
-            <TableHeadCell>Amount</TableHeadCell>
-            <TableHeadCell>Status</TableHeadCell>
-            <TableHeadCell align="right">Actions</TableHeadCell>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Description</th>
+            <th>Event</th>
+            <th>Due Date</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th style={{ textAlign: "right" }}>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
           {invoices.map((inv) => {
             const isPaid = inv.status === "paid";
             return (
-              <TableRow key={inv.id}>
-                <TableCell>
-                  <span style={{ fontWeight: "var(--font-weight-medium)" }}>{inv.id}</span>
-                </TableCell>
-                <TableCell>{inv.description || (inv.eventTitle ? `Event: ${inv.eventTitle}` : "Invoice")}</TableCell>
-                <TableCell>
+              <tr key={inv.id}>
+                <td>
+                  <span style={{ fontWeight: 600 }}>{inv.id}</span>
+                </td>
+                <td>{inv.description || (inv.eventTitle ? `Event: ${inv.eventTitle}` : "Invoice")}</td>
+                <td>
                   {inv.eventTitle ? (
-                    <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
-                      <Tag variant="info" size="sm">Event</Tag>
-                      <span>{inv.eventTitle}</span>
-                    </div>
+                    <span style={{ color: "var(--app-color-text-primary)" }}>{inv.eventTitle}</span>
                   ) : (
-                    <span style={{ color: "var(--color-text-muted)" }}>—</span>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>—</span>
                   )}
-                </TableCell>
-                <TableCell>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "N/A"}</TableCell>
-                <TableCell>
-                  <span style={{ fontWeight: "var(--font-weight-medium)" }}>
-                    {formatAmount(inv.amountCents, inv.currency)}
-                  </span>
-                </TableCell>
-                <TableCell>
-                  <Tag variant={getStatusVariant(inv.status)} size="sm">
-                    {inv.status}
-                  </Tag>
-                </TableCell>
-                <TableCell align="right">
-                  <div style={{ display: "flex", gap: "var(--space-xs)", justifyContent: "flex-end", flexWrap: "wrap" }}>
+                </td>
+                <td>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "N/A"}</td>
+                <td>
+                  <span style={{ fontWeight: 600 }}>{formatAmount(inv.amountCents, inv.currency)}</span>
+                </td>
+                <td>
+                  <Badge variant={getStatusVariant(inv.status)}>{inv.status}</Badge>
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  <div style={{ display: "flex", gap: "var(--app-space-xs)", justifyContent: "flex-end", flexWrap: "wrap" }}>
                     {inv.eventId && (
                       <Button variant="ghost" size="sm" onClick={() => navigate(`/events/${inv.eventId}`)}>
                         View event
@@ -89,17 +82,13 @@ export const InvoiceTable: React.FC<{ invoices: Invoice[]; onRecordPayment?: (in
                         Record payment
                       </Button>
                     )}
-                    {isPaid && (
-                      <Tag variant="success" size="sm">
-                        Paid
-                      </Tag>
-                    )}
+                    {isPaid && <Badge variant="success">Paid</Badge>}
                   </div>
-                </TableCell>
-              </TableRow>
+                </td>
+              </tr>
             );
           })}
-        </TableBody>
+        </tbody>
       </Table>
     </div>
   );

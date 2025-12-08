@@ -3,10 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { login } from "../api/client";
 import { validateLogin } from "../utils/validation";
 import { Toast } from "../components/Toast";
-import { Page } from "../components/primitives/Page";
-import { Card } from "../components/primitives/Card";
-import { FormField } from "../components/primitives/FormField";
-import { Button } from "../components/primitives/Button";
+import { Card, Button, Input } from "../ui";
 import { useSession } from "../hooks/useSession";
 import { useBranding } from "../config/branding";
 
@@ -89,62 +86,85 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div style={{ 
-      minHeight: "100vh", 
-      background: "var(--color-bg)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "var(--space-4)",
-    }}>
-      <div style={{ width: "100%", maxWidth: "420px" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 36%), linear-gradient(135deg, var(--rcme-color-brand-primary), #4f8bff 46%, #a5c6ff)",
+        display: "grid",
+        placeItems: "center",
+        padding: "var(--rcme-space-xl)",
+        color: "#fff",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "520px",
+          background: "var(--rcme-card-bg)",
+          border: "1px solid var(--rcme-color-border-subtle)",
+          borderRadius: "var(--rcme-radius-lg)",
+          boxShadow: "var(--rcme-card-shadow)",
+          padding: "var(--rcme-space-xxl)",
+          color: "var(--rcme-color-text-primary)",
+        }}
+      >
         {/* Logo / Brand */}
-        <div style={{ textAlign: "center", marginBottom: "var(--space-8)" }}>
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: "var(--radius-lg)",
-            background: "var(--color-primary)",
-            color: "var(--color-text-on-primary)",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: "var(--font-weight-bold)",
-            fontSize: "var(--font-h4)",
-            marginBottom: "var(--space-4)",
-          }}>
+        <div style={{ textAlign: "center", marginBottom: "var(--rcme-space-xl)" }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: "var(--rcme-radius-md)",
+              background: "var(--rcme-color-brand-primary)",
+              color: "#fff",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: "var(--rcme-font-size-h3)",
+              marginBottom: "var(--rcme-space-md)",
+              boxShadow: "var(--rcme-shadow-sm)",
+            }}
+          >
             {branding.appName.slice(0, 2).toUpperCase()}
           </div>
-          <h1 style={{
-            fontSize: "var(--font-h2)",
-            fontWeight: "var(--font-weight-bold)",
-            color: "var(--color-text-primary)",
-            margin: "0 0 var(--space-1) 0",
-          }}>
+          <h1
+            style={{
+              fontSize: "var(--rcme-font-size-h1)",
+              fontWeight: 700,
+              color: "var(--rcme-color-text-primary)",
+              margin: "0 0 var(--rcme-space-xs) 0",
+            }}
+          >
             Welcome back
           </h1>
-          <p style={{
-            fontSize: "var(--font-body-md)",
-            color: "var(--color-text-secondary)",
-            margin: 0,
-          }}>
+          <p
+            style={{
+              fontSize: "var(--rcme-font-size-body)",
+              color: "var(--rcme-color-text-secondary)",
+              margin: 0,
+            }}
+          >
             Sign in to {branding.appName}
           </p>
         </div>
 
-        <Card>
+        <Card elevation="md" padding="lg">
           {offline && (
-            <div style={{ 
-              padding: "var(--space-3)", 
-              background: "var(--color-warning-soft)", 
-              borderRadius: "var(--radius-md)",
-              color: "var(--color-warning)",
-              fontSize: "var(--font-body-sm)",
-              marginBottom: "var(--space-4)",
-              display: "flex",
-              alignItems: "center",
-              gap: "var(--space-2)",
-            }}>
+            <div
+              style={{
+                padding: "var(--rcme-space-md)",
+                background: "var(--rcme-color-state-warning)",
+                borderRadius: "var(--rcme-radius-md)",
+                color: "#111",
+                fontSize: "var(--rcme-font-size-label)",
+                marginBottom: "var(--rcme-space-lg)",
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--rcme-space-sm)",
+              }}
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01" />
               </svg>
@@ -152,71 +172,89 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
           
-          <form onSubmit={onSubmit}>
-            <FormField label="Email" error={errors.email} required>
-              <input 
-                name="email" 
-                type="email"
-                className={`pr-input ${errors.email ? "pr-input--error" : ""}`}
-                value={form.email} 
-                onChange={onChange} 
+          <form onSubmit={onSubmit} style={{ display: "grid", gap: "var(--rcme-space-lg)" }}>
+            <Input
+              label="Email"
+              name="email"
+              type="email"
+              value={form.email}
+              onChange={onChange}
+              disabled={submitting || offline}
+              placeholder="you@example.com"
+              autoComplete="email"
+              error={errors.email}
+            />
+
+            <Input
+              label="Password"
+              name="password"
+              type="password"
+              value={form.password}
+              onChange={onChange}
+              disabled={submitting || offline}
+              placeholder="••••••••"
+              autoComplete="current-password"
+              error={errors.password}
+            />
+
+            <Input
+              label="MFA code"
+              name="mfa_code"
+              value={form.mfa_code}
+              onChange={onChange}
+              disabled={submitting || offline}
+              placeholder="123456"
+              autoComplete="one-time-code"
+              hint="Enter if prompted"
+            />
+
+            <div style={{ display: "grid", gap: "var(--rcme-space-sm)" }}>
+              <Button
+                type="submit"
                 disabled={submitting || offline}
-                placeholder="you@example.com"
-                autoComplete="email"
-              />
-            </FormField>
-            
-            <FormField label="Password" error={errors.password} required>
-              <input 
-                name="password" 
-                type="password" 
-                className={`pr-input ${errors.password ? "pr-input--error" : ""}`}
-                value={form.password} 
-                onChange={onChange} 
-                disabled={submitting || offline}
-                placeholder="••••••••"
-                autoComplete="current-password"
-              />
-            </FormField>
-            
-            <FormField label="MFA code" hint="Enter if prompted">
-              <input 
-                name="mfa_code" 
-                className="pr-input" 
-                value={form.mfa_code} 
-                onChange={onChange} 
-                disabled={submitting || offline}
-                placeholder="123456"
-                autoComplete="one-time-code"
-              />
-            </FormField>
-            
-            <Button 
-              type="submit" 
-              disabled={submitting || offline} 
-              loading={submitting}
-              fullWidth
-              size="lg"
+                loading={submitting}
+                fullWidth
+                size="lg"
+              >
+                Sign in
+              </Button>
+              <Button type="button" variant="secondary" fullWidth>
+                Continue with SSO
+              </Button>
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "var(--rcme-space-md)",
+                fontSize: "var(--rcme-font-size-label)",
+                color: "var(--rcme-color-text-secondary)",
+              }}
             >
-              Sign in
-            </Button>
-            
-            <div style={{ 
-              marginTop: "var(--space-4)", 
-              textAlign: "center",
-              fontSize: "var(--font-body-sm)",
-              color: "var(--color-text-secondary)",
-            }}>
-              Don't have an account?{" "}
-              <Link 
-                to="/register"
-                style={{ 
-                  color: "var(--color-primary)", 
-                  fontWeight: "var(--font-weight-medium)",
+              <Link
+                to="/forgot-password"
+                style={{
+                  color: "var(--rcme-color-brand-primary)",
+                  fontWeight: 600,
+                  textDecoration: "none",
                 }}
               >
-                Register
+                Forgot password?
               </Link>
+              <div>
+                New here?{" "}
+                <Link
+                  to="/register"
+                  style={{
+                    color: "var(--rcme-color-brand-primary)",
+                    fontWeight: 600,
+                  }}
+                >
+                  Create account
+                </Link>
+              </div>
             </div>
           </form>
         </Card>

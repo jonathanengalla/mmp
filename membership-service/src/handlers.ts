@@ -1,5 +1,7 @@
 // Membership handlers (MVP slice) - basic logic and validation for self-registration
 import { Request, Response } from "express";
+import fs from "fs";
+import path from "path";
 import {
   Member,
   MemberPaymentMethod,
@@ -16,7 +18,37 @@ import {
 } from "../../libs/shared/src/models";
 import crypto from "crypto";
 
+const dataDir = path.join(__dirname, "..", "data");
+const membersFile = path.join(dataDir, "members.json");
+
 const members: Member[] = [];
+
+const loadMembersFromDisk = () => {
+  try {
+    if (fs.existsSync(membersFile)) {
+      const raw = fs.readFileSync(membersFile, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        members.splice(0, members.length, ...parsed);
+      }
+    }
+  } catch (err) {
+    console.warn("[membership] Failed to load members from disk", err);
+  }
+};
+
+const persistMembers = () => {
+  try {
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(membersFile, JSON.stringify(members, null, 2), "utf-8");
+  } catch (err) {
+    console.warn("[membership] Failed to persist members to disk", err);
+  }
+};
+
+loadMembersFromDisk();
 export const getAllActiveMembersForTenant = async (tenantId: string): Promise<Member[]> => {
   return members.filter((m) => m.tenantId === tenantId && m.status === "active");
 };
@@ -141,6 +173,7 @@ export const createRegistration = (req: Request, res: Response) => {
     createdAt,
   };
   members.push(member);
+  persistMembers();
   const regId = `reg-${registrationCounter++}`;
   registrations.push({
     id: regId,
@@ -381,6 +414,7 @@ export const updateCurrentMember = (req: Request, res: Response) => {
   if (address !== undefined) member.address = address;
   if (linkedinUrl !== undefined) (member as any).linkedinUrl = linkedinUrl;
   if (otherSocials !== undefined) (member as any).otherSocials = otherSocials;
+  persistMembers();
 
   return res.json({
     id: member.id,
@@ -880,6 +914,7 @@ export const updateMyAvatar = (req: Request, res: Response) => {
   }
 
   (member as any).avatarUrl = avatarUrl;
+  persistMembers();
 
   if (process.env.NODE_ENV !== "production") {
     console.log(`[membership] Member ${member.id} (${member.email}) updated their avatar`);
@@ -915,6 +950,7 @@ export const adminUpdateAvatar = (req: Request, res: Response) => {
   }
 
   (member as any).avatarUrl = avatarUrl;
+  persistMembers();
 
   if (process.env.NODE_ENV !== "production") {
     console.log(`[membership] Admin updated avatar for member ${member.id} (${member.email})`);

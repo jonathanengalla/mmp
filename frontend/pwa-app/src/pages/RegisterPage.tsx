@@ -67,107 +67,138 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div style={{ 
-      minHeight: "100vh", 
-      background: "var(--color-bg)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "var(--space-6) var(--space-4)",
-    }}>
-      <div style={{ width: "100%", maxWidth: "480px" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 36%), linear-gradient(135deg, var(--rcme-color-brand-primary), #4f8bff 46%, #a5c6ff)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "var(--rcme-space-xl)",
+      }}
+    >
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "520px",
+          background: "var(--rcme-card-bg)",
+          border: "1px solid var(--rcme-color-border-subtle)",
+          borderRadius: "var(--rcme-card-radius)",
+          boxShadow: "var(--rcme-card-shadow)",
+          padding: "var(--rcme-space-xxl)",
+          color: "var(--rcme-color-text-primary)",
+        }}
+      >
         {/* Logo / Brand */}
-        <div style={{ textAlign: "center", marginBottom: "var(--space-6)" }}>
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: "var(--radius-lg)",
-            background: "var(--color-primary)",
-            color: "var(--color-text-on-primary)",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: "var(--font-weight-bold)",
-            fontSize: "var(--font-h4)",
-            marginBottom: "var(--space-4)",
-          }}>
+        <div style={{ textAlign: "center", marginBottom: "var(--rcme-space-xl)" }}>
+          <div
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: "var(--rcme-radius-md)",
+              background: "var(--rcme-color-brand-primary)",
+              color: "#fff",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 700,
+              fontSize: "var(--rcme-font-size-h3)",
+              marginBottom: "var(--rcme-space-md)",
+              boxShadow: "var(--rcme-shadow-sm)",
+            }}
+          >
             {branding.appName.slice(0, 2).toUpperCase()}
           </div>
-          <h1 style={{
-            fontSize: "var(--font-h2)",
-            fontWeight: "var(--font-weight-bold)",
-            color: "var(--color-text-primary)",
-            margin: "0 0 var(--space-1) 0",
-          }}>
+          <h1
+            style={{
+              fontSize: "var(--rcme-font-size-h1)",
+              fontWeight: 700,
+              color: "var(--rcme-color-text-primary)",
+              margin: "0 0 var(--rcme-space-xs) 0",
+            }}
+          >
             Create your account
           </h1>
-          <p style={{
-            fontSize: "var(--font-body-md)",
-            color: "var(--color-text-secondary)",
-            margin: 0,
-          }}>
+          <p
+            style={{
+              fontSize: "var(--rcme-font-size-body)",
+              color: "var(--rcme-color-text-secondary)",
+              margin: 0,
+            }}
+          >
             Join {branding.appName}
           </p>
         </div>
 
         <Card>
           {offline && (
-            <div style={{ 
-              padding: "var(--space-3)", 
-              background: "var(--color-warning-soft)", 
-              borderRadius: "var(--radius-md)",
-              color: "var(--color-warning)",
-              fontSize: "var(--font-body-sm)",
-              marginBottom: "var(--space-4)",
-            }}>
+            <div
+              style={{
+                padding: "var(--rcme-space-md)",
+                background: "var(--rcme-color-state-warning)",
+                borderRadius: "var(--rcme-radius-md)",
+                color: "#111",
+                fontSize: "var(--rcme-font-size-label)",
+                marginBottom: "var(--rcme-space-lg)",
+              }}
+            >
               You're offline – registration unavailable
             </div>
           )}
           
           {submitError && (
-            <div style={{ 
-              padding: "var(--space-3)", 
-              background: "var(--color-error-soft)", 
-              borderRadius: "var(--radius-md)",
-              color: "var(--color-error)",
-              fontSize: "var(--font-body-sm)",
-              marginBottom: "var(--space-4)",
-            }}>
+            <div
+              style={{
+                padding: "var(--rcme-space-md)",
+                background: "var(--rcme-color-state-error)",
+                borderRadius: "var(--rcme-radius-md)",
+                color: "#111",
+                fontSize: "var(--rcme-font-size-label)",
+                marginBottom: "var(--rcme-space-lg)",
+              }}
+            >
               {submitError}
             </div>
           )}
 
           {submitted ? (
-            <div style={{ textAlign: "center", padding: "var(--space-6) 0" }}>
-              <div style={{
-                width: 64,
-                height: 64,
-                borderRadius: "var(--radius-full)",
-                background: "var(--color-success-soft)",
-                color: "var(--color-success)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: "var(--space-4)",
-              }}>
+            <div style={{ textAlign: "center", padding: "var(--rcme-space-xxl) 0" }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "var(--rcme-radius-pill)",
+                  background: "rgba(127, 207, 133, 0.16)",
+                  color: "var(--rcme-color-state-success)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "var(--rcme-space-lg)",
+                }}
+              >
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                   <polyline points="22 4 12 14.01 9 11.01" />
                 </svg>
               </div>
-              <h2 style={{
-                fontSize: "var(--font-h3)",
-                fontWeight: "var(--font-weight-semibold)",
-                color: "var(--color-text-primary)",
-                margin: "0 0 var(--space-2) 0",
-              }}>
+              <h2
+                style={{
+                  fontSize: "var(--rcme-font-size-h2)",
+                  fontWeight: 600,
+                  color: "var(--rcme-color-text-primary)",
+                  margin: "0 0 var(--rcme-space-sm) 0",
+                }}
+              >
                 Check your email
               </h2>
-              <p style={{
-                fontSize: "var(--font-body-md)",
-                color: "var(--color-text-secondary)",
-                margin: "0 0 var(--space-6) 0",
-              }}>
+              <p
+                style={{
+                  fontSize: "var(--rcme-font-size-body)",
+                  color: "var(--rcme-color-text-secondary)",
+                  margin: "0 0 var(--rcme-space-xl) 0",
+                }}
+              >
                 We've sent a verification link to <strong>{form.email}</strong>
               </p>
               <Button onClick={() => navigate("/login")} variant="secondary">
@@ -176,12 +207,14 @@ export const RegisterPage: React.FC = () => {
             </div>
           ) : (
             <form onSubmit={onSubmit}>
-              <div style={{ 
-                display: "grid", 
-                gridTemplateColumns: "1fr 1fr", 
-                gap: "var(--space-4)",
-                marginBottom: "var(--space-4)",
-              }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "var(--rcme-space-lg)",
+                  marginBottom: "var(--rcme-space-lg)",
+                }}
+              >
                 <FormField label="First name" error={errors.first_name} required>
                   <input 
                     name="first_name" 
@@ -272,18 +305,20 @@ export const RegisterPage: React.FC = () => {
                 Create account
               </Button>
               
-              <div style={{ 
-                marginTop: "var(--space-4)", 
-                textAlign: "center",
-                fontSize: "var(--font-body-sm)",
-                color: "var(--color-text-secondary)",
-              }}>
+              <div
+                style={{
+                  marginTop: "var(--rcme-space-lg)",
+                  textAlign: "center",
+                  fontSize: "var(--rcme-font-size-label)",
+                  color: "var(--rcme-color-text-secondary)",
+                }}
+              >
                 Already have an account?{" "}
                 <Link 
                   to="/login"
                   style={{ 
-                    color: "var(--color-primary)", 
-                    fontWeight: "var(--font-weight-medium)",
+                  color: "var(--rcme-color-brand-primary)", 
+                  fontWeight: 600,
                   }}
                 >
                   Sign in

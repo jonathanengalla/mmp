@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "../hooks/useSession";
 import { useBranding, adminNavItems, NavItem } from "../config/branding";
+import { TenantThemeSwitcher } from "../ui/TenantThemeSwitcher";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -62,20 +63,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         textDecoration: "none",
         fontSize: "var(--font-body-sm)",
         fontWeight: isActive(item.path) ? "var(--font-weight-semibold)" : "var(--font-weight-medium)",
-        color: isActive(item.path) ? "var(--color-primary)" : "var(--color-text-secondary)",
-        background: isActive(item.path) ? "var(--color-primary-soft)" : "transparent",
+        color: isActive(item.path) ? "var(--app-color-brand-primary)" : "var(--app-color-text-secondary)",
+        background: isActive(item.path) ? "var(--app-color-surface-2)" : "transparent",
         transition: "all var(--motion-fast) var(--motion-easing)",
       }}
       onMouseEnter={(e) => {
         if (!isActive(item.path)) {
-          e.currentTarget.style.background = "var(--color-surface-1)";
-          e.currentTarget.style.color = "var(--color-text-primary)";
+          e.currentTarget.style.background = "var(--app-color-surface-1)";
+          e.currentTarget.style.color = "var(--app-color-text-primary)";
         }
       }}
       onMouseLeave={(e) => {
         if (!isActive(item.path)) {
           e.currentTarget.style.background = "transparent";
-          e.currentTarget.style.color = "var(--color-text-secondary)";
+          e.currentTarget.style.color = "var(--app-color-text-secondary)";
         }
       }}
     >
@@ -84,11 +85,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   );
 
   return (
-    <div style={{ 
-      minHeight: "100vh", 
-      background: "var(--color-bg)",
-      display: "flex",
-    }}>
+    <div className="app-shell" style={{ minHeight: "100vh", display: "flex" }}>
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -109,8 +106,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <aside
         style={{
           width: "var(--sidebar-width)",
-          background: "var(--color-surface)",
-          borderRight: "1px solid var(--color-border)",
           position: "fixed",
           top: 0,
           left: 0,
@@ -121,20 +116,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           transform: sidebarOpen ? "translateX(0)" : undefined,
           transition: "transform var(--motion-medium) var(--motion-easing)",
         }}
-        className="sidebar"
+        className="sidebar app-shell-sidebar"
       >
         {/* Logo / Brand */}
         <div style={{
           padding: "var(--space-5) var(--space-4)",
-          borderBottom: "1px solid var(--color-border)",
+          borderBottom: "1px solid var(--app-color-border-subtle)",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
             <div style={{
               width: 36,
               height: 36,
               borderRadius: "var(--radius-md)",
-              background: "var(--color-primary)",
-              color: "var(--color-text-on-primary)",
+              background: "var(--app-color-brand-primary)",
+              color: "var(--app-color-text-on-primary)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -147,7 +142,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <div style={{
                 fontWeight: "var(--font-weight-semibold)",
                 fontSize: "var(--font-body-md)",
-                color: "var(--color-text-primary)",
+                color: "var(--app-color-text-primary)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -156,7 +151,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               </div>
               <div style={{
                 fontSize: "var(--font-caption)",
-                color: "var(--color-text-muted)",
+                color: "var(--app-color-text-muted)",
               }}>
                 Member Portal
               </div>
@@ -264,13 +259,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         display: "flex",
         flexDirection: "column",
       }}
-      className="main-container"
+      className="main-container app-shell-main"
       >
         {/* Header */}
         <header style={{
           height: "var(--header-height)",
-          background: "var(--color-surface)",
-          borderBottom: "1px solid var(--color-border)",
+          background: "var(--app-color-surface-0)",
+          borderBottom: "1px solid var(--app-color-border-subtle)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -303,15 +298,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             display: "flex", 
             alignItems: "center", 
             gap: "var(--space-2)",
-            color: "var(--color-text-secondary)",
+              color: "var(--app-color-text-secondary)",
             fontSize: "var(--font-body-sm)",
           }}>
-            <span style={{ color: "var(--color-text-muted)" }}>
+            <span style={{ color: "var(--app-color-text-muted)" }}>
               {branding.appName}
             </span>
-            <span style={{ color: "var(--color-text-muted)" }}>/</span>
+            <span style={{ color: "var(--app-color-text-muted)" }}>/</span>
             <span style={{ 
-              color: "var(--color-text-primary)", 
+              color: "var(--app-color-text-primary)", 
               fontWeight: "var(--font-weight-medium)" 
             }}>
               {getCurrentPageTitle(location.pathname, nav.sideNav, adminNavItems)}
@@ -320,7 +315,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
           {/* Right side actions */}
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-            {/* Quick actions could go here */}
+            <TenantThemeSwitcher />
           </div>
         </header>
 
