@@ -2,6 +2,9 @@ import express, { Router } from "express";
 import cors from "cors";
 import routes from "./routes";
 import { seedDevUser } from "./store";
+// Reporting routes
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const reportingRoutes = require("../../services/reporting-service/src/routes").default;
 
 // Import membership handlers directly (not routes, to avoid express resolution issue)
 // Import membership handlers via require to avoid TS dependency on sibling service types
@@ -222,6 +225,10 @@ eventsRouter.get("/reporting/reports/events/attendance", eventsAttendanceReportH
 eventsRouter.post("/events/checkin", checkInByCodeHandler);
 app.use("/", eventsRouter);
 app.use("/api", eventsRouter);
+
+// Reporting routes (admin-protected)
+app.use("/", reportingRoutes);
+app.use("/api", reportingRoutes);
 
 const port = process.env.PORT || 3001;
 

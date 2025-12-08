@@ -46,6 +46,28 @@ type SessionState = {
   user: SessionUser | null;
 };
 
+const USER_KEY = "oneledger_session_user";
+
+const getStoredUser = (): SessionUser | null => {
+  if (typeof localStorage === "undefined") return null;
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const setStoredUser = (user: SessionUser | null) => {
+  if (typeof localStorage === "undefined") return;
+  if (!user) {
+    localStorage.removeItem(USER_KEY);
+    return;
+  }
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+};
+
 type SessionContextValue = {
   authed: boolean;
   tokens: SessionTokens | null;
@@ -61,11 +83,11 @@ const SessionContext = createContext<SessionContextValue | undefined>(undefined)
 export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<SessionState>(() => ({
     tokens: getSessionTokens(),
-    user: null,
+    user: getStoredUser(),
   }));
 
   useEffect(() => {
-    setState((prev) => ({ ...prev, tokens: getSessionTokens() }));
+    setState((prev) => ({ ...prev, tokens: getSessionTokens(), user: getStoredUser() }));
   }, []);
 
   const setSession = (next: Partial<SessionState>) => {
@@ -77,12 +99,14 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
       } else {
         clearSessionTokens();
       }
+      setStoredUser(user ?? null);
       return { tokens, user };
     });
   };
 
   const logout = () => {
     clearSessionTokens();
+    setStoredUser(null);
     setState({ tokens: null, user: null });
   };
 

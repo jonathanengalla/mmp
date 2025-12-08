@@ -5,11 +5,11 @@
   "main": "dist/auth-service/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "tsc -b",
     "start": "node dist/auth-service/src/server.js",
     "test": "echo \"No tests configured for auth-service\"",
-    "db:migrate": "NODE_ENV=${NODE_ENV:-development} node scripts/db-migrate.js",
-    "db:seed:base": "NODE_ENV=${NODE_ENV:-development} node scripts/db-seed-base.js",
+    "db:migrate": "NODE_ENV=production node scripts/db-migrate.js",
+    "db:seed:base": "NODE_ENV=production node scripts/db-seed-base.js",
     "db:reset:test": "NODE_ENV=test node scripts/db-reset-and-seed-test.js",
     "demo:reset": "APP_ENV=demo node scripts/demo-reset-and-seed.js"
   },
