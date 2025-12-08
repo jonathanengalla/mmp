@@ -33,6 +33,7 @@ const seedMembers = async () => {
 const seedEvents = async () => {
   const events = [
     {
+      id: "event-global-insights",
       title: "Global Insights Mixer",
       description: "Monthly networking and learning session for Rotary Club of Manila Expats.",
       location: "Makati, Metro Manila",
@@ -44,6 +45,7 @@ const seedEvents = async () => {
       currency: "PHP",
     },
     {
+      id: "event-christmas-party",
       title: "RCME Christmas Party",
       description: "Year end celebration with raffle prizes and sponsor recognition.",
       location: "BGC, Taguig",
@@ -58,7 +60,7 @@ const seedEvents = async () => {
 
   for (const e of events) {
     await prisma.event.upsert({
-      where: { title: e.title },
+      where: { id: e.id },
       update: {},
       create: e,
     });

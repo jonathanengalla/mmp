@@ -5,67 +5,56 @@ import { getUserFromAuthHeader } from "./utils/auth";
 
 const router = Router();
 
-interface User {
-  id: string;
-  email: string;
-  password: string;
-  roles: string[];
-  tenantId?: string;
-  memberId?: string;
-}
+router.post("/login", async (req: Request, res: Response) => {
+  try {
+    console.log("[auth-service] POST /auth/login headers:", req.headers);
+    console.log("[auth-service] POST /auth/login body:", req.body);
 
-router.post("/login", (req: Request, res: Response) => {
-  (async () => {
-    try {
-      console.log("[auth-service] POST /auth/login headers:", req.headers);
-      console.log("[auth-service] POST /auth/login body:", req.body);
+    const { email, password } = (req.body || {}) as {
+      email?: string;
+      password?: string;
+    };
 
-      const { email, password } = (req.body || {}) as {
-        email?: string;
-        password?: string;
-      };
-
-      if (!email || !password) {
-        console.warn("[auth-service] Missing email or password", {
-          email,
-          passwordPresent: !!password,
-        });
-        return res.status(400).json({ error: "Email and password are required" });
-      }
-
-      const user = await prisma.user.findUnique({ where: { email } });
-
-      if (!user) {
-        console.warn("[auth-service] Invalid credentials for", email);
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      const ok = await bcrypt.compare(password, user.passwordHash);
-      if (!ok) {
-        console.warn("[auth-service] Invalid credentials for", email);
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      const token = `user-${user.id}`;
-      console.log("[auth-service] Login OK for", email);
-
-      return res.json({
-        success: true,
-        token,
-        roles: user.roles,
-        user: {
-          id: user.id,
-          email: user.email,
-          roles: user.roles,
-        },
-        tenant_id: user.tenantId || "t1",
-        member_id: user.memberId || null,
+    if (!email || !password) {
+      console.warn("[auth-service] Missing email or password", {
+        email,
+        passwordPresent: !!password,
       });
-    } catch (err) {
-      console.error("[auth-service] Unexpected error in /auth/login:", err);
-      return res.status(500).json({ error: "Internal server error" });
+      return res.status(400).json({ success: false, error: "Email and password are required" });
     }
-  })();
+
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      console.warn("[auth-service] Invalid credentials for", email);
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
+
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) {
+      console.warn("[auth-service] Invalid credentials for", email);
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
+
+    const token = `user-${user.id}`;
+    console.log("[auth-service] Login OK for", email);
+
+    return res.json({
+      success: true,
+      token,
+      roles: user.roles,
+      user: {
+        id: user.id,
+        email: user.email,
+        roles: user.roles,
+      },
+      tenant_id: user.tenantId || "t1",
+      member_id: user.memberId || null,
+    });
+  } catch (err) {
+    console.error("[auth/login] error", err);
+    return res.status(500).json({ success: false, error: "Internal server error" });
+  }
 });
 
 router.get("/me", async (req: Request, res: Response) => {
