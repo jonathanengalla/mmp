@@ -3,10 +3,12 @@
  * db:seed:base (idempotent, safe for local+demo)
  */
 const { PrismaClient } = require("@prisma/client");
+const bcrypt = require("bcryptjs");
 const prisma = new PrismaClient();
 
 const seedMembers = async () => {
   const members = [
+    { email: "admin@test.local", firstName: "Admin", lastName: "User", membershipType: "regular", roles: ["admin", "member", "event_manager", "finance_manager", "communications_manager"] },
     { email: "president@rcme.demo", firstName: "Alex", lastName: "Santos", membershipType: "regular" },
     { email: "secretary@rcme.demo", firstName: "Mia", lastName: "Reyes", membershipType: "regular" },
     { email: "member1@rcme.demo", firstName: "Carlos", lastName: "Tan", membershipType: "associate" },
@@ -22,6 +24,7 @@ const seedMembers = async () => {
         lastName: m.lastName,
         membershipType: m.membershipType,
         status: "ACTIVE",
+        roles: m.roles || [],
       },
     });
   }
@@ -103,9 +106,31 @@ const seedInvoices = async () => {
   }
 };
 
+const seedUsers = async () => {
+  const adminMember = await prisma.member.findUnique({ where: { email: "admin@test.local" } });
+  const passwordHash = bcrypt.hashSync("password123", 10);
+  await prisma.user.upsert({
+    where: { email: "admin@test.local" },
+    update: {
+      roles: ["admin", "member", "event_manager", "finance_manager", "communications_manager"],
+      memberId: adminMember?.id || null,
+      passwordHash,
+    },
+    create: {
+      email: "admin@test.local",
+      passwordHash,
+      roles: ["admin", "member", "event_manager", "finance_manager", "communications_manager"],
+      tenantId: "t1",
+      memberId: adminMember?.id || null,
+      status: "ACTIVE",
+    },
+  });
+};
+
 async function main() {
   console.log("[seed:base] starting");
   await seedMembers();
+  await seedUsers();
   await seedEvents();
   await seedInvoices();
   console.log("[seed:base] done");

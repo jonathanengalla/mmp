@@ -13,13 +13,22 @@ model Member {
   firstName      String
   lastName       String
   status         MemberStatus  @default(ACTIVE)
+  tenantId       String        @default("t1")
   membershipType String?
   phone          String?
   address        String?
+  linkedinUrl    String?
+  otherSocials   String?
+  avatarUrl      String?
+  roles          String[]      @default([])
+  verificationToken   String?
+  verificationExpires DateTime?
+  tags           String[]      @default([])
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   invoices       Invoice[]
+  user           User?
 }
 
 model Event {
@@ -32,10 +41,12 @@ model Event {
   capacity    Int?
   price       Int?
   currency    String?
+  tags        String[]     @default([])
   startsAt    DateTime
   endsAt      DateTime
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  invoices    Invoice[]
 }
 
 model Invoice {
@@ -50,9 +61,25 @@ model Invoice {
   dueAt         DateTime
   paidAt        DateTime?
   description   String?
+  event         Event?         @relation(fields: [eventId], references: [id])
+  eventId       String?
+  source        String?
 
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  roles        String[] @default([])
+  tenantId     String   @default("t1")
+  member       Member?  @relation(fields: [memberId], references: [id])
+  memberId     String?  @unique
+  status       MemberStatus @default(ACTIVE)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 enum MemberStatus {

@@ -1,4 +1,6 @@
 import { NextFunction, Request, Response } from "express";
+import { prisma } from "./db/prisma";
+import { getUserFromAuthHeader } from "./utils/auth";
 import {
   EventAttendanceReportItem,
   EventCheckInResult,
@@ -26,10 +28,9 @@ import {
 } from "./eventsStore";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const billingHandlers = require("../../payments-billing-service/src/handlers");
-const { createEventInvoice, getInvoiceById, getInvoicesForMember } = billingHandlers as {
+const { createEventInvoice, getInvoiceById } = billingHandlers as {
   createEventInvoice: (...args: any[]) => any;
   getInvoiceById: (...args: any[]) => any;
-  getInvoicesForMember: (...args: any[]) => any;
 };
 import { sendEmail } from "./notifications/emailSender";
 import { buildEventInvoiceEmail, buildEventRsvpEmail } from "./notifications/emailTemplates";
@@ -154,11 +155,11 @@ const toInvoiceDto = (invoice: any): Invoice => {
     status: (statusMap[invoice.status] as InvoiceStatus) || (invoice.status as InvoiceStatus),
     description: invoice.description || invoice.type || "Invoice",
     eventId: invoice.eventId || null,
-    eventTitle: invoice.eventTitle || null,
+    eventTitle: invoice.event?.title || invoice.eventTitle || null,
     source: (invoice.source as Invoice["source"]) || (invoice.type as Invoice["source"]) || "manual",
-    dueDate: invoice.dueDate || null,
+    dueDate: invoice.dueAt ? new Date(invoice.dueAt).toISOString() : invoice.dueDate || null,
     createdAt: invoice.createdAt ? new Date(invoice.createdAt).toISOString() : new Date().toISOString(),
-    paidAt: invoice.paidAt || null,
+    paidAt: invoice.paidAt ? new Date(invoice.paidAt).toISOString() : null,
     paymentMethod: invoice.paymentMethod || null,
     paymentReference: invoice.paymentReference || null,
   };
@@ -370,12 +371,22 @@ export const eventCheckoutHandler = async (req: Request, res: Response) => {
   return res.status(201).json(payload);
 };
 
-export const listMyInvoicesHandler = (req: Request, res: Response) => {
-  const { memberId } = getMemberContext(req);
-  const tenantId = (req as any).user?.tenantId || "t1";
-  if (!memberId) return res.status(401).json({ error: { message: "Unauthorized" } });
-  const invs = getInvoicesForMember(tenantId, memberId).map(toInvoiceDto);
-  return res.json({ items: invs });
+export const listMyInvoicesHandler = async (req: Request, res: Response) => {
+  try {
+    const user = await getUserFromAuthHeader(req);
+    if (!user || !user.memberId) return res.status(401).json({ error: { message: "Unauthorized" } });
+
+    const invoices = await prisma.invoice.findMany({
+      where: { memberId: user.memberId },
+      include: { event: true },
+      orderBy: { issuedAt: "desc" },
+    });
+    const items = invoices.map(toInvoiceDto);
+    return res.json({ items });
+  } catch (err) {
+    console.error("[invoices] listMyInvoicesHandler error", err);
+    return res.status(500).json({ error: { message: "Internal server error" } });
+  }
 };
 
 export const eventsAttendanceReportHandler = [
