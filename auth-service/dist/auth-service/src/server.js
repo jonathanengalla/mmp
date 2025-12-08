@@ -55,10 +55,10 @@ const eventsHandlers_1 = require("./eventsHandlers");
 const app = (0, express_1.default)();
 // Allow cross-origin for dev
 app.use((0, cors_1.default)());
-// Parse JSON request bodies
-app.use(express_1.default.json());
-// Also parse URL-encoded form bodies (in case the client sends form data)
-app.use(express_1.default.urlencoded({ extended: true }));
+// Parse request bodies with a higher limit to support banner uploads
+const BODY_LIMIT = process.env.BODY_LIMIT || "10mb";
+app.use(express_1.default.json({ limit: BODY_LIMIT }));
+app.use(express_1.default.urlencoded({ extended: true, limit: BODY_LIMIT }));
 // Auth middleware that attaches user context for protected routes
 const authMiddleware = (req, _res, next) => {
     const authHeader = req.headers.authorization;

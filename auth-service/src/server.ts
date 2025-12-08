@@ -83,11 +83,10 @@ const app = express();
 // Allow cross-origin for dev
 app.use(cors());
 
-// Parse JSON request bodies
-app.use(express.json());
-
-// Also parse URL-encoded form bodies (in case the client sends form data)
-app.use(express.urlencoded({ extended: true }));
+// Parse request bodies with a higher limit to support banner uploads
+const BODY_LIMIT = process.env.BODY_LIMIT || "10mb";
+app.use(express.json({ limit: BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 
 // Auth middleware that attaches user context for protected routes
 const authMiddleware = (req: express.Request, _res: express.Response, next: express.NextFunction) => {
