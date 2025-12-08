@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../../auth-service/src/db/prisma";
 import { getUserFromAuthHeader } from "../../auth-service/src/utils/auth";
-import { MemberStatus } from "@prisma/client";
+import { MemberStatus, EventStatus } from "@prisma/client";
 
 const errorResponse = (res: Response, code: string, message: string, details?: { field: string; issue: string }[], status = 400) =>
   res.status(status).json({ error: { code, message, details: details || [] }, trace_id: "trace-" + Date.now() });
@@ -59,7 +59,70 @@ export const listMembersReport = async (req: Request, res: Response) => {
   }
 };
 
-// Keep placeholders for other reports; still in-memory stubs unless wired later
+export const listEventsReport = async (req: Request, res: Response) => {
+  try {
+    const user = await getUserFromAuthHeader(req);
+    if (!user) return res.status(401).json({ error: { code: "unauthorized", message: "Auth required", details: [] } });
+    const roles: string[] = user.roles || [];
+    if (!roles.includes("admin")) return errorResponse(res, "forbidden", "Admin role required", [], 403);
+
+    const statusFilter = (req.query.status as string | undefined) || undefined;
+    const fromDate = req.query.from_date ? new Date(req.query.from_date as string) : undefined;
+    const toDate = req.query.to_date ? new Date(req.query.to_date as string) : undefined;
+    const page = Math.max(parseInt((req.query.page as string) || "1", 10), 1);
+    const pageSize = Math.max(Math.min(parseInt((req.query.page_size as string) || "25", 10), 100), 1);
+
+    const where: any = {};
+    if (statusFilter) {
+      const normalized = statusFilter.toUpperCase();
+      if (["DRAFT", "PUBLISHED", "ARCHIVED"].includes(normalized)) {
+        where.status = normalized as EventStatus;
+      }
+    }
+    if (fromDate) {
+      where.startsAt = { ...(where.startsAt || {}), gte: fromDate };
+    }
+    if (toDate) {
+      where.startsAt = { ...(where.startsAt || {}), lte: toDate };
+    }
+
+    const [totalItems, events] = await Promise.all([
+      prisma.event.count({ where }),
+      prisma.event.findMany({
+        where,
+        orderBy: { startsAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          _count: { select: { invoices: true } },
+        },
+      }),
+    ]);
+
+    const items = events.map((e) => ({
+      event_id: e.id,
+      title: e.title,
+      description: e.description,
+      status: e.status,
+      startsAt: e.startsAt,
+      endsAt: e.endsAt,
+      invoices_count: e._count?.invoices ?? 0,
+      tags: e.tags || [],
+    }));
+
+    return res.json({
+      items,
+      page,
+      page_size: pageSize,
+      total_items: totalItems,
+      total_pages: Math.max(1, Math.ceil(totalItems / pageSize)),
+    });
+  } catch (err) {
+    console.error("[reports/events] error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 export const duesSummaryReport = (_req: Request, res: Response) => {
   return res.status(501).json({ error: "Not implemented" });
 };
