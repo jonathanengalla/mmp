@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RCME Invoices · Variation 2</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-primary: #d6c7a2;
+      --brand-hover: #cdbb8e;
+      --accent-green: #7fcf85;
+      --accent-amber: #f2b35f;
+      --accent-blue: #7fb2ff;
+      --neutral-bg: #0f1115;
+      --surface-0: #11141a;
+      --surface-1: #161b22;
+      --surface-2: #1d232d;
+      --surface-3: #252e3a;
+      --text-primary: #f7f9fc;
+      --text-secondary: #c9d2e3;
+      --text-muted: #93a1b6;
+      --text-inverse: #0f1115;
+      --border-default: #1f2834;
+      --border-strong: #2a3545;
+      --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.25);
+      --shadow-subtle: 0 1px 2px rgba(0, 0, 0, 0.32);
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-pill: 9999px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-7: 28px;
+      --space-8: 32px;
+    }
+
+    :root[data-theme="light"] {
+      --neutral-bg: #f4f6fb;
+      --surface-0: #ffffff;
+      --surface-1: #f7f8fb;
+      --surface-2: #ecf0f7;
+      --surface-3: #e0e6f0;
+      --text-primary: #0f172a;
+      --text-secondary: #3b4252;
+      --text-muted: #667189;
+      --border-default: #d8deeb;
+      --border-strong: #c6cfdd;
+      --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.12);
+      --shadow-subtle: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--neutral-bg);
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: 100vh;
+      background: var(--surface-0);
+    }
+
+    aside {
+      background: var(--surface-1);
+      border-right: 1px solid var(--border-default);
+      padding: var(--space-6) var(--space-5);
+      display: grid;
+      gap: var(--space-5);
+      box-shadow: 10px 0 30px rgba(0, 0, 0, 0.18);
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: rgba(214, 199, 162, 0.12);
+      color: var(--brand-primary);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      border: 1px solid var(--border-default);
+    }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav button {
+      border: 1px solid var(--border-default);
+      background: var(--surface-1);
+      color: var(--text-secondary);
+      border-radius: var(--radius-md);
+      padding: 11px 12px;
+      text-align: left;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+
+    .nav button.active {
+      background: var(--surface-2);
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+    }
+
+    .summary {
+      display: grid;
+      gap: var(--space-2);
+      padding: var(--space-4);
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .summary h3 { margin: 0; font-size: 15px; letter-spacing: -0.01em; }
+    .summary .value { font-size: 20px; font-weight: 700; }
+    .summary .meta { color: var(--text-muted); font-size: 12px; }
+
+    .main {
+      padding: var(--space-6) var(--space-6) var(--space-7);
+      display: grid;
+      gap: var(--space-5);
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .header h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+    .header p { margin: 4px 0 0; color: var(--text-secondary); font-size: 14px; }
+
+    .theme-toggle {
+      border: 1px solid var(--border-strong);
+      background: var(--surface-1);
+      color: var(--text-primary);
+      border-radius: var(--radius-pill);
+      padding: 8px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease;
+    }
+    .theme-toggle:hover { background: var(--surface-2); }
+
+    .content {
+      display: grid;
+      grid-template-columns: 1.02fr 0.98fr;
+      gap: var(--space-5);
+    }
+
+    .list {
+      background: var(--surface-1);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+
+    .list-header {
+      padding: var(--space-4) var(--space-5);
+      border-bottom: 1px solid var(--border-default);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 700;
+      font-size: 12px;
+    }
+
+    .item {
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-default);
+      display: grid;
+      gap: 6px;
+      cursor: pointer;
+      transition: background 120ms ease;
+    }
+    .item:hover { background: var(--surface-2); }
+
+    .item-title {
+      display: flex;
+      justify-content: space-between;
+      gap: var(--space-3);
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .item-meta {
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .amount { color: var(--text-primary); font-weight: 700; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 9px;
+      border-radius: var(--radius-pill);
+      font-weight: 600;
+      font-size: 12px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface-3);
+      color: var(--text-secondary);
+    }
+    .status--paid { color: var(--accent-green); border-color: rgba(127, 207, 133, 0.3); }
+    .status--due { color: var(--accent-amber); border-color: rgba(242, 179, 95, 0.35); }
+    .status--failed { color: #f58c8c; border-color: rgba(245, 140, 140, 0.35); }
+
+    .detail {
+      background: var(--surface-1);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-lg);
+      padding: var(--space-5);
+      box-shadow: var(--shadow-card);
+      display: grid;
+      gap: var(--space-4);
+    }
+    .detail h3 { margin: 0; font-size: 18px; }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: var(--space-3);
+    }
+
+    .field {
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      display: grid;
+      gap: 6px;
+    }
+    .field .label { color: var(--text-muted); font-size: 12px; letter-spacing: 0.02em; }
+    .field .value { font-weight: 600; }
+
+    .callout {
+      background: var(--surface-2);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid var(--border-strong);
+      background: var(--surface-1);
+      color: var(--text-primary);
+      border-radius: var(--radius-pill);
+      padding: 8px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 120ms ease, border-color 120ms ease, transform 100ms ease;
+    }
+    .btn:hover { background: var(--surface-2); }
+    .btn:active { transform: scale(0.99); }
+    .btn--primary {
+      background: var(--brand-primary);
+      border-color: var(--brand-primary);
+      color: var(--text-inverse);
+    }
+    .btn--primary:hover { background: var(--brand-hover); }
+
+    @media (max-width: 1024px) {
+      .shell { grid-template-columns: 1fr; }
+      aside { box-shadow: none; }
+      .content { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 640px) {
+      aside, .main { padding: var(--space-5) var(--space-4); }
+      .header { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside>
+      <div class="logo">RC</div>
+      <div>
+        <div style="color: var(--text-primary); font-weight: 700;">Invoices</div>
+        <div style="color: var(--text-muted); font-size: 13px;">Manage billing and payouts.</div>
+      </div>
+      <div class="nav">
+        <button class="active">All invoices</button>
+        <button>Open</button>
+        <button>Paid</button>
+        <button>Failed</button>
+      </div>
+      <div class="summary">
+        <h3>Open balance</h3>
+        <div class="value">$1,240.00</div>
+        <div class="meta">3 invoices due · Net 15</div>
+        <button class="btn btn--primary">Collect now</button>
+      </div>
+      <div class="summary">
+        <h3>Next payout</h3>
+        <div class="value">Dec 15, 2025</div>
+        <div class="meta">Est. $2,140.00</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="header">
+        <div>
+          <h1>Invoices</h1>
+          <p>List and preview in one view.</p>
+        </div>
+        <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+          <button class="btn">Export</button>
+          <button class="btn btn--primary">New invoice</button>
+          <button class="theme-toggle" id="themeToggle">Toggle theme</button>
+        </div>
+      </div>
+
+      <div class="content">
+        <section class="list" aria-label="Invoice list">
+          <div class="list-header">Invoices</div>
+          <div class="item">
+            <div class="item-title">
+              <span>#INV-2031</span>
+              <span class="amount">$320.00</span>
+            </div>
+            <div class="item-meta">
+              <span>Dec 04, 2025</span>
+              <span>Kody Fisher</span>
+              <span class="status status--paid">Paid</span>
+            </div>
+          </div>
+          <div class="item" style="background: var(--surface-2);">
+            <div class="item-title">
+              <span>#INV-2028</span>
+              <span class="amount">$420.00</span>
+            </div>
+            <div class="item-meta">
+              <span>Dec 01, 2025</span>
+              <span>Jonathan Engalla</span>
+              <span class="status status--due">Due</span>
+            </div>
+          </div>
+          <div class="item">
+            <div class="item-title">
+              <span>#INV-2020</span>
+              <span class="amount">$180.00</span>
+            </div>
+            <div class="item-meta">
+              <span>Nov 21, 2025</span>
+              <span>Courtney Henry</span>
+              <span class="status status--failed">Failed</span>
+            </div>
+          </div>
+          <div class="item">
+            <div class="item-title">
+              <span>#INV-2014</span>
+              <span class="amount">$260.00</span>
+            </div>
+            <div class="item-meta">
+              <span>Nov 10, 2025</span>
+              <span>Arlene McCoy</span>
+              <span class="status status--paid">Paid</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="detail" aria-label="Invoice detail">
+          <h3>Invoice detail</h3>
+          <div class="detail-grid">
+            <div class="field">
+              <div class="label">Invoice</div>
+              <div class="value">#INV-2028</div>
+            </div>
+            <div class="field">
+              <div class="label">Member</div>
+              <div class="value">Jonathan Engalla</div>
+            </div>
+            <div class="field">
+              <div class="label">Status</div>
+              <div class="value"><span class="status status--due">Due</span></div>
+            </div>
+            <div class="field">
+              <div class="label">Amount</div>
+              <div class="value">$420.00</div>
+            </div>
+            <div class="field">
+              <div class="label">Issue date</div>
+              <div class="value">Dec 01, 2025</div>
+            </div>
+            <div class="field">
+              <div class="label">Due date</div>
+              <div class="value">Dec 15, 2025</div>
+            </div>
+          </div>
+          <div class="callout">
+            <div>
+              <div style="font-weight: 600;">Send reminder</div>
+              <div style="color: var(--text-muted); font-size: 13px;">Email member with payment link.</div>
+            </div>
+            <div class="actions" style="display: flex; gap: var(--space-2);">
+              <button class="btn">Preview</button>
+              <button class="btn btn--primary">Send</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const root = document.documentElement;
+    const toggle = document.getElementById("themeToggle");
+    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    if (prefersLight) root.setAttribute("data-theme", "light");
+    toggle?.addEventListener("click", () => {
+      const isLight = root.getAttribute("data-theme") === "light";
+      root.setAttribute("data-theme", isLight ? "dark" : "light");
+    });
+  </script>
+</body>
+</html>
+

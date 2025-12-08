@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RCME Login · Split Hero</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --brand-primary: #0f62fe;
+      --brand-hover: #0b4ddf;
+      --brand-soft: #eef4ff;
+      --accent-mint: #10b981;
+      --neutral-bg: #f7f7f7;
+      --surface-0: #ffffff;
+      --surface-1: #f3f4f6;
+      --surface-2: #e5e7eb;
+      --text-primary: #1f2937;
+      --text-secondary: #4b5563;
+      --text-muted: #6b7280;
+      --border-default: #e5e7eb;
+      --border-strong: #d1d5db;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --radius-pill: 9999px;
+      --shadow-subtle: 0 1px 2px rgba(15, 23, 42, 0.08);
+      --shadow-card: 0 8px 24px rgba(15, 23, 42, 0.06);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-7: 32px;
+      --space-8: 40px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--neutral-bg);
+      color: var(--text-primary);
+    }
+
+    .page {
+      display: grid;
+      grid-template-columns: 1.05fr 1fr;
+      min-height: 100vh;
+    }
+
+    .hero {
+      background: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 35%),
+                  linear-gradient(135deg, #0f62fe, #4f8bff 45%, #a5c6ff);
+      color: #fff;
+      padding: var(--space-7) var(--space-8);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-6);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 80% 10%, rgba(255,255,255,0.18), transparent 35%);
+      pointer-events: none;
+    }
+
+    .hero-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.16);
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .brand span {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .hero-panel {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: var(--radius-lg);
+      padding: var(--space-6);
+      display: grid;
+      gap: var(--space-4);
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.18);
+    }
+
+    .hero-panel h2 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .hero-panel p {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.82);
+      line-height: 1.6;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-4);
+    }
+
+    .stat {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .stat .label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .stat .value {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .card {
+      background: var(--surface-0);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-card);
+      padding: var(--space-7);
+      max-width: 520px;
+      width: min(520px, 92vw);
+      margin: auto;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-5);
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .card-subtitle {
+      margin: 6px 0 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--brand-soft);
+      color: var(--brand-primary);
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 600;
+      border: 1px solid #d9e5ff;
+    }
+
+    form {
+      display: grid;
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    input {
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: var(--surface-0);
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--brand-primary);
+      box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.18);
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .checkbox {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .checkbox input {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+
+    .actions {
+      display: grid;
+      gap: var(--space-3);
+      margin-top: var(--space-2);
+    }
+
+    .btn {
+      height: 44px;
+      border-radius: var(--radius-pill);
+      border: 1px solid transparent;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 150ms ease, border-color 150ms ease, transform 120ms ease;
+    }
+
+    .btn:active { transform: scale(0.99); }
+
+    .btn-primary {
+      background: var(--brand-primary);
+      color: #fff;
+      border-color: var(--brand-primary);
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .btn-primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); }
+
+    .btn-ghost {
+      background: var(--surface-0);
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+    }
+
+    .btn-ghost:hover { background: var(--surface-1); }
+
+    .footer {
+      margin-top: var(--space-5);
+      color: var(--text-secondary);
+      font-size: 14px;
+      text-align: center;
+      display: grid;
+      gap: var(--space-2);
+    }
+
+    .footer a {
+      color: var(--brand-primary);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    @media (max-width: 1080px) {
+      .page { grid-template-columns: 1fr; }
+      .hero { min-height: 320px; }
+      .card { margin: var(--space-6); }
+    }
+
+    @media (max-width: 640px) {
+      .hero { padding: var(--space-6) var(--space-5); }
+      .hero-panel { padding: var(--space-5); }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .card { padding: var(--space-6); margin: var(--space-5); }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="hero-header">
+        <div class="logo">RC</div>
+        <div class="brand">
+          <h1>Rotary Club of Manila Expats</h1>
+          <span>Community · Service · Fellowship</span>
+        </div>
+      </div>
+
+      <div class="hero-panel">
+        <h2>Welcome back, members</h2>
+        <p>Sign in to access events, dues, and community discussions. Keep up with upcoming meetups, vote on proposals, and manage your membership.</p>
+        <div class="stats">
+          <div class="stat">
+            <div class="label">Next event</div>
+            <div class="value">Dec 12 · 6:00 PM</div>
+          </div>
+          <div class="stat">
+            <div class="label">Active members</div>
+            <div class="value">1,842</div>
+          </div>
+          <div class="stat">
+            <div class="label">Open discussions</div>
+            <div class="value">87</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-label="Login form">
+      <header class="card-header">
+        <div>
+          <h2 class="card-title">Sign in to RCME</h2>
+          <p class="card-subtitle">Use your member credentials to continue.</p>
+        </div>
+        <span class="pill">RCME Member Portal</span>
+      </header>
+
+      <form>
+        <label>
+          Email address
+          <input type="email" placeholder="you@example.com" required />
+        </label>
+        <label>
+          Password
+          <input type="password" placeholder="••••••••" required />
+          <span class="hint">At least 8 characters with a number and symbol.</span>
+        </label>
+        <div class="row">
+          <label class="checkbox">
+            <input type="checkbox" />
+            Remember me
+          </label>
+          <a href="#" style="color: var(--brand-primary); font-weight: 600; text-decoration: none;">Forgot password?</a>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" type="submit">Sign in</button>
+          <button class="btn btn-ghost" type="button">Continue with SSO</button>
+        </div>
+      </form>
+
+      <div class="footer">
+        <div>New to RCME? <a href="#">Create an account</a></div>
+        <div>Need help? <a href="#">Contact support</a></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+

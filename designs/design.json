@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "name": "RCME Member Portal Design System",
+    "version": 1,
+    "themes": [
+      "light",
+      "dark"
+    ]
+  },
+  "colors": {
+    "brand": {
+      "primary": "#0f62fe",
+      "primarySoft": "#eef4ff",
+      "accent": "#d6c7a2",
+      "accentSoft": "#f1e7c9"
+    },
+    "light": {
+      "background": "#f7f7f7",
+      "surface": {
+        "0": "#ffffff",
+        "1": "#f3f4f6",
+        "2": "#e5e7eb"
+      },
+      "text": {
+        "primary": "#1f2937",
+        "secondary": "#4b5563",
+        "muted": "#6b7280"
+      },
+      "border": {
+        "subtle": "#e5e7eb",
+        "strong": "#d1d5db"
+      },
+      "state": {
+        "success": "#7fcf85",
+        "warning": "#f2b35f",
+        "error": "#f58c8c",
+        "info": "#7fb2ff"
+      }
+    },
+    "dark": {
+      "background": "#0f1115",
+      "surface": {
+        "0": "#11141a",
+        "1": "#161b22",
+        "2": "#1d232d"
+      },
+      "text": {
+        "primary": "#f7f9fc",
+        "secondary": "#c9d2e3",
+        "muted": "#93a1b6"
+      },
+      "border": {
+        "subtle": "#1f2834",
+        "strong": "#2a3545"
+      },
+      "state": {
+        "success": "#7fcf85",
+        "warning": "#f2b35f",
+        "error": "#f58c8c",
+        "info": "#7fb2ff"
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": "Inter, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif",
+    "scale": {
+      "display": {
+        "size": 32,
+        "weight": 700,
+        "lineHeight": 1.2
+      },
+      "h1": {
+        "size": 28,
+        "weight": 700,
+        "lineHeight": 1.25
+      },
+      "h2": {
+        "size": 24,
+        "weight": 600,
+        "lineHeight": 1.3
+      },
+      "h3": {
+        "size": 20,
+        "weight": 600,
+        "lineHeight": 1.35
+      },
+      "body": {
+        "size": 16,
+        "weight": 400,
+        "lineHeight": 1.5
+      },
+      "label": {
+        "size": 14,
+        "weight": 500,
+        "lineHeight": 1.4
+      },
+      "caption": {
+        "size": 12,
+        "weight": 400,
+        "lineHeight": 1.4
+      }
+    }
+  },
+  "spacing": {
+    "unit": 4,
+    "scale": {
+      "xs": 4,
+      "sm": 8,
+      "md": 12,
+      "lg": 16,
+      "xl": 24,
+      "xxl": 32
+    }
+  },
+  "radii": {
+    "sm": 4,
+    "md": 8,
+    "lg": 16,
+    "pill": 999
+  },
+  "shadows": {
+    "sm": "0 1px 2px rgba(15, 23, 42, 0.08)",
+    "md": "0 4px 8px rgba(15, 23, 42, 0.12)",
+    "lg": "0 10px 24px rgba(15, 23, 42, 0.18)"
+  },
+  "components": {
+    "button": {
+      "height": 40,
+      "paddingX": 16,
+      "radius": "md",
+      "font": "label",
+      "variants": {
+        "primary": {
+          "background": "colors.brand.primary",
+          "text": "#ffffff"
+        },
+        "secondary": {
+          "background": "light.surface.1",
+          "border": "light.border.subtle",
+          "text": "light.text.primary"
+        },
+        "ghost": {
+          "background": "transparent",
+          "text": "colors.brand.primary"
+        }
+      }
+    },
+    "card": {
+      "padding": "lg",
+      "radius": "lg",
+      "shadow": "md",
+      "gap": "md"
+    },
+    "input": {
+      "height": 40,
+      "radius": "md",
+      "borderColor": "light.border.subtle",
+      "focusBorderColor": "colors.brand.primary"
+    },
+    "pill": {
+      "radius": "pill",
+      "paddingX": 10,
+      "paddingY": 4
+    },
+    "table": {
+      "rowPaddingY": 10,
+      "rowPaddingX": 12,
+      "headerBackground": "light.surface.1"
+    },
+    "shell": {
+      "maxWidth": 1200,
+      "pagePaddingX": 24,
+      "pagePaddingY": 24
+    }
+  },
+  "layout": {
+    "pageMaxWidth": 1200,
+    "sidebarWidth": 300,
+    "headerHeight": 64
+  }
+}
+
