@@ -61,8 +61,8 @@ export const AdminEmailLogPage: React.FC = () => {
         <Card>
           {loading && <div>Loading email log...</div>}
           {!loading && error && (
-            <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
-              <span style={{ color: "var(--color-error)" }}>{error}</span>
+            <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center", color: "var(--app-color-text-primary)" }}>
+              <span style={{ color: "var(--app-color-state-error)" }}>{error}</span>
               <Button variant="secondary" onClick={load}>
                 Retry
               </Button>
@@ -105,12 +105,13 @@ export const AdminEmailLogPage: React.FC = () => {
                           <TableCell colSpan={5}>
                             <pre
                               style={{
-                                background: "var(--color-surface-1)",
-                                border: "1px solid var(--color-border)",
+                                background: "var(--app-color-surface-2)",
+                                border: "1px solid var(--app-color-border-subtle)",
                                 borderRadius: "var(--radius-md)",
                                 padding: "var(--space-sm)",
                                 fontSize: "12px",
                                 overflowX: "auto",
+                                color: "var(--app-color-text-primary)",
                               }}
                             >
                               {JSON.stringify(item.payload ?? item, null, 2)}

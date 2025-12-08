@@ -60,7 +60,7 @@ export const AdminEventCheckInPage: React.FC = () => {
           <Card title="Check-in result" style={{ marginTop: "var(--space-md)" }}>
             <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center", marginBottom: "var(--space-sm)" }}>
               <Tag variant="success">Checked in</Tag>
-              <div style={{ color: "var(--color-text-muted)" }}>{result.checkedInAt}</div>
+              <div style={{ color: "var(--app-color-text-muted)" }}>{result.checkedInAt}</div>
             </div>
             <div>Event ID: {result.eventId}</div>
             <div>Registration ID: {result.registrationId}</div>

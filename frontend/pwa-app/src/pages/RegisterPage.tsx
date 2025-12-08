@@ -98,7 +98,7 @@ export const RegisterPage: React.FC = () => {
               height: 48,
               borderRadius: "var(--rcme-radius-md)",
               background: "var(--rcme-color-brand-primary)",
-              color: "#fff",
+              color: "var(--app-color-text-primary)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",

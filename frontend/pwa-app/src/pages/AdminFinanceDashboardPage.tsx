@@ -202,13 +202,13 @@ export const AdminFinanceDashboardPage: React.FC = () => {
         >
           <Card title="Outstanding invoices">
             {invoicesState.error ? (
-              <div style={{ color: "var(--color-danger)" }}>{invoicesState.error}</div>
+              <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>
             ) : (
               <div style={{ display: "grid", gap: "var(--space-xs)" }}>
                 <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>
                   {formatMoney(totalOutstanding.amountCents, invoices[0]?.currency)}
                 </div>
-                <div style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+                <div style={{ fontSize: "0.85rem", color: "var(--app-color-text-muted)" }}>
                   {totalOutstanding.count} open invoice{totalOutstanding.count === 1 ? "" : "s"}
                 </div>
               </div>
@@ -217,13 +217,13 @@ export const AdminFinanceDashboardPage: React.FC = () => {
 
           <Card title="Paid last 30 days">
             {invoicesState.error ? (
-              <div style={{ color: "var(--color-danger)" }}>{invoicesState.error}</div>
+              <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>
             ) : (
               <div style={{ display: "grid", gap: "var(--space-xs)" }}>
                 <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>
                   {formatMoney(last30DaysPaid.amountCents, invoices[0]?.currency)}
                 </div>
-                <div style={{ fontSize: "0.85rem", color: "var(--color-text-muted)" }}>
+                <div style={{ fontSize: "0.85rem", color: "var(--app-color-text-muted)" }}>
                   {last30DaysPaid.count} invoice{last30DaysPaid.count === 1 ? "" : "s"} paid in the last 30 days
                 </div>
               </div>
@@ -232,7 +232,7 @@ export const AdminFinanceDashboardPage: React.FC = () => {
 
           <Card title="Revenue mix">
             {invoicesState.error ? (
-              <div style={{ color: "var(--color-danger)" }}>{invoicesState.error}</div>
+              <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>
             ) : (
               <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.9rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -254,9 +254,9 @@ export const AdminFinanceDashboardPage: React.FC = () => {
 
         <Card title="Dues summary">
           {duesState.loading && <div>Loading dues summary…</div>}
-          {duesState.error && <div style={{ color: "var(--color-danger)" }}>{duesState.error}</div>}
+          {duesState.error && <div style={{ color: "var(--app-color-state-error)" }}>{duesState.error}</div>}
           {!duesState.loading && !duesState.error && duesRows.length === 0 && (
-            <div style={{ color: "var(--color-text-muted)" }}>No dues runs yet.</div>
+            <div style={{ color: "var(--app-color-text-muted)" }}>No dues runs yet.</div>
           )}
           {!duesState.loading && !duesState.error && duesRows.length > 0 && (
             <Table>
@@ -276,7 +276,7 @@ export const AdminFinanceDashboardPage: React.FC = () => {
                       <div style={{ display: "flex", flexDirection: "column" }}>
                         <span>{row.label}</span>
                         {row.dueDate && (
-                          <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>Due {row.dueDate}</span>
+                          <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>Due {row.dueDate}</span>
                         )}
                       </div>
                     </TableCell>
@@ -293,9 +293,9 @@ export const AdminFinanceDashboardPage: React.FC = () => {
 
         <Card title="Recent invoices">
           {invoicesState.loading && <div>Loading invoices…</div>}
-          {invoicesState.error && <div style={{ color: "var(--color-danger)" }}>{invoicesState.error}</div>}
+          {invoicesState.error && <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>}
           {!invoicesState.loading && !invoicesState.error && recentInvoices.length === 0 && (
-            <div style={{ color: "var(--color-text-muted)" }}>No invoices found.</div>
+            <div style={{ color: "var(--app-color-text-muted)" }}>No invoices found.</div>
           )}
           {!invoicesState.loading && !invoicesState.error && recentInvoices.length > 0 && (
             <Table>
@@ -315,7 +315,7 @@ export const AdminFinanceDashboardPage: React.FC = () => {
                       <div style={{ display: "flex", flexDirection: "column" }}>
                         <span>{inv.description || "Invoice"}</span>
                         {inv.eventTitle && (
-                          <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>Event: {inv.eventTitle}</span>
+                          <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>Event: {inv.eventTitle}</span>
                         )}
                       </div>
                     </TableCell>
@@ -347,7 +347,7 @@ export const AdminFinanceDashboardPage: React.FC = () => {
                       {inv.createdAt ? (
                         <span>{new Date(inv.createdAt).toLocaleDateString()}</span>
                       ) : (
-                        <span style={{ color: "var(--color-text-muted)" }}>–</span>
+                        <span style={{ color: "var(--app-color-text-muted)" }}>–</span>
                       )}
                     </TableCell>
                   </TableRow>
@@ -359,9 +359,9 @@ export const AdminFinanceDashboardPage: React.FC = () => {
 
         <Card title="Top events">
           {eventsState.loading && <div>Loading events…</div>}
-          {eventsState.error && <div style={{ color: "var(--color-danger)" }}>{eventsState.error}</div>}
+          {eventsState.error && <div style={{ color: "var(--app-color-state-error)" }}>{eventsState.error}</div>}
           {!eventsState.loading && !eventsState.error && topEvents.length === 0 && (
-            <div style={{ color: "var(--color-text-muted)" }}>No event data yet.</div>
+            <div style={{ color: "var(--app-color-text-muted)" }}>No event data yet.</div>
           )}
           {!eventsState.loading && !eventsState.error && topEvents.length > 0 && (
             <Table>
@@ -380,7 +380,7 @@ export const AdminFinanceDashboardPage: React.FC = () => {
                       <div style={{ display: "flex", flexDirection: "column" }}>
                         <span>{ev.title}</span>
                         {ev.startDate && (
-                          <span style={{ fontSize: "0.8rem", color: "var(--color-text-muted)" }}>
+                          <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>
                             {new Date(ev.startDate).toLocaleDateString()}
                           </span>
                         )}

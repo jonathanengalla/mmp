@@ -133,7 +133,7 @@ export const PaymentMethodsPage: React.FC = () => {
     return (
       <Page title="Payment Methods">
         <Card>
-          <div style={{ padding: "var(--space-8)", textAlign: "center", color: "var(--color-text-muted)" }}>
+          <div style={{ padding: "var(--space-8)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
             <div className="pr-skeleton" style={{ 
               width: 48, 
               height: 32, 
@@ -152,13 +152,13 @@ export const PaymentMethodsPage: React.FC = () => {
     return (
       <Page title="Payment Methods">
         <Card>
-          <div style={{ padding: "var(--space-8)", textAlign: "center" }}>
+          <div style={{ padding: "var(--space-8)", textAlign: "center", color: "var(--app-color-text-primary)" }}>
             <div style={{ 
               width: 64,
               height: 64,
               borderRadius: "var(--radius-full)",
-              background: "var(--color-error-soft)",
-              color: "var(--color-error)",
+              background: "var(--app-color-error-soft)",
+              color: "var(--app-color-state-error)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -173,7 +173,7 @@ export const PaymentMethodsPage: React.FC = () => {
             <h3 style={{ fontSize: "var(--font-h3)", margin: "0 0 var(--space-2) 0" }}>
               Failed to load payment methods
             </h3>
-            <p style={{ color: "var(--color-text-secondary)", marginBottom: "var(--space-4)" }}>
+            <p style={{ color: "var(--app-color-text-secondary)", marginBottom: "var(--space-4)" }}>
               {loadError}
             </p>
             <Button variant="secondary" onClick={fetchMethods}>
@@ -193,9 +193,12 @@ export const PaymentMethodsPage: React.FC = () => {
           <div style={{ 
             padding: "var(--space-6)", 
             textAlign: "center",
-            color: "var(--color-text-muted)",
-            background: "var(--color-surface-1)",
-            borderRadius: "var(--radius-md)",
+              color: "var(--app-color-text-muted)",
+              background: "var(--app-color-surface-1)",
+              borderRadius: "var(--radius-md)",
+              color: "var(--app-color-text-muted)",
+              background: "var(--app-color-surface-1)",
+              borderRadius: "var(--radius-md)",
           }}>
             <svg 
               width="40" 
@@ -221,9 +224,9 @@ export const PaymentMethodsPage: React.FC = () => {
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: "var(--space-4)",
-                  background: "var(--color-surface-1)",
+                  background: "var(--app-color-surface-1)",
                   borderRadius: "var(--radius-md)",
-                  border: method.id === defaultId ? "1px solid var(--color-primary)" : "1px solid transparent",
+                  border: method.id === defaultId ? "1px solid var(--app-color-primary)" : "1px solid transparent",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
@@ -232,14 +235,14 @@ export const PaymentMethodsPage: React.FC = () => {
                     width: 40,
                     height: 28,
                     borderRadius: "var(--radius-sm)",
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
+                    background: "var(--app-color-surface-0)",
+                    border: "1px solid var(--app-color-border-subtle)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: "var(--font-caption)",
                     fontWeight: "var(--font-weight-bold)",
-                    color: "var(--color-text-secondary)",
+                    color: "var(--app-color-text-secondary)",
                   }}>
                     {method.brand.slice(0, 4).toUpperCase()}
                   </div>
@@ -255,7 +258,7 @@ export const PaymentMethodsPage: React.FC = () => {
                     </div>
                     <div style={{ 
                       fontSize: "var(--font-caption)", 
-                      color: "var(--color-text-muted)",
+                      color: "var(--app-color-text-muted)",
                       marginTop: "var(--space-1)",
                     }}>
                       Expires {String(method.expMonth).padStart(2, "0")}/{method.expYear}

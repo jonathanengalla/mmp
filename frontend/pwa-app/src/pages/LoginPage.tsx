@@ -89,24 +89,26 @@ export const LoginPage: React.FC = () => {
     <div
       style={{
         minHeight: "100vh",
-        background:
-          "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12), transparent 36%), linear-gradient(135deg, var(--rcme-color-brand-primary), #4f8bff 46%, #a5c6ff)",
+        background: `
+          radial-gradient(circle at 20% 20%, rgba(255,255,255,0.06), transparent 34%),
+          linear-gradient(135deg, var(--app-color-bg), var(--app-color-surface-2))
+        `,
         display: "grid",
         placeItems: "center",
         padding: "var(--rcme-space-xl)",
-        color: "#fff",
+        color: "var(--app-color-text-primary)",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: "520px",
-          background: "var(--rcme-card-bg)",
-          border: "1px solid var(--rcme-color-border-subtle)",
+          background: "var(--app-color-surface-1)",
+          border: "1px solid var(--app-color-border-subtle)",
           borderRadius: "var(--rcme-radius-lg)",
-          boxShadow: "var(--rcme-card-shadow)",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
           padding: "var(--rcme-space-xxl)",
-          color: "var(--rcme-color-text-primary)",
+          color: "var(--app-color-text-primary)",
         }}
       >
         {/* Logo / Brand */}
@@ -116,8 +118,8 @@ export const LoginPage: React.FC = () => {
               width: 48,
               height: 48,
               borderRadius: "var(--rcme-radius-md)",
-              background: "var(--rcme-color-brand-primary)",
-              color: "#fff",
+              background: "var(--app-color-brand-primary)",
+              color: "var(--app-color-on-primary, #ffffff)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -133,8 +135,9 @@ export const LoginPage: React.FC = () => {
             style={{
               fontSize: "var(--rcme-font-size-h1)",
               fontWeight: 700,
-              color: "var(--rcme-color-text-primary)",
+              color: "var(--app-color-text-primary)",
               margin: "0 0 var(--rcme-space-xs) 0",
+              letterSpacing: "-0.02em",
             }}
           >
             Welcome back
@@ -142,7 +145,7 @@ export const LoginPage: React.FC = () => {
           <p
             style={{
               fontSize: "var(--rcme-font-size-body)",
-              color: "var(--rcme-color-text-secondary)",
+              color: "var(--app-color-text-secondary)",
               margin: 0,
             }}
           >
@@ -155,9 +158,9 @@ export const LoginPage: React.FC = () => {
             <div
               style={{
                 padding: "var(--rcme-space-md)",
-                background: "var(--rcme-color-state-warning)",
+                background: "var(--app-color-warning-soft)",
                 borderRadius: "var(--rcme-radius-md)",
-                color: "#111",
+                color: "var(--app-color-text-primary)",
                 fontSize: "var(--rcme-font-size-label)",
                 marginBottom: "var(--rcme-space-lg)",
                 display: "flex",

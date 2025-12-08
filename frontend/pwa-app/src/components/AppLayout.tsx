@@ -197,7 +197,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* User section at bottom */}
         <div style={{
           padding: "var(--space-4)",
-          borderTop: "1px solid var(--color-border)",
+          borderTop: "1px solid var(--app-color-border-subtle)",
+          background: "var(--app-color-surface-1)",
+          color: "var(--app-color-text-primary)",
         }}>
           <div style={{
             display: "flex",
@@ -205,14 +207,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             gap: "var(--space-3)",
             padding: "var(--space-2)",
             borderRadius: "var(--radius-md)",
-            background: "var(--color-surface-1)",
+            background: "var(--app-color-surface-2)",
+            border: "1px solid var(--app-color-border-subtle)",
           }}>
             <div style={{
               width: 32,
               height: 32,
               borderRadius: "var(--radius-full)",
-              background: "var(--color-primary-soft)",
-              color: "var(--color-primary)",
+              background: "var(--app-color-primary-soft)",
+              color: "var(--app-color-primary)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -225,7 +228,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <div style={{
                 fontSize: "var(--font-body-sm)",
                 fontWeight: "var(--font-weight-medium)",
-                color: "var(--color-text-primary)",
+                color: "var(--app-color-text-primary)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -239,7 +242,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   border: "none",
                   padding: 0,
                   fontSize: "var(--font-caption)",
-                  color: "var(--color-text-muted)",
+                  color: "var(--app-color-text-muted)",
                   cursor: "pointer",
                   textDecoration: "underline",
                 }}
@@ -281,11 +284,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             style={{
               display: "none",
               background: "none",
-              border: "1px solid var(--color-border)",
+              border: "1px solid var(--app-color-border-subtle)",
               borderRadius: "var(--radius-md)",
               padding: "var(--space-2)",
               cursor: "pointer",
-              color: "var(--color-text-primary)",
+              color: "var(--app-color-text-primary)",
             }}
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

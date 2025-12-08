@@ -17,17 +17,17 @@ const currencyDisplay = (priceCents?: number | null, currency?: string | null) =
 const TicketCode: React.FC<{ code: string }> = ({ code }) => (
   <div
     style={{
-      border: "1px solid var(--color-border)",
+      border: "1px solid var(--app-color-border-subtle)",
       borderRadius: "var(--radius-medium)",
       padding: "var(--space-3)",
-      background: "var(--color-surface-1)",
+      background: "var(--app-color-surface-1)",
       display: "grid",
       gap: "var(--space-1)",
     }}
   >
-    <div style={{ fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>Ticket code</div>
+    <div style={{ fontSize: "var(--font-caption)", color: "var(--app-color-text-muted)" }}>Ticket code</div>
     <div style={{ fontFamily: "monospace", fontWeight: 600, wordBreak: "break-all" }}>{code}</div>
-    <div style={{ fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
+    <div style={{ fontSize: "var(--font-caption)", color: "var(--app-color-text-muted)" }}>
       Show this ticket code at the event for check-in.
     </div>
   </div>
@@ -135,7 +135,7 @@ export const EventDetailPage: React.FC = () => {
       {loading && <Card>Loading event...</Card>}
       {!loading && error && (
         <Card>
-          <div style={{ color: "var(--color-error)" }}>{error}</div>
+          <div style={{ color: "var(--app-color-state-error)" }}>{error}</div>
           <Button style={{ marginTop: "var(--space-sm)" }} onClick={load}>
             Retry
           </Button>
@@ -157,7 +157,7 @@ export const EventDetailPage: React.FC = () => {
                   height: 220,
                   borderRadius: "var(--radius-large)",
                   background:
-                    "linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%)",
+                    "linear-gradient(135deg, var(--app-color-surface-2) 0%, var(--app-color-surface-3, var(--app-color-surface-2)) 100%)",
                 }}
               />
             )}
@@ -180,35 +180,35 @@ export const EventDetailPage: React.FC = () => {
               <Card title="Event details">
                 <div style={{ display: "grid", gap: "var(--space-sm)" }}>
                   <div>
-                    <div style={{ color: "var(--color-text-muted)" }}>Date / Time</div>
+                    <div style={{ color: "var(--app-color-text-muted)" }}>Date / Time</div>
                     <div>{new Date(event.startDate).toLocaleString()}</div>
                     {event.endDate && <div>{new Date(event.endDate).toLocaleString()}</div>}
                   </div>
                   <div>
-                    <div style={{ color: "var(--color-text-muted)" }}>Location</div>
+                    <div style={{ color: "var(--app-color-text-muted)" }}>Location</div>
                     <div>{event.location || "TBA"}</div>
                   </div>
                   <div>
-                    <div style={{ color: "var(--color-text-muted)" }}>Capacity</div>
+                    <div style={{ color: "var(--app-color-text-muted)" }}>Capacity</div>
                     <div>
                       {event.capacity ?? "N/A"}
                       {capacityLeft != null && ` • ${capacityLeft} seats remaining`}
                     </div>
                   </div>
                   <div>
-                    <div style={{ color: "var(--color-text-muted)" }}>Price</div>
+                    <div style={{ color: "var(--app-color-text-muted)" }}>Price</div>
                     <div>{currencyDisplay(event.priceCents, event.currency)}</div>
                   </div>
                   {event.ticketCode && isRegistered && (
                     <div>
-                      <div style={{ color: "var(--color-text-muted)" }}>Ticket code</div>
+                      <div style={{ color: "var(--app-color-text-muted)" }}>Ticket code</div>
                       <TicketCode code={event.ticketCode} />
                     </div>
                   )}
                 </div>
               </Card>
               <Card title="Description">
-                <div style={{ whiteSpace: "pre-wrap", color: "var(--color-text-primary)" }}>
+                <div style={{ whiteSpace: "pre-wrap", color: "var(--app-color-text-primary)" }}>
                   {event.description || "No description provided."}
                 </div>
               </Card>
@@ -219,7 +219,7 @@ export const EventDetailPage: React.FC = () => {
                 {registrationDisabled && <Tag variant="warning">Registration is not open for this event.</Tag>}
                 {!isRegistered && !registrationDisabled && (
                   <>
-                    <div style={{ color: "var(--color-text-muted)", marginBottom: "var(--space-sm)" }}>{helperText}</div>
+                    <div style={{ color: "var(--app-color-text-muted)", marginBottom: "var(--space-sm)" }}>{helperText}</div>
                     <Button fullWidth disabled={submitting} onClick={onRegister}>
                       {submitting ? "Saving..." : registerLabel}
                     </Button>
@@ -234,7 +234,7 @@ export const EventDetailPage: React.FC = () => {
                           : "Registered – payment outstanding"
                         : "You’re registered"}
                     </Tag>
-                    <div style={{ color: "var(--color-text-muted)" }}>{helperText}</div>
+                    <div style={{ color: "var(--app-color-text-muted)" }}>{helperText}</div>
                     <div>{paymentStatusText}</div>
                     <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
                       {registrationMode === "pay_now" && (
