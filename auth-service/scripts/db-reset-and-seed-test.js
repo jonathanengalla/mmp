@@ -1,9 +1,17 @@
 #!/usr/bin/env node
 /**
  * db:reset:test (destructive, test-only)
- * Safe to drop/reseed in TEST. Do not run in dev/demo/prod.
- * Placeholder until a real DB is connected.
+ * Implement drop/recreate/seed for TEST only when DB is wired.
  */
+const { execSync } = require("child_process");
 
-console.log("[db:reset:test] No-op placeholder. When DB exists, implement drop/recreate/seed for TEST only.");
+try {
+  console.log("[db:reset:test] Dropping and recreating test schema (if configured)");
+  // Adjust these commands when a dedicated test DB is available.
+  execSync("npx prisma migrate reset --force --skip-seed", { stdio: "inherit", env: { ...process.env, NODE_ENV: "test" } });
+  console.log("[db:reset:test] Reset complete");
+} catch (err) {
+  console.error("[db:reset:test] Failed", err);
+  process.exit(1);
+}
 

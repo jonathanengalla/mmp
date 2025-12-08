@@ -1,0 +1,5 @@
+# Prisma Migrate lockfile
+
+[migration_lock]
+migration_engine_version = "5.19.1"
+

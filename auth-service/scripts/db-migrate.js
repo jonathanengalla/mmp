@@ -1,9 +1,12 @@
 #!/usr/bin/env node
-/**
- * db:migrate (non-destructive)
- * Intended for local dev and demo. Apply schema migrations only.
- * Currently a placeholder because persistence is not yet wired; update when a real DB is added.
- */
+const { execSync } = require("child_process");
 
-console.log("[db:migrate] No-op: no migrations defined. When DB is configured, add migration runner here.");
+try {
+  console.log("[db:migrate] Running prisma migrate deploy");
+  execSync("npx prisma migrate deploy", { stdio: "inherit" });
+  console.log("[db:migrate] Success");
+} catch (err) {
+  console.error("[db:migrate] Failed", err);
+  process.exit(1);
+}
 

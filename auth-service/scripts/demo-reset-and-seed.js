@@ -2,8 +2,7 @@
 /**
  * demo:reset (manual, destructive)
  * Only run intentionally for the demo environment. Never in deploy hooks.
- * Placeholder until a real DB is connected.
+ * Implement a wipe + heavy seed when DB is wired.
  */
-
-console.log("[demo:reset] No-op placeholder. Intended for manual demo wipe/reseed when DB is wired.");
+console.log("[demo:reset] Not implemented. Add destructive reset + heavy seed here for demo only.");
 
