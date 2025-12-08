@@ -5,7 +5,7 @@
   "main": "dist/auth-service/src/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc -b",
+    "build": "npx prisma generate && tsc -b",
     "start": "node dist/auth-service/src/server.js",
     "test": "echo \"No tests configured for auth-service\"",
     "db:migrate": "NODE_ENV=production node scripts/db-migrate.js",
