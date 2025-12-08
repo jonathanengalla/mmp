@@ -22,7 +22,7 @@
 
 .app-button--primary {
   background: var(--app-color-brand-primary);
-  color: #ffffff;
+  color: var(--app-color-text-on-primary, #ffffff);
   border-color: var(--app-color-brand-primary);
 }
 .app-button--primary:hover { transform: translateY(-1px); }

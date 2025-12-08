@@ -8,6 +8,7 @@
   --app-color-surface-0: var(--rcme-color-surface-0);
   --app-color-surface-1: var(--rcme-color-surface-1);
   --app-color-surface-2: var(--rcme-color-surface-2);
+  --app-color-surface-3: var(--rcme-color-surface-3, var(--rcme-color-surface-2));
 
   /* Text */
   --app-color-text-primary: var(--rcme-color-text-primary);
@@ -17,12 +18,17 @@
   /* Borders */
   --app-color-border-subtle: var(--rcme-color-border-subtle);
   --app-color-border-strong: var(--rcme-color-border-strong);
+  --app-color-border: var(--app-color-border-subtle);
 
   /* States */
   --app-color-state-success: var(--rcme-color-state-success);
   --app-color-state-warning: var(--rcme-color-state-warning);
   --app-color-state-error: var(--rcme-color-state-error);
   --app-color-state-info: var(--rcme-color-state-info);
+  --app-color-success-soft: var(--rcme-color-state-success-soft, rgba(74, 222, 128, 0.12));
+  --app-color-warning-soft: var(--rcme-color-state-warning-soft, rgba(250, 204, 21, 0.12));
+  --app-color-error-soft: var(--rcme-color-state-error-soft, rgba(248, 113, 113, 0.12));
+  --app-color-info-soft: var(--rcme-color-state-info-soft, rgba(56, 189, 248, 0.12));
 
   /* Spacing */
   --app-space-xs: var(--rcme-space-xs);

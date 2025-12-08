@@ -52,6 +52,7 @@
   --rcme-color-surface-0: #ffffff;
   --rcme-color-surface-1: #f3f4f6;
   --rcme-color-surface-2: #e5e7eb;
+  --rcme-color-surface-3: #dfe3ea;
 
   --rcme-color-text-primary: #1f2937;
   --rcme-color-text-secondary: #4b5563;
@@ -61,10 +62,14 @@
   --rcme-color-border-strong: #d1d5db;
   --app-color-border: var(--rcme-color-border-subtle);
 
-  --rcme-color-state-success: #7fcf85;
-  --rcme-color-state-warning: #f2b35f;
-  --rcme-color-state-error: #f58c8c;
-  --rcme-color-state-info: #7fb2ff;
+  --rcme-color-state-success: #4ADE80;
+  --rcme-color-state-warning: #FACC15;
+  --rcme-color-state-error: #F87171;
+  --rcme-color-state-info: #38BDF8;
+  --rcme-color-state-success-soft: rgba(74, 222, 128, 0.12);
+  --rcme-color-state-warning-soft: rgba(250, 204, 21, 0.12);
+  --rcme-color-state-error-soft: rgba(248, 113, 113, 0.12);
+  --rcme-color-state-info-soft: rgba(56, 189, 248, 0.12);
 
   /* Legacy token bridge */
   --color-bg: var(--rcme-color-bg);
@@ -84,10 +89,10 @@
   --color-warning: var(--rcme-color-state-warning);
   --color-error: var(--rcme-color-state-error);
   --color-info: var(--rcme-color-state-info);
-  --color-success-soft: rgba(127, 207, 133, 0.12);
-  --color-warning-soft: rgba(242, 179, 95, 0.12);
-  --color-error-soft: rgba(245, 140, 140, 0.12);
-  --color-info-soft: rgba(127, 178, 255, 0.12);
+  --color-success-soft: var(--rcme-color-state-success-soft);
+  --color-warning-soft: var(--rcme-color-state-warning-soft);
+  --color-error-soft: var(--rcme-color-state-error-soft);
+  --color-info-soft: var(--rcme-color-state-info-soft);
 
   --color-text-primary: var(--rcme-color-text-primary);
   --color-text-secondary: var(--rcme-color-text-secondary);
@@ -126,6 +131,7 @@
   --rcme-color-surface-0: #121827;
   --rcme-color-surface-1: #161f2e;
   --rcme-color-surface-2: #1d2637;
+  --rcme-color-surface-3: #1f293a;
 
   --rcme-color-text-primary: #eef2f7;
   --rcme-color-text-secondary: #c7d0e0;
@@ -135,10 +141,14 @@
   --rcme-color-border-strong: #2a384d;
   --app-color-border: var(--rcme-color-border-subtle);
 
-  --rcme-color-state-success: #7fcf85;
-  --rcme-color-state-warning: #f2b35f;
-  --rcme-color-state-error: #f58c8c;
-  --rcme-color-state-info: #7fb2ff;
+  --rcme-color-state-success: #4ADE80;
+  --rcme-color-state-warning: #FACC15;
+  --rcme-color-state-error: #F87171;
+  --rcme-color-state-info: #38BDF8;
+  --rcme-color-state-success-soft: rgba(74, 222, 128, 0.16);
+  --rcme-color-state-warning-soft: rgba(250, 204, 21, 0.16);
+  --rcme-color-state-error-soft: rgba(248, 113, 113, 0.16);
+  --rcme-color-state-info-soft: rgba(56, 189, 248, 0.16);
 
   /* Legacy token bridge */
   --color-bg: var(--rcme-color-bg);
@@ -158,10 +168,10 @@
   --color-warning: var(--rcme-color-state-warning);
   --color-error: var(--rcme-color-state-error);
   --color-info: var(--rcme-color-state-info);
-  --color-success-soft: rgba(127, 207, 133, 0.2);
-  --color-warning-soft: rgba(242, 179, 95, 0.2);
-  --color-error-soft: rgba(245, 140, 140, 0.2);
-  --color-info-soft: rgba(127, 178, 255, 0.2);
+  --color-success-soft: var(--rcme-color-state-success-soft);
+  --color-warning-soft: var(--rcme-color-state-warning-soft);
+  --color-error-soft: var(--rcme-color-state-error-soft);
+  --color-info-soft: var(--rcme-color-state-info-soft);
 
   --color-text-primary: var(--rcme-color-text-primary);
   --color-text-secondary: var(--rcme-color-text-secondary);
