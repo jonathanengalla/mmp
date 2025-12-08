@@ -227,8 +227,8 @@ app.use("/", eventsRouter);
 app.use("/api", eventsRouter);
 
 // Reporting routes (admin-protected)
-app.use("/", reportingRoutes);
-app.use("/api", reportingRoutes);
+app.use("/reporting", reportingRoutes);
+app.use("/api/reporting", reportingRoutes);
 
 const port = process.env.PORT || 3001;
 
@@ -240,7 +240,7 @@ __seedDevMember();
 
 app.listen(port, () => {
   console.log(`[dev-server] listening on http://localhost:${port}`);
-  console.log(`[dev-server] Routes: /auth, /membership, /billing`);
+  console.log(`[dev-server] Routes: /auth, /membership, /billing, /reporting`);
 });
 
 export default app;
