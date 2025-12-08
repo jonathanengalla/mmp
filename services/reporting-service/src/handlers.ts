@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { prisma } from "../../auth-service/src/db/prisma";
-import { getUserFromAuthHeader } from "../../auth-service/src/utils/auth";
+import { prisma } from "../../../auth-service/src/db/prisma";
+import { getUserFromAuthHeader } from "../../../auth-service/src/utils/auth";
 import { MemberStatus, EventStatus } from "@prisma/client";
 
 const errorResponse = (res: Response, code: string, message: string, details?: { field: string; issue: string }[], status = 400) =>
