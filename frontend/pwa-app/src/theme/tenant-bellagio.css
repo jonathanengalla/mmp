@@ -34,21 +34,43 @@
 }
 
 :root[data-tenant="bellagio"][data-theme="dark"] {
-  --rcme-color-brand-primary: #7b1f3d;
-  --rcme-color-brand-accent: #c84d71;
-  --rcme-color-bg: #0f0a0c;
-  --rcme-color-surface-0: #120d10;
-  --rcme-color-surface-1: #181118;
-  --rcme-color-surface-2: #221825;
-  --rcme-color-text-primary: #f3e8ec;
-  --rcme-color-text-secondary: #d7c0c8;
-  --rcme-color-text-muted: #a88ca0;
-  --rcme-color-border-subtle: #261b22;
-  --rcme-color-border-strong: #33232e;
-  --rcme-color-state-success: #8cd3a2;
-  --rcme-color-state-warning: #e9c06e;
-  --rcme-color-state-error: #e07a80;
-  --rcme-color-state-info: #8ab2f5;
+  --bellagio-bg: #1A1214;
+  --bellagio-surface-1: #22181B;
+  --bellagio-surface-2: #2A1E22;
+  --bellagio-surface-3: #33262B;
+  --bellagio-text-primary: #F2F2F7;
+  --bellagio-text-secondary: #B4B6C2;
+  --bellagio-text-tertiary: #8B8E99;
+  --bellagio-primary: #B43459;
+  --bellagio-primary-hover: #E879A7;
+  --bellagio-primary-muted: #4C0519;
+  --bellagio-border: #3A3C41;
+  --bellagio-border-focus: #E879A7;
+  --bellagio-success: #4ADE80;
+  --bellagio-success-bg: rgba(74, 222, 128, 0.12);
+  --bellagio-warning: #FACC15;
+  --bellagio-warning-bg: rgba(250, 204, 21, 0.12);
+  --bellagio-error: #F87171;
+  --bellagio-error-bg: rgba(248, 113, 113, 0.12);
+  --bellagio-info: #38BDF8;
+  --bellagio-info-bg: rgba(56, 189, 248, 0.12);
+
+  --rcme-color-brand-primary: var(--bellagio-primary);
+  --rcme-color-brand-accent: var(--bellagio-primary);
+  --rcme-color-bg: var(--bellagio-bg);
+  --rcme-color-surface-0: var(--bellagio-surface-1);
+  --rcme-color-surface-1: var(--bellagio-surface-1);
+  --rcme-color-surface-2: var(--bellagio-surface-2);
+  --rcme-color-surface-3: var(--bellagio-surface-3);
+  --rcme-color-text-primary: var(--bellagio-text-primary);
+  --rcme-color-text-secondary: var(--bellagio-text-secondary);
+  --rcme-color-text-muted: var(--bellagio-text-tertiary);
+  --rcme-color-border-subtle: var(--bellagio-border);
+  --rcme-color-border-strong: var(--bellagio-border);
+  --rcme-color-state-success: var(--bellagio-success);
+  --rcme-color-state-warning: var(--bellagio-warning);
+  --rcme-color-state-error: var(--bellagio-error);
+  --rcme-color-state-info: var(--bellagio-info);
 
   --app-color-brand-primary: var(--rcme-color-brand-primary);
   --app-color-brand-accent: var(--rcme-color-brand-accent);
@@ -56,15 +78,23 @@
   --app-color-surface-0: var(--rcme-color-surface-0);
   --app-color-surface-1: var(--rcme-color-surface-1);
   --app-color-surface-2: var(--rcme-color-surface-2);
+  --app-color-surface-3: var(--rcme-color-surface-3);
   --app-color-text-primary: var(--rcme-color-text-primary);
   --app-color-text-secondary: var(--rcme-color-text-secondary);
   --app-color-text-muted: var(--rcme-color-text-muted);
-  --app-color-border: var(--rcme-color-border-subtle);
-  --app-color-border-subtle: var(--rcme-color-border-subtle);
-  --app-color-border-strong: var(--rcme-color-border-strong);
+  --app-color-border: var(--bellagio-border);
+  --app-color-border-subtle: var(--bellagio-border);
+  --app-color-border-strong: var(--bellagio-border);
   --app-color-state-success: var(--rcme-color-state-success);
   --app-color-state-warning: var(--rcme-color-state-warning);
   --app-color-state-error: var(--rcme-color-state-error);
   --app-color-state-info: var(--rcme-color-state-info);
+  --app-color-primary: var(--bellagio-primary);
+  --app-color-primary-hover: var(--bellagio-primary-hover);
+  --app-color-primary-soft: var(--bellagio-primary-muted);
+  --app-color-success-soft: var(--bellagio-success-bg);
+  --app-color-warning-soft: var(--bellagio-warning-bg);
+  --app-color-error-soft: var(--bellagio-error-bg);
+  --app-color-info-soft: var(--bellagio-info-bg);
 }
 

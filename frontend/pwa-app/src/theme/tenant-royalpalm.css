@@ -34,21 +34,22 @@
 }
 
 :root[data-tenant="royalpalm"][data-theme="dark"] {
-  --rcme-color-brand-primary: #1b8f5a;
-  --rcme-color-brand-accent: #2dbf7a;
-  --rcme-color-bg: #0f1712;
-  --rcme-color-surface-0: #111c14;
-  --rcme-color-surface-1: #152218;
-  --rcme-color-surface-2: #1c2c21;
-  --rcme-color-text-primary: #e8f3ea;
-  --rcme-color-text-secondary: #c2d3c7;
-  --rcme-color-text-muted: #90a697;
-  --rcme-color-border-subtle: #203528;
-  --rcme-color-border-strong: #2c4633;
-  --rcme-color-state-success: #4fce86;
-  --rcme-color-state-warning: #e7c06c;
-  --rcme-color-state-error: #e1848a;
-  --rcme-color-state-info: #80b9ff;
+  --rcme-color-brand-primary: #34D399;
+  --rcme-color-brand-accent: #34D399;
+  --rcme-color-bg: #0C1310;
+  --rcme-color-surface-0: #131A17;
+  --rcme-color-surface-1: #131A17;
+  --rcme-color-surface-2: #18211C;
+  --rcme-color-surface-3: #1F2A24;
+  --rcme-color-text-primary: #F2F2F7;
+  --rcme-color-text-secondary: #B4B6C2;
+  --rcme-color-text-muted: #8B8E99;
+  --rcme-color-border-subtle: #1F2A24;
+  --rcme-color-border-strong: #24332B;
+  --rcme-color-state-success: #4ADE80;
+  --rcme-color-state-warning: #FACC15;
+  --rcme-color-state-error: #F87171;
+  --rcme-color-state-info: #38BDF8;
 
   --app-color-brand-primary: var(--rcme-color-brand-primary);
   --app-color-brand-accent: var(--rcme-color-brand-accent);
@@ -56,6 +57,7 @@
   --app-color-surface-0: var(--rcme-color-surface-0);
   --app-color-surface-1: var(--rcme-color-surface-1);
   --app-color-surface-2: var(--rcme-color-surface-2);
+  --app-color-surface-3: var(--rcme-color-surface-3);
   --app-color-text-primary: var(--rcme-color-text-primary);
   --app-color-text-secondary: var(--rcme-color-text-secondary);
   --app-color-text-muted: var(--rcme-color-text-muted);
@@ -66,5 +68,12 @@
   --app-color-state-warning: var(--rcme-color-state-warning);
   --app-color-state-error: var(--rcme-color-state-error);
   --app-color-state-info: var(--rcme-color-state-info);
+  --app-color-primary: var(--rcme-color-brand-primary);
+  --app-color-primary-hover: #6EE7B7;
+  --app-color-primary-soft: #064E3B;
+  --app-color-success-soft: rgba(74, 222, 128, 0.12);
+  --app-color-warning-soft: rgba(250, 204, 21, 0.12);
+  --app-color-error-soft: rgba(248, 113, 113, 0.12);
+  --app-color-info-soft: rgba(56, 189, 248, 0.12);
 }
 
