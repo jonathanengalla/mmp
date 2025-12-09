@@ -29,7 +29,7 @@ Status: Done
 - Smoke: health/auth OK (backend), login succeeds with seeded tenant, protected route accessible; incorrect tenant/creds show errors.
 
 ## Dev quickstart
-- `cp .env.development.example .env.local`
-- Set `VITE_DEFAULT_TENANT_ID` to a valid tenant key (e.g., rcme-dev); do not hardcode tenant IDs in code.
+- `.env.development` (checked in) sets `VITE_API_BASE_URL` and `VITE_DEFAULT_TENANT_ID` for local dev.
+- Optional: `cp .env.development.example .env.local` to override; set `VITE_DEFAULT_TENANT_ID` to a valid tenant key (do not hardcode in code).
 - `npm install` && `npm run dev`
 

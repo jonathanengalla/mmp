@@ -2,10 +2,12 @@
 Purpose: installable PWA that consumes service APIs via the API gateway; uses route-level lazy-loading, service worker caching, and tenant-aware theming/branding.
 
 ## Dev quickstart (login/tenant-aware)
-1) Copy env template: `cp .env.development.example .env.local`
-2) Set `VITE_DEFAULT_TENANT_ID` in `.env.local` to a valid tenant key in your dev DB (e.g., rcme-dev). Do not hardcode tenant IDs in code; always use env or runtime config.
-3) Ensure `VITE_API_BASE_URL` points to your backend (default in the example: http://localhost:3000).
-4) Install deps: `npm install`
-5) Run dev server: `npm run dev`
-6) Login: use seeded credentials; `/auth/login` expects `{ email, password, tenantId }`.
+- Already configured: `.env.development` (checked in) sets `VITE_API_BASE_URL` and `VITE_DEFAULT_TENANT_ID` for local dev.
+- Optional overrides: create `.env.local` if you need to change tenant/API locally (not required).
+- Steps:
+  1) From `frontend/pwa-app`: `npm install`
+  2) `npm run dev`
+  3) Login with seeded credentials; `/auth/login` sends `{ email, password, tenantId }` using `VITE_DEFAULT_TENANT_ID`.
+
+Note: run `npm run dev` from `frontend/pwa-app` so Vite picks up `.env.development` / `.env.local`.
 
