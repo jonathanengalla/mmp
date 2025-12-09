@@ -3,6 +3,18 @@ import cors from "cors";
 import routes from "./routes";
 import { authMiddleware } from "./authMiddleware";
 import { requireAnyRole, requireRole } from "./rbac";
+import {
+  approveMember,
+  createRegistration,
+  getCurrentMember,
+  getMember,
+  listMembers,
+  listPendingMembers,
+  requestVerification,
+  searchDirectoryMembers,
+  rejectMember,
+  verify,
+} from "./membershipHandlers";
 
 // Local reporting stub (501)
 const reportingRoutes = Router();
@@ -27,161 +39,31 @@ const billingHandlers = {
   },
 };
 
-// Membership stubs (501) — removes cross-service dependency on membership-service
-const membershipHandlers = {
-  createRegistration: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] createRegistration stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  requestVerification: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] requestVerification stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  verify: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] verify stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  listMembers: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] listMembers stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  listPendingMembers: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] listPendingMembers stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  createMember: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] createMember stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  createMemberAdmin: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] createMemberAdmin stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  getMember: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] getMember stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  getCurrentMember: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] getCurrentMember stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  updateCurrentMember: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] updateCurrentMember stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  approveMember: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] approveMember stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  rejectMember: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] rejectMember stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  updateMemberContact: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] updateMemberContact stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  uploadPhoto: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] uploadPhoto stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  searchDirectoryMembers: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] searchDirectoryMembers stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  deactivateMember: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] deactivateMember stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  updateMemberRoles: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] updateMemberRoles stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  updateMyAvatar: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] updateMyAvatar stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  adminUpdateAvatar: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] adminUpdateAvatar stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  importMembers: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] importMembers stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  auditMember: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] auditMember stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  getMemberPaymentMethods: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] getMemberPaymentMethods stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  createMemberPaymentMethod: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] createMemberPaymentMethod stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  getProfileCustomFieldSchema: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] getProfileCustomFieldSchema stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  updateProfileCustomFieldSchema: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] updateProfileCustomFieldSchema stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  getCurrentMemberCustomFields: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] getCurrentMemberCustomFields stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  updateCurrentMemberCustomFields: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] updateCurrentMemberCustomFields stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  adminGetMemberCustomFields: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] adminGetMemberCustomFields stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  adminUpdateMemberCustomFields: (_req: express.Request, res: express.Response) => {
-    console.warn("[membership] adminUpdateMemberCustomFields stub hit; membership-service not implemented yet.");
-    return res.status(501).json({ error: "Membership not implemented yet" });
-  },
-  __seedDevMember: () => {
-    console.warn("[membership] __seedDevMember stub hit; membership-service not implemented yet.");
-    return null;
-  },
+// Membership helpers
+const membershipStub = (label: string) => (_req: express.Request, res: express.Response) => {
+  console.warn(`[membership] ${label} stub hit; not implemented in BKS-03 scope.`);
+  return res.status(501).json({ error: "Membership not implemented yet" });
 };
-const {
-  createRegistration,
-  requestVerification,
-  verify,
-  listMembers,
-  listPendingMembers,
-  createMember,
-  createMemberAdmin,
-  getMember,
-  getCurrentMember,
-  updateCurrentMember,
-  approveMember,
-  rejectMember,
-  updateMemberContact,
-  uploadPhoto,
-  searchDirectoryMembers,
-  deactivateMember,
-  updateMemberRoles,
-  updateMyAvatar,
-  adminUpdateAvatar,
-  importMembers,
-  auditMember,
-  getMemberPaymentMethods,
-  createMemberPaymentMethod,
-  getProfileCustomFieldSchema,
-  updateProfileCustomFieldSchema,
-  getCurrentMemberCustomFields,
-  updateCurrentMemberCustomFields,
-  adminGetMemberCustomFields,
-  adminUpdateMemberCustomFields,
-  __seedDevMember,
-} = membershipHandlers;
+const createMember = createRegistration;
+const createMemberAdmin = createRegistration;
+const updateCurrentMember = membershipStub("updateCurrentMember");
+const updateMemberContact = membershipStub("updateMemberContact");
+const uploadPhoto = membershipStub("uploadPhoto");
+const deactivateMember = membershipStub("deactivateMember");
+const updateMemberRoles = membershipStub("updateMemberRoles");
+const updateMyAvatar = membershipStub("updateMyAvatar");
+const adminUpdateAvatar = membershipStub("adminUpdateAvatar");
+const importMembers = membershipStub("importMembers");
+const auditMember = membershipStub("auditMember");
+const getMemberPaymentMethods = membershipStub("getMemberPaymentMethods");
+const createMemberPaymentMethod = membershipStub("createMemberPaymentMethod");
+const getProfileCustomFieldSchema = membershipStub("getProfileCustomFieldSchema");
+const updateProfileCustomFieldSchema = membershipStub("updateProfileCustomFieldSchema");
+const getCurrentMemberCustomFields = membershipStub("getCurrentMemberCustomFields");
+const updateCurrentMemberCustomFields = membershipStub("updateCurrentMemberCustomFields");
+const adminGetMemberCustomFields = membershipStub("adminGetMemberCustomFields");
+const adminUpdateMemberCustomFields = membershipStub("adminUpdateMemberCustomFields");
+const __seedDevMember = () => null;
 
 // Import billing handlers via require to avoid TS dependency on sibling service types
 const paymentsBillingHandlers = {

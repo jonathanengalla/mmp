@@ -1,4 +1,5 @@
 # BKS-03 — Membership + verification persistence
+Status: Done
 
 - **Problem summary**: Membership, verification, and approval flows are in-memory; data is lost on restart and not tenant-isolated.
 - **Goal**: Move membership registration, verification, approval, profile updates, and custom fields onto Prisma with tenant scoping.
@@ -14,5 +15,10 @@
   - `/members/search`, `/members/me`, `/members/pending` use DB and respect tenant filters.
   - In-memory membership code is removed/disabled; automated test covers registration + verify + approve.
 - **Dependencies**: BKS-01, BKS-02.
+
+## Implementation Notes
+- Membership store added with tenant-scoped Prisma operations (list, get, create, approve/reject, verification token set/verify).
+- Membership routes (`/membership/members`, `/members/pending`, `/members/:id`, `/members/me`, register, approve, verify, search) now use Prisma with tenant filters and RBAC guards.
+- Non-scope membership routes (custom fields, payment methods, avatar uploads, imports) remain 501 stubs.
 
 

@@ -42,6 +42,13 @@ After a Render deploy, run quick checks to ensure the backend is alive:
 
 If these fail, do not proceed to front-end integration.
 
+### Auth & JWT Smoke (Post-Deploy)
+- `POST <SERVICE_URL>/auth/login` with valid seeded user `{ email, password, tenantId }` returns 200 with `token` containing `userId`, `tenantId`, `roles`.
+- `GET <SERVICE_URL>/membership/members`:
+  - Without `Authorization` → expect 401/403.
+  - With `Authorization: Bearer <token>` (admin/officer) → expect 200 list scoped to caller’s tenant.
+- Membership smoke (BKS-03): with a valid admin token, register a member, list members, and approve a member to confirm Prisma persistence, RBAC, and tenant isolation.
+
 ## Vercel Frontend
 - `VITE_API_BASE_URL` (or equivalent) points to the Render backend URL.
 - Tenant defaults documented for the environment.

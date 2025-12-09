@@ -1,4 +1,5 @@
 # BKS-02 — JWT + tenant-scoped RBAC enforcement
+Status: Done
 
 - **Problem summary**: Auth middleware trusts any bearer token and fakes an admin user; no tenant claim or RBAC enforcement, allowing unrestricted access.
 - **Goal**: Implement JWT verification with tenant claims and server-side RBAC checks for all protected routes.

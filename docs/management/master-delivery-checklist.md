@@ -20,8 +20,8 @@
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
 | BKS-01 | Multi-tenant Prisma schema baseline | 🟢 | Schema/migrations applied to new Render DB |
-| BKS-02 | JWT + tenant-scoped RBAC enforcement | ⚪ | JWT + RBAC implemented; requires `JWT_SECRET` set in local `.env` and Render env |
-| BKS-03 | Membership + verification persistence | 🟡 | Membership routes stubbed (501); real persistence pending |
+| BKS-02 | JWT + tenant-scoped RBAC enforcement | 🟢 | JWT + tenant RBAC implemented; requires `JWT_SECRET` in local `.env` and Render env; QA Gate PASS with auth/JWT smoke tests |
+| BKS-03 | Membership + verification persistence | 🟢 | Membership register/list/approve/search/me now persisted via Prisma with tenant + RBAC; non-scope routes remain stubbed |
 | BKS-04 | Billing/payments persistence and PAN/CVC removal | 🟡 | Billing/payments routes stubbed (501); no PAN/CVC handling |
 | BKS-05 | Events persistence with billing linkage | ⚪ | Not started |
 | BKS-06 | Audit & reporting data store | ⚪ | Not started |
@@ -51,6 +51,8 @@
 | --- | --- | --- |
 | DPL-01 | PASS | Render pipeline validated; health endpoints available |
 | BKS-01 | PASS | Multitenant schema/migrations applied; stubs in place |
+| BKS-02 | PASS | JWT + tenant RBAC gate passed; health/login/protected route smoke tests documented |
+| BKS-03 | PASS | Membership persistence + verification gate passed; core flows smoke-tested with tenant + RBAC; advanced flows documented as stubs |
 
 ---
 Last updated: 2025-12-09 00:00 (local)
