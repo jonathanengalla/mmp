@@ -10,6 +10,7 @@ import {
   verifyMemberByToken,
 } from "./membershipStore";
 import type { AuthenticatedRequest } from "./authMiddleware";
+import { prisma } from "./db/prisma";
 
 const sanitizeMember = (m: any) => ({
   id: m.id,
@@ -29,18 +30,39 @@ const sanitizeMember = (m: any) => ({
 async function ensureMemberForUser(req: AuthenticatedRequest) {
   if (!req.user) return null;
   const tenantId = req.user.tenantId;
+  const userId = req.user.userId;
   if (req.user.memberId) {
     const existing = await getMemberByIdForTenant(tenantId, req.user.memberId);
     if (existing) return existing;
   }
   const email = req.user.email || "user@example.com";
   const firstName = (email.split("@")[0] || "User").split(".")[0] || "User";
-  const created = await createMemberForTenant(tenantId, {
-    email,
-    firstName,
-    lastName: "Member",
-    phone: null,
-    address: null,
+  // Try to find existing member by tenant + email
+  const existingByEmail = await prisma.member.findFirst({
+    where: { tenantId, email },
+  });
+  if (existingByEmail) {
+    if (!req.user.memberId) {
+      await prisma.user.update({ where: { id: userId }, data: { memberId: existingByEmail.id } });
+      (req.user as any).memberId = existingByEmail.id;
+    }
+    return existingByEmail;
+  }
+  // Create and link user -> member
+  const created = await prisma.$transaction(async (tx) => {
+    const member = await tx.member.create({
+      data: {
+        tenantId,
+        email,
+        firstName,
+        lastName: "Member",
+        phone: null,
+        address: null,
+        status: MemberStatus.ACTIVE,
+      },
+    });
+    await tx.user.update({ where: { id: userId }, data: { memberId: member.id } });
+    return member;
   });
   (req.user as any).memberId = created.id;
   return created;
