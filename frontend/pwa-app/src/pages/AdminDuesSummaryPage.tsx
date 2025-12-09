@@ -3,7 +3,7 @@ import { Button } from "../components/primitives/Button";
 import { Card } from "../components/primitives/Card";
 import { Page } from "../components/primitives/Page";
 import { FormField } from "../components/primitives/FormField";
-import { Table, TableBody, TableCell, TableHeadCell, TableHeader, TableRow } from "../components/ui/Table";
+import { Table, TableBody, TableCell, TableHeadCell, TableHeader, TableRow, TableCard } from "../components/ui/Table";
 import { useSession } from "../hooks/useSession";
 import { createDuesRun, getDuesSummary, DuesSummaryResponse } from "../api/client";
 
@@ -127,7 +127,7 @@ export const AdminDuesSummaryPage: React.FC = () => {
             <Button type="submit" disabled={submitting}>
               {submitting ? "Creating..." : "Create dues run"}
             </Button>
-            {message && <span style={{ color: "var(--color-text-muted)" }}>{message}</span>}
+            {message && <span style={{ color: "var(--app-color-text-muted)" }}>{message}</span>}
           </div>
         </form>
       </Card>
@@ -136,7 +136,7 @@ export const AdminDuesSummaryPage: React.FC = () => {
         {loading && <div>Loading dues summary...</div>}
         {!loading && error && (
           <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
-            <span style={{ color: "var(--color-error)" }}>{error}</span>
+            <span style={{ color: "var(--app-color-state-error)" }}>{error}</span>
             <Button variant="secondary" onClick={loadSummary}>
               Retry
             </Button>
@@ -144,36 +144,38 @@ export const AdminDuesSummaryPage: React.FC = () => {
         )}
         {!loading && !error && summary && summary.items.length === 0 && <div>No dues runs yet. Create your first dues run above.</div>}
         {!loading && !error && summary && summary.items.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHeadCell>Period</TableHeadCell>
-                <TableHeadCell>Label</TableHeadCell>
-                <TableHeadCell>Currency</TableHeadCell>
-                <TableHeadCell>Total invoices</TableHeadCell>
-                <TableHeadCell>Unpaid</TableHeadCell>
-                <TableHeadCell>Paid</TableHeadCell>
-                <TableHeadCell>Total amount</TableHeadCell>
-                <TableHeadCell>Unpaid amount</TableHeadCell>
-                <TableHeadCell>Paid amount</TableHeadCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {summary.items.map((item) => (
-                <TableRow key={item.periodKey}>
-                  <TableCell>{item.periodKey}</TableCell>
-                  <TableCell>{item.label}</TableCell>
-                  <TableCell>{item.currency}</TableCell>
-                  <TableCell>{item.totalCount}</TableCell>
-                  <TableCell>{item.unpaidCount}</TableCell>
-                  <TableCell>{item.paidCount}</TableCell>
-                  <TableCell>{formatMoney(item.amountCentsTotal, item.currency)}</TableCell>
-                  <TableCell>{formatMoney(item.amountCentsUnpaid, item.currency)}</TableCell>
-                  <TableCell>{formatMoney(item.amountCentsPaid, item.currency)}</TableCell>
+          <TableCard>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeadCell>Period</TableHeadCell>
+                  <TableHeadCell>Label</TableHeadCell>
+                  <TableHeadCell>Currency</TableHeadCell>
+                  <TableHeadCell>Total invoices</TableHeadCell>
+                  <TableHeadCell>Unpaid</TableHeadCell>
+                  <TableHeadCell>Paid</TableHeadCell>
+                  <TableHeadCell>Total amount</TableHeadCell>
+                  <TableHeadCell>Unpaid amount</TableHeadCell>
+                  <TableHeadCell>Paid amount</TableHeadCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {summary.items.map((item) => (
+                  <TableRow key={item.periodKey}>
+                    <TableCell>{item.periodKey}</TableCell>
+                    <TableCell>{item.label}</TableCell>
+                    <TableCell>{item.currency}</TableCell>
+                    <TableCell>{item.totalCount}</TableCell>
+                    <TableCell>{item.unpaidCount}</TableCell>
+                    <TableCell>{item.paidCount}</TableCell>
+                    <TableCell>{formatMoney(item.amountCentsTotal, item.currency)}</TableCell>
+                    <TableCell>{formatMoney(item.amountCentsUnpaid, item.currency)}</TableCell>
+                    <TableCell>{formatMoney(item.amountCentsPaid, item.currency)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableCard>
         )}
       </Card>
     </Page>

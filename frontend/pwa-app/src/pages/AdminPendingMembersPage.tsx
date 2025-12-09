@@ -5,7 +5,7 @@ import { Toast } from "../components/Toast";
 import { Page } from "../components/primitives/Page";
 import { Card } from "../components/primitives/Card";
 import { Button } from "../components/primitives/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from "../components/ui/Table";
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell, TableCard } from "../components/ui/Table";
 import { Tag } from "../components/ui/Tag";
 import { Modal } from "../components/ui/Modal";
 
@@ -106,19 +106,19 @@ export const AdminPendingMembersPage: React.FC = () => {
         {/* Header with count */}
         <div style={{ 
           padding: "var(--space-4) var(--space-6)", 
-          borderBottom: "1px solid var(--color-border)",
+          borderBottom: "1px solid var(--app-color-border-subtle)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
         }}>
-          <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+          <span style={{ color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
             {items.length} pending {items.length === 1 ? "member" : "members"}
           </span>
         </div>
 
         {/* Loading state */}
         {loading && (
-          <div style={{ padding: "var(--space-8)", textAlign: "center", color: "var(--color-text-muted)" }}>
+          <div style={{ padding: "var(--space-8)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
             <div className="pr-skeleton" style={{ 
               width: 40, 
               height: 40, 
@@ -134,7 +134,7 @@ export const AdminPendingMembersPage: React.FC = () => {
           <div style={{ 
             padding: "var(--space-10)", 
             textAlign: "center",
-            color: "var(--color-text-muted)",
+            color: "var(--app-color-text-muted)",
           }}>
             <svg 
               width="48" 
@@ -153,7 +153,7 @@ export const AdminPendingMembersPage: React.FC = () => {
               fontSize: "var(--font-h3)", 
               margin: "0 0 var(--space-2) 0",
               fontWeight: "var(--font-weight-semibold)",
-              color: "var(--color-text-primary)",
+              color: "var(--app-color-text-primary)",
             }}>
               All caught up!
             </h3>
@@ -165,73 +165,75 @@ export const AdminPendingMembersPage: React.FC = () => {
 
         {/* Members table */}
         {!loading && items.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHeadCell>Member</TableHeadCell>
-                <TableHeadCell>Email</TableHeadCell>
-                <TableHeadCell>Status</TableHeadCell>
-                <TableHeadCell>Registered</TableHeadCell>
-                <TableHeadCell align="right">Actions</TableHeadCell>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((m) => (
-                <TableRow key={m.id}>
-                  <TableCell>
-                    <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                      <div style={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: "var(--radius-full)",
-                        background: "var(--color-warning-soft)",
-                        color: "var(--color-warning)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: "var(--font-weight-semibold)",
-                        fontSize: "var(--font-caption)",
-                        flexShrink: 0,
-                      }}>
-                        {m.first_name?.charAt(0)}{m.last_name?.charAt(0)}
-                      </div>
-                      <span style={{ fontWeight: "var(--font-weight-medium)" }}>
-                        {m.first_name} {m.last_name}
-                      </span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{m.email}</TableCell>
-                  <TableCell>
-                    <Tag variant="warning">{m.status}</Tag>
-                  </TableCell>
-                  <TableCell>
-                    {m.created_at ? new Date(m.created_at).toLocaleDateString() : "N/A"}
-                  </TableCell>
-                  <TableCell align="right">
-                    <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleApprove(m)}
-                        disabled={actionLoading === m.id}
-                        loading={actionLoading === m.id}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => openRejectModal(m)}
-                        disabled={actionLoading === m.id}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  </TableCell>
+          <TableCard>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeadCell>Member</TableHeadCell>
+                  <TableHeadCell>Email</TableHeadCell>
+                  <TableHeadCell>Status</TableHeadCell>
+                  <TableHeadCell>Registered</TableHeadCell>
+                  <TableHeadCell align="right">Actions</TableHeadCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {items.map((m) => (
+                  <TableRow key={m.id}>
+                    <TableCell>
+                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+                        <div style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: "var(--radius-full)",
+                          background: "var(--app-color-warning-soft)",
+                          color: "var(--app-color-state-warning)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontWeight: "var(--font-weight-semibold)",
+                          fontSize: "var(--font-caption)",
+                          flexShrink: 0,
+                        }}>
+                          {m.first_name?.charAt(0)}{m.last_name?.charAt(0)}
+                        </div>
+                        <span style={{ fontWeight: "var(--font-weight-medium)" }}>
+                          {m.first_name} {m.last_name}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{m.email}</TableCell>
+                    <TableCell>
+                      <Tag variant="warning">{m.status}</Tag>
+                    </TableCell>
+                    <TableCell>
+                      {m.created_at ? new Date(m.created_at).toLocaleDateString() : "N/A"}
+                    </TableCell>
+                    <TableCell align="right">
+                      <div style={{ display: "flex", gap: "var(--space-2)", justifyContent: "flex-end" }}>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleApprove(m)}
+                          disabled={actionLoading === m.id}
+                          loading={actionLoading === m.id}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => openRejectModal(m)}
+                          disabled={actionLoading === m.id}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableCard>
         )}
       </Card>
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Badge, Button, Table } from "../ui";
+import { Badge, Button, Table, TableCard } from "../ui";
 import { Invoice } from "../../../../libs/shared/src/models";
 import { useNavigate } from "react-router-dom";
 
@@ -28,13 +28,7 @@ export const InvoiceTable: React.FC<{ invoices: Invoice[]; onRecordPayment?: (in
 }) => {
   const navigate = useNavigate();
   return (
-    <div
-      style={{
-        border: "1px solid var(--app-color-border-subtle)",
-        borderRadius: "var(--app-radius-md)",
-        overflow: "hidden",
-      }}
-    >
+    <TableCard>
       <Table>
         <thead>
           <tr>
@@ -90,7 +84,7 @@ export const InvoiceTable: React.FC<{ invoices: Invoice[]; onRecordPayment?: (in
           })}
         </tbody>
       </Table>
-    </div>
+    </TableCard>
   );
 };
 

@@ -123,15 +123,15 @@
 .app-table {
   width: 100%;
   border-collapse: collapse;
-  border: 1px solid var(--app-color-border-subtle);
-  border-radius: var(--app-radius-md);
-  overflow: hidden;
-  background: var(--app-color-surface-0);
-  color: var(--app-color-text-primary);
+  border-spacing: 0;
+  font-size: var(--font-body-sm);
+  background: var(--app-color-surface-1, var(--app-color-surface-0));
+  color: var(--app-color-text, var(--app-color-text-primary));
 }
 .app-table thead {
-  background: var(--app-color-surface-1);
-  color: var(--app-color-text-secondary);
+  background: var(--app-color-surface-2);
+  color: var(--app-color-text-strong, var(--app-color-text-primary));
+  border-bottom: 1px solid var(--app-color-border-subtle);
 }
 .app-table th,
 .app-table td {
@@ -139,11 +139,28 @@
   border-bottom: 1px solid var(--app-color-border-subtle);
   text-align: left;
 }
+.app-table th {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-caption);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.app-table td {
+  color: var(--app-color-text, var(--app-color-text-primary));
+}
 .app-table tbody tr:hover {
-  background: var(--app-color-surface-2);
+  background: var(--app-color-surface-2, var(--app-color-surface-3));
 }
 .app-table tbody tr:last-child td {
   border-bottom: none;
+}
+.app-table-card,
+.ui-table-card {
+  background: var(--app-color-surface-1);
+  border: 1px solid var(--app-color-border-subtle);
+  border-radius: var(--app-radius-lg);
+  overflow: hidden;
+  box-shadow: var(--app-shadow-sm);
 }
 
 .app-page-shell {
@@ -163,12 +180,12 @@
 .app-page-shell__title {
   margin: 0;
   font-size: 24px;
-  color: var(--app-color-text-primary);
+  color: var(--app-color-text-strong, var(--app-color-text-primary));
   letter-spacing: -0.01em;
 }
 .app-page-shell__description {
   margin: var(--app-space-xs) 0 0;
-  color: var(--app-color-text-secondary);
+  color: var(--app-color-text-muted, var(--app-color-text-secondary));
   font-weight: 500;
 }
 

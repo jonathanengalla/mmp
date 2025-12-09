@@ -131,7 +131,7 @@ export const AdminPaymentCategoriesPage: React.FC = () => {
                   <div
                     key={cat.id}
                     style={{
-                      border: "1px solid var(--color-border)",
+                      border: "1px solid var(--app-color-border-subtle)",
                       borderRadius: "var(--radius-md)",
                       padding: "var(--space-md)",
                       display: "flex",
@@ -142,7 +142,7 @@ export const AdminPaymentCategoriesPage: React.FC = () => {
                     <div style={{ minWidth: 80, fontWeight: 700 }}>{cat.code}</div>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>{cat.name}</div>
-                      <div style={{ color: "var(--color-text-muted)" }}>{cat.description}</div>
+                      <div style={{ color: "var(--app-color-text-muted)" }}>{cat.description}</div>
                       <div>Type: {cat.type}</div>
                       <div>Status: {cat.active ? "Active" : "Inactive"}</div>
                     </div>

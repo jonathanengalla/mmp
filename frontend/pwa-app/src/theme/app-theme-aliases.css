@@ -9,12 +9,15 @@
   --app-color-surface-1: var(--rcme-color-surface-1);
   --app-color-surface-2: var(--rcme-color-surface-2);
   --app-color-surface-3: var(--rcme-color-surface-3, var(--rcme-color-surface-2));
+  --app-color-surface: var(--app-color-surface-1);
 
   /* Text */
+  --app-color-text: var(--rcme-color-text-primary);
   --app-color-text-primary: var(--rcme-color-text-primary);
   --app-color-text-secondary: var(--rcme-color-text-secondary);
   --app-color-text-muted: var(--rcme-color-text-muted);
-  --app-color-on-primary: var(--color-text-on-primary);
+  --app-color-text-strong: var(--rcme-color-text-primary);
+  --app-color-on-primary: var(--rcme-color-text-on-primary);
 
   /* Borders */
   --app-color-border-subtle: var(--rcme-color-border-subtle);

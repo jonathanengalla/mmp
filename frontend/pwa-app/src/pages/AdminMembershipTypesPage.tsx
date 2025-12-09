@@ -101,9 +101,9 @@ export const AdminMembershipTypesPage: React.FC = () => {
           {!loading && types.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
               {types.map((t) => (
-                <div key={t.id} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "var(--space-md)" }}>
+                <div key={t.id} style={{ border: "1px solid var(--app-color-border-subtle)", borderRadius: "var(--radius-md)", padding: "var(--space-md)" }}>
                   <div style={{ fontWeight: 600 }}>{t.name}</div>
-                  <div style={{ color: "var(--color-text-muted)" }}>{t.description}</div>
+                  <div style={{ color: "var(--app-color-text-muted)" }}>{t.description}</div>
                   <div>Price: {t.price}</div>
                   <div>Period: {t.period}</div>
                 </div>

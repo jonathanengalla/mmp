@@ -11,10 +11,10 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   };
 
 const colors: Record<Variant, { bg: string; color: string; border: string }> = {
-  primary: { bg: "var(--color-primary)", color: "#fff", border: "var(--color-primary)" },
-  secondary: { bg: "var(--color-primary-soft)", color: "var(--color-primary)", border: "var(--color-primary-soft)" },
-  ghost: { bg: "transparent", color: "var(--color-text)", border: "var(--color-border)" },
-  danger: { bg: "var(--color-danger)", color: "#fff", border: "var(--color-danger)" },
+  primary: { bg: "var(--app-color-primary)", color: "var(--app-color-on-primary)", border: "var(--app-color-primary)" },
+  secondary: { bg: "var(--app-color-primary-soft)", color: "var(--app-color-primary)", border: "var(--app-color-primary-soft)" },
+  ghost: { bg: "transparent", color: "var(--app-color-text-primary)", border: "var(--app-color-border-subtle)" },
+  danger: { bg: "var(--app-color-state-error)", color: "var(--app-color-on-primary)", border: "var(--app-color-state-error)" },
 };
 
 export const Button: React.FC<ButtonProps> = ({ variant = "primary", fullWidth, style, children, as = "button", href, ...props }) => {

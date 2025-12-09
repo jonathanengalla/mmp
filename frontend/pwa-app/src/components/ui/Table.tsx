@@ -25,6 +25,11 @@ type TableCellProps = {
   align?: "left" | "center" | "right";
 };
 
+type TableCardProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
 export const Table: React.FC<TableRootProps> = ({ 
   children, 
   className,
@@ -92,4 +97,10 @@ export const TableCell: React.FC<TableCellProps> = ({
       {children}
     </td>
   );
+};
+
+export const TableCard: React.FC<TableCardProps> = ({ children, className }) => {
+  const classes = ["ui-table-card"];
+  if (className) classes.push(className);
+  return <div className={classes.join(" ")}>{children}</div>;
 };

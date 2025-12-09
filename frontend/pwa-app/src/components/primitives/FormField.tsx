@@ -26,7 +26,7 @@ export const FormField: React.FC<FormFieldProps> = ({
     <div className={classNames.join(" ")}>
       <label htmlFor={htmlFor}>
         {label}
-        {required && <span style={{ color: "var(--color-error)", marginLeft: "var(--space-1)" }}>*</span>}
+        {required && <span style={{ color: "var(--app-color-state-error)", marginLeft: "var(--space-1)" }}>*</span>}
       </label>
       {children}
       {hint && !error && <div className="pr-form-hint">{hint}</div>}

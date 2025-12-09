@@ -72,7 +72,7 @@ export const VerifyPage: React.FC = () => {
               borderRadius: "var(--radius-full)",
               margin: "0 auto var(--space-4)",
             }} />
-            <p style={{ color: "var(--color-text-muted)", margin: 0 }}>
+            <p style={{ color: "var(--app-color-text-muted)", margin: 0 }}>
               Verifying your email...
             </p>
           </div>
@@ -85,8 +85,8 @@ export const VerifyPage: React.FC = () => {
               width: 64,
               height: 64,
               borderRadius: "var(--radius-full)",
-              background: "var(--color-success-soft)",
-              color: "var(--color-success)",
+              background: "var(--app-color-state-success-soft)",
+              color: "var(--app-color-state-success)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -105,7 +105,7 @@ export const VerifyPage: React.FC = () => {
               Email Verified!
             </h2>
             <p style={{
-              color: "var(--color-text-secondary)",
+              color: "var(--app-color-text-secondary)",
               margin: "0 0 var(--space-6) 0",
             }}>
               Your email has been verified. You can now log in to your account.
@@ -123,8 +123,8 @@ export const VerifyPage: React.FC = () => {
               width: 64,
               height: 64,
               borderRadius: "var(--radius-full)",
-              background: "var(--color-warning-soft)",
-              color: "var(--color-warning)",
+              background: "var(--app-color-state-warning-soft)",
+              color: "var(--app-color-state-warning)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -143,7 +143,7 @@ export const VerifyPage: React.FC = () => {
               Link Expired
             </h2>
             <p style={{
-              color: "var(--color-text-secondary)",
+              color: "var(--app-color-text-secondary)",
               margin: "0 0 var(--space-4) 0",
             }}>
               {verifyError || "Your verification link has expired. Request a new one below."}
@@ -161,8 +161,8 @@ export const VerifyPage: React.FC = () => {
               width: 64,
               height: 64,
               borderRadius: "var(--radius-full)",
-              background: "var(--color-error-soft)",
-              color: "var(--color-error)",
+              background: "var(--app-color-state-error-soft)",
+              color: "var(--app-color-state-error)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -182,7 +182,7 @@ export const VerifyPage: React.FC = () => {
               Verification Failed
             </h2>
             <p style={{
-              color: "var(--color-text-secondary)",
+              color: "var(--app-color-text-secondary)",
               margin: "0 0 var(--space-4) 0",
             }}>
               {verifyError || "This verification link is invalid or has already been used."}
@@ -197,7 +197,7 @@ export const VerifyPage: React.FC = () => {
         return (
           <div>
             <p style={{ 
-              color: "var(--color-text-secondary)", 
+              color: "var(--app-color-text-secondary)", 
               marginBottom: "var(--space-4)" 
             }}>
               Enter your email below to receive a new verification link.
@@ -225,7 +225,7 @@ export const VerifyPage: React.FC = () => {
   return (
     <div style={{ 
       minHeight: "100vh", 
-      background: "var(--color-bg)",
+      background: "var(--app-color-bg)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -238,8 +238,8 @@ export const VerifyPage: React.FC = () => {
             width: 48,
             height: 48,
             borderRadius: "var(--radius-lg)",
-            background: "var(--color-primary)",
-            color: "var(--color-text-on-primary)",
+            background: "var(--app-color-primary)",
+            color: "var(--app-color-on-primary)",
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
@@ -252,14 +252,14 @@ export const VerifyPage: React.FC = () => {
           <h1 style={{
             fontSize: "var(--font-h2)",
             fontWeight: "var(--font-weight-bold)",
-            color: "var(--color-text-primary)",
+            color: "var(--app-color-text-primary)",
             margin: "0 0 var(--space-1) 0",
           }}>
             Verify Email
           </h1>
           <p style={{
             fontSize: "var(--font-body-md)",
-            color: "var(--color-text-secondary)",
+            color: "var(--app-color-text-secondary)",
             margin: 0,
           }}>
             Complete your registration
@@ -273,16 +273,16 @@ export const VerifyPage: React.FC = () => {
             <div style={{ 
               marginTop: "var(--space-4)", 
               paddingTop: "var(--space-4)",
-              borderTop: "1px solid var(--color-border)",
+              borderTop: "1px solid var(--app-color-border-subtle)",
               textAlign: "center",
               fontSize: "var(--font-body-sm)",
-              color: "var(--color-text-secondary)",
+              color: "var(--app-color-text-secondary)",
             }}>
               Already verified?{" "}
               <Link 
                 to="/login"
                 style={{ 
-                  color: "var(--color-primary)", 
+                  color: "var(--app-color-primary)", 
                   fontWeight: "var(--font-weight-medium)",
                 }}
               >

@@ -7,66 +7,307 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+enum PaymentMethodStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MembershipPeriod {
+  MONTHLY
+  ANNUAL
+}
+
+enum EventRegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  CHECKED_IN
+}
+
+enum MemberStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+}
+
+model Tenant {
+  id            String             @id @default(cuid())
+  slug          String             @unique
+  name          String
+  description   String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  users         User[]
+  members       Member[]
+  membershipTypes MembershipType[]
+  invoices      Invoice[]
+  payments      Payment[]
+  paymentMethods PaymentMethod[]
+  events        Event[]
+  registrations EventRegistration[]
+  auditLogs     AuditLog[]
+  orgProfile    OrgProfile?
+  featureFlags  FeatureFlags?
+  roleAssignments RoleAssignment[]
+}
+
 model Member {
-  id             String        @id @default(cuid())
-  email          String        @unique
-  firstName      String
-  lastName       String
-  status         MemberStatus  @default(ACTIVE)
-  tenantId       String        @default("t1")
-  membershipType String?
-  phone          String?
-  address        String?
-  linkedinUrl    String?
-  otherSocials   String?
-  avatarUrl      String?
-  roles          String[]      @default([])
+  id                  String        @id @default(cuid())
+  tenantId            String
+  email               String
+  firstName           String
+  lastName            String
+  status              MemberStatus  @default(PENDING_VERIFICATION)
+  membershipTypeId    String?
+  phone               String?
+  address             String?
+  linkedinUrl         String?
+  otherSocials        String?
+  avatarUrl           String?
+  roles               String[]      @default([])
   verificationToken   String?
   verificationExpires DateTime?
-  tags           String[]      @default([])
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  tags                String[]      @default([])
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
+  membershipType MembershipType? @relation(fields: [membershipTypeId, tenantId], references: [id, tenantId])
   invoices       Invoice[]
+  paymentMethods PaymentMethod[]
+  payments       Payment[]
+  registrations  EventRegistration[]
   user           User?
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, email], map: "Member_email_tenantId_key")
+  @@unique([id, tenantId], map: "Member_id_tenantId_key")
+  @@index([tenantId, email], map: "Member_tenant_email_idx")
+  @@index([tenantId, status], map: "Member_tenant_status_idx")
+}
+
+model MembershipType {
+  id          String           @id @default(cuid())
+  tenantId    String
+  name        String
+  description String?
+  amountCents Int
+  currency    String
+  period      MembershipPeriod
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id])
+  members Member[]
+
+  @@unique([tenantId, name], map: "MembershipType_tenant_name_key")
+  @@unique([id, tenantId], map: "MembershipType_id_tenant_key")
+  @@index([tenantId, name], map: "MembershipType_tenant_name_idx")
 }
 
 model Event {
   id          String       @id @default(cuid())
+  tenantId    String
   title       String
+  slug        String
   description String?
   location    String?
   status      EventStatus  @default(DRAFT)
   bannerUrl   String?
   capacity    Int?
-  price       Int?
+  priceCents  Int?
   currency    String?
   tags        String[]     @default([])
   startsAt    DateTime
   endsAt      DateTime
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  invoices    Invoice[]
+
+  invoices      Invoice[]
+  registrations EventRegistration[]
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, slug], map: "Event_slug_tenantId_key")
+  @@unique([id, tenantId], map: "Event_id_tenantId_key")
+  @@index([tenantId, status], map: "Event_tenant_status_idx")
 }
 
 model Invoice {
   id            String         @id @default(cuid())
-  invoiceNumber String         @unique
-  member        Member         @relation(fields: [memberId], references: [id])
+  tenantId      String
+  invoiceNumber String
   memberId      String
-  amount        Int
+  amountCents   Int
   currency      String
-  status        InvoiceStatus  @default(PENDING)
-  issuedAt      DateTime
-  dueAt         DateTime
+  status        InvoiceStatus  @default(UNPAID)
+  issuedAt      DateTime       @default(now())
+  dueAt         DateTime?
   paidAt        DateTime?
   description   String?
-  event         Event?         @relation(fields: [eventId], references: [id])
   eventId       String?
   source        String?
-
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+
+  member    Member   @relation(fields: [memberId, tenantId], references: [id, tenantId])
+  event     Event?   @relation(fields: [eventId, tenantId], references: [id, tenantId])
+  payments  Payment[]
+  auditLogs AuditLog[]
+  eventRegistrations EventRegistration[]
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, invoiceNumber], map: "Invoice_invoiceNumber_tenantId_key")
+  @@unique([id, tenantId], map: "Invoice_id_tenantId_key")
+  @@index([tenantId, memberId], map: "Invoice_tenant_member_idx")
+  @@index([tenantId, status], map: "Invoice_tenant_status_idx")
+}
+
+model PaymentMethod {
+  id         String               @id @default(cuid())
+  tenantId   String
+  memberId   String
+  brand      String
+  last4      String
+  expMonth   Int
+  expYear    Int
+  label      String?
+  token      String
+  isDefault  Boolean              @default(false)
+  status     PaymentMethodStatus  @default(ACTIVE)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+
+  member Member @relation(fields: [memberId, tenantId], references: [id, tenantId])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  payments Payment[]
+
+  @@index([tenantId, memberId], map: "PaymentMethod_tenant_member_idx")
+  @@index([tenantId, isDefault], map: "PaymentMethod_tenant_default_idx")
+  @@unique([id, tenantId], map: "PaymentMethod_id_tenantId_key")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  tenantId        String
+  invoiceId       String
+  memberId        String
+  paymentMethodId String?
+  amountCents     Int
+  currency        String
+  status          PaymentStatus @default(PENDING)
+  reference       String?
+  processedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  invoice       Invoice       @relation(fields: [invoiceId, tenantId], references: [id, tenantId])
+  member        Member        @relation(fields: [memberId, tenantId], references: [id, tenantId])
+  paymentMethod PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, invoiceId], map: "Payment_tenant_invoice_idx")
+  @@index([tenantId, memberId], map: "Payment_tenant_member_idx")
+}
+
+model EventRegistration {
+  id         String                   @id @default(cuid())
+  tenantId   String
+  eventId    String
+  memberId   String
+  invoiceId  String?
+  status     EventRegistrationStatus  @default(PENDING)
+  checkInCode String?
+  checkInAt  DateTime?
+  createdAt  DateTime                 @default(now())
+  updatedAt  DateTime                 @updatedAt
+
+  event    Event    @relation(fields: [eventId, tenantId], references: [id, tenantId])
+  member   Member   @relation(fields: [memberId, tenantId], references: [id, tenantId])
+  invoice  Invoice? @relation(fields: [invoiceId, tenantId], references: [id, tenantId])
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, eventId, memberId], map: "Registration_tenant_event_member_key")
+  @@index([tenantId, status], map: "Registration_tenant_status_idx")
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  tenantId     String
+  actorUserId  String?
+  actorMemberId String?
+  action       String
+  entityType   String?
+  entityId     String?
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  invoiceId    String?
+
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, entityType], map: "AuditLog_tenant_entity_idx")
+  @@index([tenantId, createdAt], map: "AuditLog_tenant_created_idx")
+}
+
+model OrgProfile {
+  id        String   @id @default(cuid())
+  tenantId  String   @unique
+  name      String
+  logoUrl   String?
+  timezone  String?
+  locale    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+}
+
+model FeatureFlags {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique
+  payments        Boolean  @default(true)
+  events          Boolean  @default(true)
+  communications  Boolean  @default(true)
+  reporting       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+}
+
+model RoleAssignment {
+  id       String   @id @default(cuid())
+  tenantId String
+  userId   String
+  role     String
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId, tenantId], references: [id, tenantId])
+
+  @@unique([tenantId, userId, role], map: "RoleAssignment_tenant_user_role_key")
+  @@index([tenantId, role], map: "RoleAssignment_tenant_role_idx")
 }
 
 model User {
@@ -74,31 +315,18 @@ model User {
   email        String   @unique
   passwordHash String
   roles        String[] @default([])
-  tenantId     String   @default("t1")
-  member       Member?  @relation(fields: [memberId], references: [id])
+  tenantId     String
   memberId     String?  @unique
   status       MemberStatus @default(ACTIVE)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-}
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  member       Member?  @relation(fields: [memberId, tenantId], references: [id, tenantId])
+  roleAssignments RoleAssignment[]
 
-enum MemberStatus {
-  ACTIVE
-  INACTIVE
-  ARCHIVED
-}
-
-enum EventStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-enum InvoiceStatus {
-  DRAFT
-  PENDING
-  PAID
-  OVERDUE
-  CANCELLED
+  @@unique([tenantId, email], map: "User_email_tenantId_key")
+  @@unique([id, tenantId], map: "User_id_tenantId_key")
+  @@index([tenantId, email], map: "User_tenant_email_idx")
+  @@unique([memberId, tenantId], map: "User_member_tenant_unique")
 }
 

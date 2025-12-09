@@ -80,10 +80,10 @@ export const EventCard: React.FC<EventCardProps> = ({
             position: "relative",
             width: "100%",
             paddingTop: "32%",
-            background: "var(--color-surface-1)",
+            background: "var(--app-color-surface-1)",
             borderRadius: "var(--radius-large)",
             overflow: "hidden",
-            border: "1px solid var(--color-border-subtle)",
+            border: "1px solid var(--app-color-border-subtle)",
           }}
         >
           {bannerImageUrl ? (
@@ -107,8 +107,8 @@ export const EventCard: React.FC<EventCardProps> = ({
                 alignItems: "center",
                 justifyContent: "center",
                 background:
-                  "linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%)",
-                color: "var(--color-text-muted)",
+                  "linear-gradient(135deg, var(--app-color-surface-2) 0%, var(--app-color-surface-3, var(--app-color-surface-2)) 100%)",
+                color: "var(--app-color-text-muted)",
                 fontWeight: 600,
               }}
             >
@@ -122,7 +122,7 @@ export const EventCard: React.FC<EventCardProps> = ({
             <div style={{ display: "grid", gap: "var(--space-xxs)" }}>
               <div style={{ fontSize: "var(--font-body-lg)", fontWeight: 700 }}>{title}</div>
               {description && (
-                <div style={{ color: "var(--color-text-muted)", lineHeight: 1.4 }}>{description}</div>
+                <div style={{ color: "var(--app-color-text-muted)", lineHeight: 1.4 }}>{description}</div>
               )}
             </div>
             <div style={{ display: "flex", gap: "var(--space-xxs)", flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -132,7 +132,7 @@ export const EventCard: React.FC<EventCardProps> = ({
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "var(--space-md)", flexWrap: "wrap", color: "var(--color-text-muted)" }}>
+          <div style={{ display: "flex", gap: "var(--space-md)", flexWrap: "wrap", color: "var(--app-color-text-muted)" }}>
             <span>{formatDateRange(startDate, endDate)}</span>
             <span>•</span>
             <span>{location || "Location TBA"}</span>

@@ -139,11 +139,11 @@ export const AdminBroadcastsPage: React.FC = () => {
           {!loading && drafts.length > 0 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-sm)" }}>
               {drafts.map((d) => (
-                <div key={d.id} style={{ border: "1px solid var(--color-border)", borderRadius: "var(--radius-md)", padding: "var(--space-md)" }}>
+                <div key={d.id} style={{ border: "1px solid var(--app-color-border-subtle)", borderRadius: "var(--radius-md)", padding: "var(--space-md)" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-sm)" }}>
                     <div>
                       <div style={{ fontWeight: 600 }}>{d.subject}</div>
-                      <div style={{ color: "var(--color-text-muted)" }}>Created: {d.created_at ? new Date(d.created_at).toLocaleString() : "N/A"}</div>
+                      <div style={{ color: "var(--app-color-text-muted)" }}>Created: {d.created_at ? new Date(d.created_at).toLocaleString() : "N/A"}</div>
                     </div>
                     <Tag tone="info">{d.status}</Tag>
                   </div>

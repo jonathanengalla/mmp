@@ -2,11 +2,7 @@ import React, { useState, useCallback, useEffect } from "react";
 import { searchDirectoryMembers, MemberDirectoryEntry, MemberDirectorySearchResponse } from "../api/client";
 import { useSession } from "../hooks/useSession";
 import { Toast } from "../components/Toast";
-import { Page } from "../components/primitives/Page";
-import { Card } from "../components/primitives/Card";
-import { Button } from "../components/primitives/Button";
-import { Tag } from "../components/primitives/Tag";
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from "../components/ui/Table";
+import { PageShell, Card, Button, Input, Badge, Table, TableCard } from "../ui";
 
 const PAGE_SIZE = 20;
 
@@ -88,40 +84,17 @@ export const DirectoryPage: React.FC = () => {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
-    <Page title="Member Directory" description="Search members by name or email">
+    <PageShell title="Member Directory" description="Search members by name or email">
       {/* Search card */}
       <Card>
         <form onSubmit={handleSearch}>
-          <div style={{ display: "flex", gap: "var(--space-3)" }}>
-            <div style={{ flex: 1, position: "relative" }}>
-              <input
-                type="text"
-                className="pr-input"
+          <div style={{ display: "flex", gap: "var(--app-space-sm)", flexWrap: "wrap" }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name or email..."
-                style={{ paddingLeft: "var(--space-8)" }}
               />
-              <svg 
-                width="18" 
-                height="18" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ 
-                  position: "absolute", 
-                  left: "var(--space-3)", 
-                  top: "50%", 
-                  transform: "translateY(-50%)",
-                  color: "var(--app-color-text-muted)",
-                }}
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
             </div>
             <Button type="submit" disabled={loading || !query.trim()}>
               Search
@@ -136,21 +109,21 @@ export const DirectoryPage: React.FC = () => {
       </Card>
 
       {/* Results */}
-      <div style={{ marginTop: "var(--space-6)" }}>
+      <div style={{ marginTop: "var(--app-space-lg)" }}>
         {/* Error state */}
         {loadError && (
           <Card>
-            <div style={{ padding: "var(--space-6)", textAlign: "center" }}>
+            <div style={{ padding: "var(--app-space-xl)", textAlign: "center" }}>
               <div style={{ 
                 width: 56,
                 height: 56,
-                borderRadius: "var(--radius-full)",
-                background: "var(--app-color-error-soft)",
+                borderRadius: "var(--app-radius-pill)",
+                background: "var(--app-color-surface-2)",
                 color: "var(--app-color-state-error)",
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                marginBottom: "var(--space-4)",
+                marginBottom: "var(--app-space-md)",
               }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
@@ -158,14 +131,10 @@ export const DirectoryPage: React.FC = () => {
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
               </div>
-              <h3 style={{ 
-                fontSize: "var(--font-h3)", 
-                margin: "0 0 var(--space-2) 0",
-                fontWeight: "var(--font-weight-semibold)",
-              }}>
+              <h3 style={{ fontSize: "var(--rcme-font-size-h3)", margin: "0 0 var(--app-space-sm) 0", fontWeight: 600 }}>
                 Search failed
               </h3>
-              <p style={{ color: "var(--app-color-text-secondary)", marginBottom: "var(--space-4)" }}>
+              <p style={{ color: "var(--app-color-text-secondary)", marginBottom: "var(--app-space-md)" }}>
                 {loadError}
               </p>
               <Button variant="secondary" onClick={() => doSearch(query, offset)}>
@@ -179,7 +148,7 @@ export const DirectoryPage: React.FC = () => {
         {!loadError && !hasSearched && !loading && (
           <Card>
             <div style={{ 
-              padding: "var(--space-8)", 
+              padding: "var(--app-space-xxl)", 
               textAlign: "center",
               color: "var(--app-color-text-muted)",
             }}>
@@ -195,7 +164,7 @@ export const DirectoryPage: React.FC = () => {
                 <circle cx="11" cy="11" r="8" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
-              <p style={{ margin: 0, fontSize: "var(--font-body-md)" }}>
+              <p style={{ margin: 0, fontSize: "var(--rcme-font-size-body)" }}>
                 Type a name or email to search the directory
               </p>
             </div>
@@ -205,12 +174,12 @@ export const DirectoryPage: React.FC = () => {
         {/* Loading state */}
         {loading && (
           <Card>
-            <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
+            <div style={{ padding: "var(--app-space-xl)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
               <div className="pr-skeleton" style={{ 
                 width: 40, 
                 height: 40, 
-                borderRadius: "var(--radius-full)",
-                margin: "0 auto var(--space-4)",
+                borderRadius: "var(--app-radius-pill)",
+                margin: "0 auto var(--app-space-md)",
               }} />
               <p style={{ margin: 0 }}>Searching...</p>
             </div>
@@ -221,7 +190,7 @@ export const DirectoryPage: React.FC = () => {
         {!loadError && hasSearched && !loading && results.length === 0 && (
           <Card>
             <div style={{ 
-              padding: "var(--space-8)", 
+              padding: "var(--app-space-xxl)", 
               textAlign: "center",
               color: "var(--app-color-text-muted)",
             }}>
@@ -240,14 +209,14 @@ export const DirectoryPage: React.FC = () => {
                 <line x1="22" y1="11" x2="17" y2="6" />
               </svg>
               <h3 style={{ 
-                fontSize: "var(--font-h3)", 
-                margin: "0 0 var(--space-2) 0",
-                fontWeight: "var(--font-weight-semibold)",
+                fontSize: "var(--rcme-font-size-h3)", 
+                margin: "0 0 var(--app-space-sm) 0",
+                fontWeight: 600,
                 color: "var(--app-color-text-primary)",
               }}>
                 No members found
               </h3>
-              <p style={{ margin: 0, fontSize: "var(--font-body-md)" }}>
+              <p style={{ margin: 0, fontSize: "var(--rcme-font-size-body)" }}>
                 No members match "{query}"
               </p>
             </div>
@@ -257,94 +226,96 @@ export const DirectoryPage: React.FC = () => {
         {/* Results list */}
         {!loadError && !loading && results.length > 0 && (
           <Card padding="none">
-            <div style={{ padding: "var(--space-4)", borderBottom: "1px solid var(--app-color-border-subtle)" }}>
-              <span style={{ color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+            <div style={{ padding: "var(--app-space-md)", borderBottom: "1px solid var(--app-color-border-subtle)" }}>
+              <span style={{ color: "var(--app-color-text-secondary)" }}>
                 Showing {offset + 1}–{Math.min(offset + PAGE_SIZE, total)} of {total} members
               </span>
             </div>
             
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHeadCell>Name</TableHeadCell>
-                  <TableHeadCell>Email</TableHeadCell>
-                  <TableHeadCell>Phone</TableHeadCell>
-                  <TableHeadCell>Status</TableHeadCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.map((member) => (
-                  <TableRow key={member.id}>
-                    <TableCell>
-                      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                        {member.avatarUrl ? (
-                          <img
-                            src={member.avatarUrl}
-                            alt={`${member.first_name} ${member.last_name}`}
-                            style={{
+            <TableCard>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {results.map((member) => (
+                    <tr key={member.id}>
+                      <td>
+                        <div style={{ display: "flex", alignItems: "center", gap: "var(--app-space-sm)" }}>
+                          {member.avatarUrl ? (
+                            <img
+                              src={member.avatarUrl}
+                              alt={`${member.first_name} ${member.last_name}`}
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: "var(--radius-full)",
+                                objectFit: "cover",
+                                flexShrink: 0,
+                              }}
+                            />
+                          ) : (
+                            <div style={{
                               width: 32,
                               height: 32,
-                              borderRadius: "var(--radius-full)",
-                              objectFit: "cover",
+                              borderRadius: "var(--app-radius-pill)",
+                              background: "var(--app-color-surface-2)",
+                              color: "var(--app-color-text-primary)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: "var(--font-weight-semibold)",
+                              fontSize: "var(--font-caption)",
                               flexShrink: 0,
-                            }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: "var(--radius-full)",
-                            background: "var(--app-color-primary-soft)",
-                            color: "var(--app-color-primary)",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontWeight: "var(--font-weight-semibold)",
-                            fontSize: "var(--font-caption)",
-                            flexShrink: 0,
-                          }}>
-                            {member.first_name?.charAt(0)}{member.last_name?.charAt(0)}
-                          </div>
-                        )}
-                        <span style={{ fontWeight: "var(--font-weight-medium)" }}>
-                          {member.first_name} {member.last_name}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <a 
-                        href={`mailto:${member.email}`}
-                        style={{ color: "var(--app-color-primary)" }}
-                      >
-                        {member.email}
-                      </a>
-                    </TableCell>
-                    <TableCell>
-                      {member.phone || <span style={{ color: "var(--app-color-text-muted)" }}>—</span>}
-                    </TableCell>
-                    <TableCell>
-                      <Tag variant={member.status === "active" ? "success" : "warning"}>
-                        {member.status}
-                      </Tag>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                            }}>
+                              {member.first_name?.charAt(0)}{member.last_name?.charAt(0)}
+                            </div>
+                          )}
+                          <span style={{ fontWeight: "var(--font-weight-medium)" }}>
+                            {member.first_name} {member.last_name}
+                          </span>
+                        </div>
+                      </td>
+                      <td>
+                        <a 
+                          href={`mailto:${member.email}`}
+                          style={{ color: "var(--app-color-brand-primary)" }}
+                        >
+                          {member.email}
+                        </a>
+                      </td>
+                      <td>
+                        {member.phone || <span style={{ color: "var(--app-color-text-muted)" }}>—</span>}
+                      </td>
+                      <td>
+                        <Badge variant={member.status === "active" ? "success" : "info"}>
+                          {member.status || "active"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </TableCard>
 
             {/* Pagination */}
             {totalPages > 1 && (
               <div style={{ 
-                padding: "var(--space-4)", 
+                padding: "var(--app-space-md)", 
                 borderTop: "1px solid var(--app-color-border-subtle)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
               }}>
-                <span style={{ color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+                <span style={{ color: "var(--app-color-text-secondary)" }}>
                   Page {currentPage} of {totalPages}
                 </span>
-                <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                <div style={{ display: "flex", gap: "var(--app-space-sm)" }}>
                   <Button variant="ghost" size="sm" onClick={handlePrev} disabled={offset === 0}>
                     Previous
                   </Button>
@@ -359,6 +330,6 @@ export const DirectoryPage: React.FC = () => {
       </div>
 
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
-    </Page>
+    </PageShell>
   );
 };

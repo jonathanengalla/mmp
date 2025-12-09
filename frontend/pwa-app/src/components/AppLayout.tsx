@@ -179,7 +179,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 padding: "var(--space-2) var(--space-3)",
                 fontSize: "var(--font-caption)",
                 fontWeight: "var(--font-weight-semibold)",
-                color: "var(--color-text-muted)",
+                color: "var(--app-color-text-muted)",
                 textTransform: "uppercase",
                 letterSpacing: "0.05em",
               }}>

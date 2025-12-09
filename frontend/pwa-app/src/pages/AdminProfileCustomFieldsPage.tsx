@@ -362,7 +362,7 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
     return (
       <Page title="Profile Custom Fields" description="Define additional fields to collect from members.">
         <Card>
-          <div style={{ padding: "var(--space-8)", textAlign: "center", color: "var(--color-text-muted)" }}>
+          <div style={{ padding: "var(--space-8)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
             Loading schema...
           </div>
         </Card>
@@ -382,7 +382,7 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
       {/* Groups Section */}
       <Card title="Field Groups" actions={<Button size="sm" onClick={openAddGroup}>Add Group</Button>}>
         {sortedGroups.length === 0 ? (
-          <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--color-text-muted)" }}>
+          <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
             No groups defined. Fields without a group will appear in "Other Information".
           </div>
         ) : (
@@ -395,15 +395,15 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
                   alignItems: "center",
                   justifyContent: "space-between",
                   padding: "var(--space-3)",
-                  background: "var(--color-surface-1)",
+                  background: "var(--app-color-surface-1)",
                   borderRadius: "var(--radius-medium)",
-                  border: "1px solid var(--color-border)",
+                  border: "1px solid var(--app-color-border-subtle)",
                 }}
               >
                 <div>
                   <div style={{ fontWeight: "var(--font-weight-medium)" }}>{group.label}</div>
                   {group.description && (
-                    <div style={{ fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
+                    <div style={{ fontSize: "var(--font-caption)", color: "var(--app-color-text-muted)" }}>
                       {group.description}
                     </div>
                   )}
@@ -430,7 +430,7 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
       <div style={{ marginTop: "var(--space-6)" }}>
         <Card title="Custom Fields" actions={<Button size="sm" onClick={openAddField}>Add Field</Button>}>
           {sortedFields.length === 0 ? (
-            <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--color-text-muted)" }}>
+            <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
               No custom fields defined yet. Add fields to collect additional information from members.
             </div>
           ) : (
@@ -445,9 +445,9 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
                       alignItems: "center",
                       justifyContent: "space-between",
                       padding: "var(--space-3)",
-                      background: "var(--color-surface-1)",
+                      background: "var(--app-color-surface-1)",
                       borderRadius: "var(--radius-medium)",
-                      border: "1px solid var(--color-border)",
+                      border: "1px solid var(--app-color-border-subtle)",
                     }}
                   >
                     <div style={{ flex: 1 }}>
@@ -456,8 +456,8 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
                         <Tag size="sm" variant="default">{CUSTOM_FIELD_TYPE_LABELS[field.type]}</Tag>
                         {field.validation?.required && <Tag size="sm" variant="warning">Required</Tag>}
                       </div>
-                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-text-muted)", marginTop: "var(--space-1)" }}>
-                        Key: <code style={{ background: "var(--color-surface-2)", padding: "0 var(--space-1)", borderRadius: "var(--radius-small)" }}>{field.key}</code>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--app-color-text-muted)", marginTop: "var(--space-1)" }}>
+                        Key: <code style={{ background: "var(--app-color-surface-2)", padding: "0 var(--space-1)", borderRadius: "var(--radius-small)" }}>{field.key}</code>
                         {group && <span> • Group: {group.label}</span>}
                         {field.helpText && <span> • {field.helpText}</span>}
                       </div>
@@ -612,13 +612,13 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
 
           {/* Options for select/checkbox */}
           {(fieldModal.data.type === "select" || fieldModal.data.type === "checkbox") && (
-            <div style={{ padding: "var(--space-3)", background: "var(--color-surface-1)", borderRadius: "var(--radius-medium)" }}>
+            <div style={{ padding: "var(--space-3)", background: "var(--app-color-surface-1)", borderRadius: "var(--radius-medium)" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
                 <span style={{ fontWeight: "var(--font-weight-medium)" }}>Options</span>
                 <Button size="sm" variant="secondary" onClick={addOption}>Add Option</Button>
               </div>
               {fieldModal.data.options.length === 0 ? (
-                <div style={{ color: "var(--color-text-muted)", fontSize: "var(--font-caption)" }}>
+                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--font-caption)" }}>
                   No options defined. Add at least one option.
                 </div>
               ) : (
@@ -648,7 +648,7 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
           )}
 
           {/* Validation */}
-          <div style={{ padding: "var(--space-3)", background: "var(--color-surface-1)", borderRadius: "var(--radius-medium)" }}>
+          <div style={{ padding: "var(--space-3)", background: "var(--app-color-surface-1)", borderRadius: "var(--radius-medium)" }}>
             <div style={{ fontWeight: "var(--font-weight-medium)", marginBottom: "var(--space-3)" }}>Validation</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
               <label style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
@@ -764,18 +764,18 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
           </div>
 
           {/* Conditional Visibility */}
-          <div style={{ padding: "var(--space-3)", background: "var(--color-surface-1)", borderRadius: "var(--radius-medium)" }}>
+          <div style={{ padding: "var(--space-3)", background: "var(--app-color-surface-1)", borderRadius: "var(--radius-medium)" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--space-3)" }}>
               <span style={{ fontWeight: "var(--font-weight-medium)" }}>Conditional Visibility</span>
               <Button size="sm" variant="secondary" onClick={addCondition}>Add Condition</Button>
             </div>
             {fieldModal.data.visibleWhen.length === 0 ? (
-              <div style={{ color: "var(--color-text-muted)", fontSize: "var(--font-caption)" }}>
+              <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--font-caption)" }}>
                 No conditions. Field will always be visible.
               </div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-2)" }}>
-                <div style={{ fontSize: "var(--font-caption)", color: "var(--color-text-muted)" }}>
+                <div style={{ fontSize: "var(--font-caption)", color: "var(--app-color-text-muted)" }}>
                   Show this field only when ALL conditions are met:
                 </div>
                 {fieldModal.data.visibleWhen.map((cond, idx) => (
@@ -791,7 +791,7 @@ export const AdminProfileCustomFieldsPage: React.FC = () => {
                         <option key={f.id} value={f.id}>{f.label}</option>
                       ))}
                     </select>
-                    <span style={{ color: "var(--color-text-muted)" }}>equals</span>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>equals</span>
                     <input
                       className="pr-input"
                       value={String(cond.equals || "")}

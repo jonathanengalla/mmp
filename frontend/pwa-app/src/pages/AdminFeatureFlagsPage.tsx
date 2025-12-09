@@ -13,7 +13,7 @@ const rowStyle: React.CSSProperties = {
   justifyContent: "space-between",
   alignItems: "center",
   padding: "var(--space-sm) 0",
-  borderBottom: "1px solid var(--color-border)",
+  borderBottom: "1px solid var(--app-color-border-subtle)",
 };
 
 export const AdminFeatureFlagsPage: React.FC = () => {
@@ -76,28 +76,28 @@ export const AdminFeatureFlagsPage: React.FC = () => {
             <div style={rowStyle}>
               <div>
                 <div style={{ fontWeight: 600 }}>Payments</div>
-                <div style={{ color: "var(--color-text-muted)" }}>Enable dues and payments flows.</div>
+                <div style={{ color: "var(--app-color-text-muted)" }}>Enable dues and payments flows.</div>
               </div>
               <input type="checkbox" checked={flags.payments} onChange={() => toggle("payments")} />
             </div>
             <div style={rowStyle}>
               <div>
                 <div style={{ fontWeight: 600 }}>Events</div>
-                <div style={{ color: "var(--color-text-muted)" }}>Enable event creation, registration, and fees.</div>
+                <div style={{ color: "var(--app-color-text-muted)" }}>Enable event creation, registration, and fees.</div>
               </div>
               <input type="checkbox" checked={flags.events} onChange={() => toggle("events")} />
             </div>
             <div style={rowStyle}>
               <div>
                 <div style={{ fontWeight: 600 }}>Communications</div>
-                <div style={{ color: "var(--color-text-muted)" }}>Enable broadcasts and reminders.</div>
+                <div style={{ color: "var(--app-color-text-muted)" }}>Enable broadcasts and reminders.</div>
               </div>
               <input type="checkbox" checked={flags.communications} onChange={() => toggle("communications")} />
             </div>
             <div style={rowStyle}>
               <div>
                 <div style={{ fontWeight: 600 }}>Reporting</div>
-                <div style={{ color: "var(--color-text-muted)" }}>Enable reports dashboards and exports.</div>
+                <div style={{ color: "var(--app-color-text-muted)" }}>Enable reports dashboards and exports.</div>
               </div>
               <input type="checkbox" checked={flags.reporting} onChange={() => toggle("reporting")} />
             </div>

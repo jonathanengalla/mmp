@@ -184,7 +184,7 @@ export const AdminEditEventPage: React.FC = () => {
       {loading && <Card>Loading event...</Card>}
       {!loading && error && (
         <Card>
-          <div style={{ color: "var(--color-error)" }}>{error}</div>
+          <div style={{ color: "var(--app-color-state-error)" }}>{error}</div>
           <Button style={{ marginTop: "var(--space-sm)" }} onClick={load}>
             Retry
           </Button>

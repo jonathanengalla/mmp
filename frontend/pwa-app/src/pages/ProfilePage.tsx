@@ -21,7 +21,7 @@ import { Card } from "../components/primitives/Card";
 import { FormField } from "../components/primitives/FormField";
 import { Button } from "../components/primitives/Button";
 import { Tag } from "../components/primitives/Tag";
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from "../components/ui/Table";
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell, TableCard } from "../components/ui/Table";
 
 interface FormState {
   phone: string;
@@ -361,7 +361,7 @@ export const ProfilePage: React.FC = () => {
           <div style={{ 
             padding: "var(--space-8)", 
             textAlign: "center", 
-            color: "var(--color-text-muted)" 
+            color: "var(--app-color-text-muted)" 
           }}>
             <div className="pr-skeleton" style={{ 
               width: 48, 
@@ -386,8 +386,8 @@ export const ProfilePage: React.FC = () => {
               width: 64,
               height: 64,
               borderRadius: "var(--radius-full)",
-              background: "var(--color-error-soft)",
-              color: "var(--color-error)",
+              background: "var(--app-color-state-error-soft)",
+              color: "var(--app-color-state-error)",
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
@@ -407,7 +407,7 @@ export const ProfilePage: React.FC = () => {
               Failed to load profile
             </h3>
             <p style={{ 
-              color: "var(--color-text-secondary)", 
+              color: "var(--app-color-text-secondary)", 
               marginBottom: "var(--space-4)" 
             }}>
               {loadError}
@@ -428,9 +428,9 @@ export const ProfilePage: React.FC = () => {
       {offline && (
         <div style={{ 
           padding: "var(--space-3)", 
-          background: "var(--color-warning-soft)", 
+          background: "var(--app-color-state-warning-soft)", 
           borderRadius: "var(--radius-md)",
-          color: "var(--color-warning)",
+          color: "var(--app-color-state-warning)",
           fontSize: "var(--font-body-sm)",
           marginBottom: "var(--space-4)",
         }}>
@@ -446,7 +446,7 @@ export const ProfilePage: React.FC = () => {
           gap: "var(--space-5)",
           marginBottom: "var(--space-6)",
           paddingBottom: "var(--space-6)",
-          borderBottom: "1px solid var(--color-border)",
+          borderBottom: "1px solid var(--app-color-border-subtle)",
         }}>
           {/* Avatar section */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-2)" }}>
@@ -460,7 +460,7 @@ export const ProfilePage: React.FC = () => {
                     height: 80,
                     borderRadius: "var(--radius-full)",
                     objectFit: "cover",
-                    border: "3px solid var(--color-border)",
+                    border: "3px solid var(--app-color-border-subtle)",
                   }}
                 />
               ) : (
@@ -468,14 +468,14 @@ export const ProfilePage: React.FC = () => {
                   width: 80,
                   height: 80,
                   borderRadius: "var(--radius-full)",
-                  background: "var(--color-primary-soft)",
-                  color: "var(--color-primary)",
+                  background: "var(--app-color-primary-soft)",
+                  color: "var(--app-color-primary)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   fontWeight: "var(--font-weight-bold)",
                   fontSize: "var(--font-h2)",
-                  border: "3px solid var(--color-border)",
+                  border: "3px solid var(--app-color-border-subtle)",
                 }}>
                   {profile?.first_name?.charAt(0)}{profile?.last_name?.charAt(0)}
                 </div>
@@ -544,7 +544,7 @@ export const ProfilePage: React.FC = () => {
             </h3>
             <p style={{ 
               margin: "var(--space-1) 0 0", 
-              color: "var(--color-text-secondary)",
+              color: "var(--app-color-text-secondary)",
               fontSize: "var(--font-body-md)",
             }}>
               {profile?.email}
@@ -711,7 +711,7 @@ export const ProfilePage: React.FC = () => {
                           disabled={customFieldsSaving || offline}
                           style={{ width: 18, height: 18 }}
                         />
-                        <span style={{ color: "var(--color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+                        <span style={{ color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
                           {field.helpText || "Yes"}
                         </span>
                       </label>
@@ -733,7 +733,7 @@ export const ProfilePage: React.FC = () => {
                           margin: "0 0 var(--space-2) 0",
                           fontSize: "var(--font-body)",
                           fontWeight: "var(--font-weight-semibold)",
-                          color: "var(--color-text-primary)",
+                          color: "var(--app-color-text-primary)",
                         }}>
                           {group.label}
                         </h4>
@@ -741,7 +741,7 @@ export const ProfilePage: React.FC = () => {
                           <p style={{
                             margin: "0 0 var(--space-4) 0",
                             fontSize: "var(--font-caption)",
-                            color: "var(--color-text-muted)",
+                            color: "var(--app-color-text-muted)",
                           }}>
                             {group.description}
                           </p>
@@ -765,7 +765,7 @@ export const ProfilePage: React.FC = () => {
                           margin: "0 0 var(--space-4) 0",
                           fontSize: "var(--font-body)",
                           fontWeight: "var(--font-weight-semibold)",
-                          color: "var(--color-text-primary)",
+                          color: "var(--app-color-text-primary)",
                         }}>
                           Other Information
                         </h4>
@@ -800,15 +800,15 @@ export const ProfilePage: React.FC = () => {
       <div style={{ marginTop: "var(--space-6)" }}>
         <Card title="Outstanding Invoices">
           {invoicesLoading ? (
-            <div style={{ padding: "var(--space-4)", textAlign: "center", color: "var(--color-text-muted)" }}>
+            <div style={{ padding: "var(--space-4)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
               Loading invoices...
             </div>
           ) : invoices.length === 0 ? (
             <div style={{ 
               padding: "var(--space-6)", 
               textAlign: "center", 
-              color: "var(--color-text-muted)",
-              background: "var(--color-surface-1)",
+              color: "var(--app-color-text-muted)",
+              background: "var(--app-color-surface-1)",
               borderRadius: "var(--radius-md)",
             }}>
               <svg 
@@ -827,11 +827,7 @@ export const ProfilePage: React.FC = () => {
               <p style={{ margin: 0 }}>No outstanding invoices</p>
             </div>
           ) : (
-            <div style={{ 
-              border: "1px solid var(--color-border)", 
-              borderRadius: "var(--radius-md)", 
-              overflow: "hidden" 
-            }}>
+            <TableCard>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -864,7 +860,7 @@ export const ProfilePage: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </TableCard>
           )}
         </Card>
       </div>

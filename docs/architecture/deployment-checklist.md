@@ -1,0 +1,31 @@
+# Deployment Checklist (Path A — New Render Postgres)
+
+## Local Dev
+- Ensure `DATABASE_URL` points to the new Render Postgres (internal connection string) or a matching local DB.
+- From `auth-service` root run:
+  - `npx prisma migrate dev --schema prisma/schema.prisma --skip-seed`
+- Optional: `npx prisma studio` to visually confirm schema.
+
+## Render Backend
+- `DATABASE_URL` set to the new Render Postgres instance (same as local).
+- Node version pinned per engines.
+- Build/release runs:
+  - `npm ci`
+  - `npx prisma migrate deploy --schema prisma/schema.prisma`
+  - start command
+- Post-deploy smoke/health check passes (health/readiness or basic API smoke).
+- Render env vars to set:
+  - `DATABASE_URL=<Render_Postgres_Internal_URL>`
+- Recommended Render build step:
+  - `npx prisma migrate deploy --schema prisma/schema.prisma`
+- Recommended start command (if not already set):
+  - `node dist/index.js`
+- Do NOT run `prisma migrate dev` against Render DB (managed Postgres lacks SUPERUSER/shadow DB support).
+
+## Vercel Frontend
+- `VITE_API_BASE_URL` (or equivalent) points to the Render backend URL.
+- Tenant defaults documented for the environment.
+
+## Local Dev (Optional)
+- `npm run migrate:dev` is for a local Postgres instance only (not Render DB).
+

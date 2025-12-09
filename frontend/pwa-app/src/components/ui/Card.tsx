@@ -11,9 +11,9 @@ type CardProps = {
 export const Card: React.FC<CardProps> = ({ children, padding = 16, title, actions, style }) => (
   <div
     style={{
-      background: "var(--color-surface)",
+      background: "var(--app-color-surface-1)",
       borderRadius: "var(--radius)",
-      border: "1px solid var(--color-border)",
+      border: "1px solid var(--app-color-border-subtle)",
       boxShadow: "var(--card-shadow)",
       padding,
       ...style,

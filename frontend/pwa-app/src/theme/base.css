@@ -191,14 +191,14 @@ a:hover {
 .pr-page__title {
   font-size: var(--font-h1);
   font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
+  color: var(--app-color-text-strong, var(--app-color-text-primary, var(--color-text-primary)));
   margin: 0 0 var(--space-2) 0;
   line-height: var(--line-height-tight);
 }
 
 .pr-page__description {
   margin: 0 0 var(--space-6) 0;
-  color: var(--color-text-secondary);
+  color: var(--app-color-text-muted, var(--app-color-text-secondary, var(--color-text-secondary)));
   font-size: var(--font-body-md);
   line-height: var(--line-height-normal);
 }
@@ -582,41 +582,56 @@ select.pr-input {
 .ui-table {
   width: 100%;
   border-collapse: collapse;
+  border-spacing: 0;
   font-size: var(--font-body-sm);
+  background: var(--app-color-surface-1, var(--color-surface));
+  color: var(--app-color-text, var(--app-color-text-primary, var(--color-text-primary)));
 }
 
 .ui-table thead {
-  background: var(--color-surface-1);
-  border-bottom: 1px solid var(--color-border);
+  background: var(--app-color-surface-2, var(--color-surface-1));
+  border-bottom: 1px solid var(--app-color-border-subtle, var(--color-border));
+}
+
+.ui-table th,
+.ui-table td {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  border-bottom: 1px solid var(--app-color-border-subtle, var(--color-border));
 }
 
 .ui-table th {
-  padding: var(--space-3) var(--space-4);
-  text-align: left;
   font-weight: var(--font-weight-semibold);
   font-size: var(--font-caption);
-  color: var(--color-text-secondary);
+  color: var(--app-color-text-strong, var(--app-color-text-primary, var(--color-text-primary)));
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 .ui-table td {
-  padding: var(--space-3) var(--space-4);
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-primary);
+  color: var(--app-color-text, var(--app-color-text-primary, var(--color-text-primary)));
   vertical-align: middle;
 }
 
 .ui-table tbody tr {
   transition: background var(--motion-fast) var(--motion-easing);
+  background: var(--app-color-surface-1, var(--color-surface));
 }
 
 .ui-table tbody tr:hover {
-  background: var(--color-surface-1);
+  background: var(--app-color-surface-2, var(--color-surface-1));
 }
 
 .ui-table tbody tr:last-child td {
   border-bottom: none;
+}
+
+.ui-table-card {
+  background: var(--app-color-surface-1, var(--color-surface));
+  border: 1px solid var(--app-color-border-subtle, var(--color-border));
+  border-radius: var(--app-radius-lg, var(--radius-lg));
+  overflow: hidden;
+  box-shadow: var(--app-shadow-sm, var(--shadow-sm));
 }
 
 /* =============================================================================

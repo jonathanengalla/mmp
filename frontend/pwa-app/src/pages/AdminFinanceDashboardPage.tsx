@@ -1,7 +1,7 @@
 import React from "react";
 import { Page } from "../components/primitives/Page";
 import { Card } from "../components/primitives/Card";
-import { Table, TableBody, TableCell, TableHeadCell, TableHeader, TableRow } from "../components/ui/Table";
+import { Table, TableBody, TableCell, TableHeadCell, TableHeader, TableRow, TableCard } from "../components/ui/Table";
 import { Tag } from "../components/primitives/Tag";
 import { useSession } from "../hooks/useSession";
 import {
@@ -259,35 +259,37 @@ export const AdminFinanceDashboardPage: React.FC = () => {
             <div style={{ color: "var(--app-color-text-muted)" }}>No dues runs yet.</div>
           )}
           {!duesState.loading && !duesState.error && duesRows.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHeadCell>Period</TableHeadCell>
-                  <TableHeadCell align="right">Members billed</TableHeadCell>
-                  <TableHeadCell align="right">Total amount</TableHeadCell>
-                  <TableHeadCell align="right">Paid</TableHeadCell>
-                  <TableHeadCell align="right">Outstanding</TableHeadCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {duesRows.slice(0, 5).map((row) => (
-                  <TableRow key={row.periodKey ?? row.label}>
-                    <TableCell>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span>{row.label}</span>
-                        {row.dueDate && (
-                          <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>Due {row.dueDate}</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell align="right">{row.totalCount ?? "–"}</TableCell>
-                    <TableCell align="right">{formatMoney(row.amountCentsTotal, row.currency)}</TableCell>
-                    <TableCell align="right">{formatMoney(row.amountCentsPaid, row.currency)}</TableCell>
-                    <TableCell align="right">{formatMoney(row.amountCentsUnpaid, row.currency)}</TableCell>
+            <TableCard>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHeadCell>Period</TableHeadCell>
+                    <TableHeadCell align="right">Members billed</TableHeadCell>
+                    <TableHeadCell align="right">Total amount</TableHeadCell>
+                    <TableHeadCell align="right">Paid</TableHeadCell>
+                    <TableHeadCell align="right">Outstanding</TableHeadCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {duesRows.slice(0, 5).map((row) => (
+                    <TableRow key={row.periodKey ?? row.label}>
+                      <TableCell>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span>{row.label}</span>
+                          {row.dueDate && (
+                            <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>Due {row.dueDate}</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell align="right">{row.totalCount ?? "–"}</TableCell>
+                      <TableCell align="right">{formatMoney(row.amountCentsTotal, row.currency)}</TableCell>
+                      <TableCell align="right">{formatMoney(row.amountCentsPaid, row.currency)}</TableCell>
+                      <TableCell align="right">{formatMoney(row.amountCentsUnpaid, row.currency)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableCard>
           )}
         </Card>
 
@@ -298,62 +300,64 @@ export const AdminFinanceDashboardPage: React.FC = () => {
             <div style={{ color: "var(--app-color-text-muted)" }}>No invoices found.</div>
           )}
           {!invoicesState.loading && !invoicesState.error && recentInvoices.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHeadCell>Invoice</TableHeadCell>
-                  <TableHeadCell>Source</TableHeadCell>
-                  <TableHeadCell align="right">Amount</TableHeadCell>
-                  <TableHeadCell>Status</TableHeadCell>
-                  <TableHeadCell>Created</TableHeadCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentInvoices.map((inv) => (
-                  <TableRow key={inv.id}>
-                    <TableCell>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span>{inv.description || "Invoice"}</span>
-                        {inv.eventTitle && (
-                          <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>Event: {inv.eventTitle}</span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {inv.source === "dues" && <Tag variant="info">Dues</Tag>}
-                      {inv.source === "event" && <Tag variant="success">Event</Tag>}
-                      {!inv.source && <Tag variant="default">Manual</Tag>}
-                      {inv.source && inv.source !== "dues" && inv.source !== "event" && (
-                        <Tag variant="default">{inv.source}</Tag>
-                      )}
-                    </TableCell>
-                    <TableCell align="right">{formatMoney(inv.amountCents, inv.currency)}</TableCell>
-                    <TableCell>
-                      <Tag
-                        variant={
-                          inv.status === "paid"
-                            ? "success"
-                            : inv.status === "overdue"
-                            ? "danger"
-                            : inv.status === "cancelled" || inv.status === "void"
-                            ? "default"
-                            : "warning"
-                        }
-                      >
-                        {inv.status}
-                      </Tag>
-                    </TableCell>
-                    <TableCell>
-                      {inv.createdAt ? (
-                        <span>{new Date(inv.createdAt).toLocaleDateString()}</span>
-                      ) : (
-                        <span style={{ color: "var(--app-color-text-muted)" }}>–</span>
-                      )}
-                    </TableCell>
+            <TableCard>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHeadCell>Invoice</TableHeadCell>
+                    <TableHeadCell>Source</TableHeadCell>
+                    <TableHeadCell align="right">Amount</TableHeadCell>
+                    <TableHeadCell>Status</TableHeadCell>
+                    <TableHeadCell>Created</TableHeadCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {recentInvoices.map((inv) => (
+                    <TableRow key={inv.id}>
+                      <TableCell>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span>{inv.description || "Invoice"}</span>
+                          {inv.eventTitle && (
+                            <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>Event: {inv.eventTitle}</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {inv.source === "dues" && <Tag variant="info">Dues</Tag>}
+                        {inv.source === "event" && <Tag variant="success">Event</Tag>}
+                        {!inv.source && <Tag variant="default">Manual</Tag>}
+                        {inv.source && inv.source !== "dues" && inv.source !== "event" && (
+                          <Tag variant="default">{inv.source}</Tag>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">{formatMoney(inv.amountCents, inv.currency)}</TableCell>
+                      <TableCell>
+                        <Tag
+                          variant={
+                            inv.status === "paid"
+                              ? "success"
+                              : inv.status === "overdue"
+                              ? "danger"
+                              : inv.status === "cancelled" || inv.status === "void"
+                              ? "default"
+                              : "warning"
+                          }
+                        >
+                          {inv.status}
+                        </Tag>
+                      </TableCell>
+                      <TableCell>
+                        {inv.createdAt ? (
+                          <span>{new Date(inv.createdAt).toLocaleDateString()}</span>
+                        ) : (
+                          <span style={{ color: "var(--app-color-text-muted)" }}>–</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableCard>
           )}
         </Card>
 
@@ -364,51 +368,53 @@ export const AdminFinanceDashboardPage: React.FC = () => {
             <div style={{ color: "var(--app-color-text-muted)" }}>No event data yet.</div>
           )}
           {!eventsState.loading && !eventsState.error && topEvents.length > 0 && (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHeadCell>Event</TableHeadCell>
-                  <TableHeadCell align="right">Registrations</TableHeadCell>
-                  <TableHeadCell align="right">Revenue</TableHeadCell>
-                  <TableHeadCell>Status</TableHeadCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {topEvents.map((ev) => (
-                  <TableRow key={ev.event_id ?? ev.title}>
-                    <TableCell>
-                      <div style={{ display: "flex", flexDirection: "column" }}>
-                        <span>{ev.title}</span>
-                        {ev.startDate && (
-                          <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>
-                            {new Date(ev.startDate).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell align="right">{(ev as any).registrationsCount ?? 0}</TableCell>
-                    <TableCell align="right">
-                      {formatMoney((ev as any).totalAmountCents ?? 0, invoices[0]?.currency)}
-                    </TableCell>
-                    <TableCell>
-                      <Tag
-                        variant={
-                          ev.status === "completed"
-                            ? "success"
-                            : ev.status === "cancelled"
-                            ? "danger"
-                            : ev.status === "published"
-                            ? "info"
-                            : "default"
-                        }
-                      >
-                        {ev.status}
-                      </Tag>
-                    </TableCell>
+            <TableCard>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHeadCell>Event</TableHeadCell>
+                    <TableHeadCell align="right">Registrations</TableHeadCell>
+                    <TableHeadCell align="right">Revenue</TableHeadCell>
+                    <TableHeadCell>Status</TableHeadCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {topEvents.map((ev) => (
+                    <TableRow key={ev.event_id ?? ev.title}>
+                      <TableCell>
+                        <div style={{ display: "flex", flexDirection: "column" }}>
+                          <span>{ev.title}</span>
+                          {ev.startDate && (
+                            <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>
+                              {new Date(ev.startDate).toLocaleDateString()}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell align="right">{(ev as any).registrationsCount ?? 0}</TableCell>
+                      <TableCell align="right">
+                        {formatMoney((ev as any).totalAmountCents ?? 0, invoices[0]?.currency)}
+                      </TableCell>
+                      <TableCell>
+                        <Tag
+                          variant={
+                            ev.status === "completed"
+                              ? "success"
+                              : ev.status === "cancelled"
+                              ? "danger"
+                              : ev.status === "published"
+                              ? "info"
+                              : "default"
+                          }
+                        >
+                          {ev.status}
+                        </Tag>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableCard>
           )}
         </Card>
       </div>

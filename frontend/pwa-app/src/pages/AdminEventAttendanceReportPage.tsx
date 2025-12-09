@@ -5,7 +5,7 @@ import { useSession } from "../hooks/useSession";
 import { Toast } from "../components/Toast";
 import { Page } from "../components/primitives/Page";
 import { Card } from "../components/primitives/Card";
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from "../components/ui/Table";
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell, TableCard } from "../components/ui/Table";
 import { Tag } from "../components/ui/Tag";
 import { Button } from "../components/primitives/Button";
 import { EventAttendanceReportItem } from "../../../../libs/shared/src/models";
@@ -55,62 +55,64 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
         {loading && <div>Loading...</div>}
         {!loading && items.length === 0 && <div>No events found.</div>}
         {!loading && items.length > 0 && (
-          <Table>
-            <TableHeader>
-            <TableRow>
-              <TableHeadCell>Title</TableHeadCell>
-              <TableHeadCell>Dates</TableHeadCell>
-              <TableHeadCell>Tags</TableHeadCell>
-              <TableHeadCell>Regs/Capacity</TableHeadCell>
-              <TableHeadCell>Paid/Unpaid</TableHeadCell>
-              <TableHeadCell>Checked-in</TableHeadCell>
-              <TableHeadCell>Invoices</TableHeadCell>
-              <TableHeadCell>Status</TableHeadCell>
-              <TableHeadCell align="right">Actions</TableHeadCell>
-            </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((ev) => (
-                <TableRow key={ev.event_id}>
-                  <TableCell>{ev.title}</TableCell>
-                  <TableCell>
-                    {new Date(ev.startDate).toLocaleString()}
-                    {ev.endDate ? ` - ${new Date(ev.endDate).toLocaleString()}` : ""}
-                  </TableCell>
-                <TableCell>
-                  <div style={{ display: "flex", gap: "var(--space-xxs)", flexWrap: "wrap" }}>
-                    {(ev.tags || []).map((t) => (
-                      <Tag key={t} variant="default">
-                        {t}
-                      </Tag>
-                    ))}
-                  </div>
-                </TableCell>
-                  <TableCell>
-                    {ev.registrationsCount}/{ev.capacity ?? "—"}
-                  </TableCell>
-                <TableCell>
-                  <div style={{ display: "flex", gap: "var(--space-xs)", alignItems: "center" }}>
-                    <Tag variant="success" size="sm">Paid: {ev.paidCount ?? 0}</Tag>
-                    <Tag variant={(ev.unpaidCount ?? 0) > 0 ? "warning" : "default"} size="sm">
-                      Unpaid: {ev.unpaidCount ?? 0}
-                    </Tag>
-                  </div>
-                </TableCell>
-                <TableCell>{ev.checkInCount ?? 0}</TableCell>
-                <TableCell>{(ev.invoiceIds || []).length > 0 ? ev.invoiceIds?.length : "—"}</TableCell>
-                <TableCell>
-                  <Tag variant={ev.status === "published" ? "success" : ev.status === "draft" ? "warning" : "default"}>{ev.status}</Tag>
-                </TableCell>
-                <TableCell align="right">
-                  <Button size="sm" variant="secondary" onClick={() => navigate(`/events/${ev.event_id}`)}>
-                    View event
-                  </Button>
-                </TableCell>
+          <TableCard>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHeadCell>Title</TableHeadCell>
+                  <TableHeadCell>Dates</TableHeadCell>
+                  <TableHeadCell>Tags</TableHeadCell>
+                  <TableHeadCell>Regs/Capacity</TableHeadCell>
+                  <TableHeadCell>Paid/Unpaid</TableHeadCell>
+                  <TableHeadCell>Checked-in</TableHeadCell>
+                  <TableHeadCell>Invoices</TableHeadCell>
+                  <TableHeadCell>Status</TableHeadCell>
+                  <TableHeadCell align="right">Actions</TableHeadCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {items.map((ev) => (
+                  <TableRow key={ev.event_id}>
+                    <TableCell>{ev.title}</TableCell>
+                    <TableCell>
+                      {new Date(ev.startDate).toLocaleString()}
+                      {ev.endDate ? ` - ${new Date(ev.endDate).toLocaleString()}` : ""}
+                    </TableCell>
+                    <TableCell>
+                      <div style={{ display: "flex", gap: "var(--space-xxs)", flexWrap: "wrap" }}>
+                        {(ev.tags || []).map((t) => (
+                          <Tag key={t} variant="default">
+                            {t}
+                          </Tag>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {ev.registrationsCount}/{ev.capacity ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <div style={{ display: "flex", gap: "var(--space-xs)", alignItems: "center" }}>
+                        <Tag variant="success" size="sm">Paid: {ev.paidCount ?? 0}</Tag>
+                        <Tag variant={(ev.unpaidCount ?? 0) > 0 ? "warning" : "default"} size="sm">
+                          Unpaid: {ev.unpaidCount ?? 0}
+                        </Tag>
+                      </div>
+                    </TableCell>
+                    <TableCell>{ev.checkInCount ?? 0}</TableCell>
+                    <TableCell>{(ev.invoiceIds || []).length > 0 ? ev.invoiceIds?.length : "—"}</TableCell>
+                    <TableCell>
+                      <Tag variant={ev.status === "published" ? "success" : ev.status === "draft" ? "warning" : "default"}>{ev.status}</Tag>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Button size="sm" variant="secondary" onClick={() => navigate(`/events/${ev.event_id}`)}>
+                        View event
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableCard>
         )}
       </Card>
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}

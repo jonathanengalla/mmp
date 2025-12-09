@@ -5,7 +5,7 @@ import { Toast } from "../components/Toast";
 import { Page } from "../components/primitives/Page";
 import { Card } from "../components/primitives/Card";
 import { Button } from "../components/primitives/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell } from "../components/ui/Table";
+import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell, TableCard } from "../components/ui/Table";
 import { Tag } from "../components/ui/Tag";
 import { Modal } from "../components/ui/Modal";
 
@@ -405,7 +405,7 @@ export const AdminMemberReportPage: React.FC = () => {
         )}
 
         {!loading && items.length > 0 && (
-          <div style={{ border: "1px solid var(--app-color-border-subtle)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+          <TableCard>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -422,7 +422,7 @@ export const AdminMemberReportPage: React.FC = () => {
               </TableHeader>
               <TableBody>{rows}</TableBody>
             </Table>
-          </div>
+          </TableCard>
         )}
       </Card>
 

@@ -74,7 +74,7 @@ export const Modal: React.FC<ModalProps> = ({
                   <p style={{ 
                     margin: "var(--space-1) 0 0", 
                     fontSize: "var(--font-body-sm)", 
-                    color: "var(--color-text-secondary)" 
+        color: "var(--app-color-text-secondary)" 
                   }}>
                     {description}
                   </p>
@@ -88,14 +88,14 @@ export const Modal: React.FC<ModalProps> = ({
                   cursor: "pointer",
                   padding: "var(--space-1)",
                   borderRadius: "var(--radius-sm)",
-                  color: "var(--color-text-muted)",
+                  color: "var(--app-color-text-muted)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   transition: "color var(--motion-fast)",
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = "var(--color-text-primary)"}
-                onMouseLeave={(e) => e.currentTarget.style.color = "var(--color-text-muted)"}
+                onMouseEnter={(e) => e.currentTarget.style.color = "var(--app-color-text-primary)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "var(--app-color-text-muted)"}
                 aria-label="Close modal"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

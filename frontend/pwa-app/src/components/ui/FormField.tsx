@@ -11,8 +11,8 @@ export const FormField: React.FC<FormFieldProps> = ({ label, helpText, error, ch
   <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 14 }}>
     <label style={{ fontWeight: 600 }}>{label}</label>
     {children}
-    {helpText && <small style={{ color: "var(--color-text-muted)" }}>{helpText}</small>}
-    {error && <small style={{ color: "var(--color-danger)" }}>{error}</small>}
+    {helpText && <small style={{ color: "var(--app-color-text-muted)" }}>{helpText}</small>}
+    {error && <small style={{ color: "var(--app-color-state-error)" }}>{error}</small>}
   </div>
 );
 

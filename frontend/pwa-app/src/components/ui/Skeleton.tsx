@@ -51,9 +51,9 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className }) =>
       className={className}
       style={{ 
         padding: "var(--space-6)", 
-        background: "var(--color-surface)",
+        background: "var(--app-color-surface-1)",
         borderRadius: "var(--radius-lg)",
-        border: "1px solid var(--color-border)",
+        border: "1px solid var(--app-color-border-subtle)",
       }}
     >
       <Skeleton width="40%" height="1.5rem" style={{ marginBottom: "var(--space-4)" }} />
