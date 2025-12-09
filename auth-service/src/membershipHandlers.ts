@@ -185,7 +185,8 @@ export const searchDirectoryMembers = async (req: AuthenticatedRequest, res: Res
 
 export const getProfileCustomFieldSchema = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-  return res.json({ sections: [], version: 1 });
+  console.log("[membership] profile custom-field schema returned (empty)", { tenantId: req.user.tenantId });
+  return res.json({ schemaType: "profile", sections: [], version: 1 });
 };
 
 export const getCurrentMemberCustomFields = async (req: AuthenticatedRequest, res: Response) => {
@@ -193,6 +194,10 @@ export const getCurrentMemberCustomFields = async (req: AuthenticatedRequest, re
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const member = await ensureMemberForUser(req);
     if (!member) return res.status(404).json({ error: "Member not found" });
+    console.log("[membership] current member custom-fields returned (empty)", {
+      tenantId: req.user.tenantId,
+      memberId: member.id,
+    });
     return res.json({ memberId: member.id, fields: {} });
   } catch (err) {
     console.error("[membership] getCurrentMemberCustomFields error", err);
