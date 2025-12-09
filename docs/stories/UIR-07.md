@@ -28,3 +28,8 @@ Status: Done
 - Login form uses the default tenantId and surfaces friendly messages for 400 (config) and 401 (invalid credentials/tenant).
 - Smoke: health/auth OK (backend), login succeeds with seeded tenant, protected route accessible; incorrect tenant/creds show errors.
 
+## Dev quickstart
+- `cp .env.development.example .env.local`
+- Set `VITE_DEFAULT_TENANT_ID` to a valid tenant key (e.g., rcme-dev); do not hardcode tenant IDs in code.
+- `npm install` && `npm run dev`
+

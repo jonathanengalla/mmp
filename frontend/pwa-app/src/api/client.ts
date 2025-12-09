@@ -95,7 +95,7 @@ const DEFAULT_TENANT_ID = import.meta.env.VITE_DEFAULT_TENANT_ID;
 export const login = async (payload: { email: string; password: string; tenantId?: string; mfa_code?: string }) => {
   const effectiveTenantId = payload.tenantId || DEFAULT_TENANT_ID;
   if (!effectiveTenantId) {
-    throw new Error("No tenantId configured. Set VITE_DEFAULT_TENANT_ID or provide tenantId.");
+    throw new Error("Missing tenantId. Set VITE_DEFAULT_TENANT_ID in your env or pass tenantId explicitly.");
   }
   const body = { email: payload.email, password: payload.password, tenantId: effectiveTenantId, mfaCode: payload.mfa_code };
   try {

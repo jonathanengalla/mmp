@@ -56,7 +56,7 @@ export const LoginPage: React.FC = () => {
         const err = resp.error as any;
         let msg = "Sign in failed. Please check your email and password.";
         if (resp.status === 400) {
-          msg = "Login configuration error. Please contact an administrator.";
+          msg = "Configuration issue: Tenant is not set. Please contact your administrator.";
         } else if (resp.status === 401) {
           msg = "Invalid email, password, or organization. Please try again.";
         }
@@ -91,7 +91,7 @@ export const LoginPage: React.FC = () => {
     } catch (err: any) {
       let fallback = typeof err?.message === "string" && err.message.trim().length > 0 ? err.message : "Login failed. Please try again.";
       if (typeof err?.message === "string" && err.message.includes("tenantId")) {
-        fallback = "Login configuration error. Please contact an administrator.";
+        fallback = "Configuration issue: Tenant is not set. Please contact your administrator.";
       }
       console.error("[login] unexpected error", err);
       setToast({ msg: fallback, type: "error" });
