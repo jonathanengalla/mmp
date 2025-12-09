@@ -5,6 +5,7 @@ import {
   createMemberForTenant,
   getMemberByIdForTenant,
   listMembersForTenant,
+  upsertMemberByTenantEmail,
   rejectMemberForTenant,
   setVerificationTokenForTenant,
   verifyMemberByToken,
@@ -37,21 +38,12 @@ async function ensureMemberForUser(req: AuthenticatedRequest) {
   }
   const email = req.user.email || "user@example.com";
   const firstName = (email.split("@")[0] || "User").split(".")[0] || "User";
-  // Try to find existing member by tenant + email
-  const existingByEmail = await prisma.member.findFirst({
-    where: { tenantId, email },
-  });
-  if (existingByEmail) {
-    if (!req.user.memberId) {
-      await prisma.user.update({ where: { id: userId }, data: { memberId: existingByEmail.id } });
-      (req.user as any).memberId = existingByEmail.id;
-    }
-    return existingByEmail;
-  }
-  // Create and link user -> member
-  const created = await prisma.$transaction(async (tx) => {
-    const member = await tx.member.create({
-      data: {
+  // Upsert member by tenant/email to avoid P2002 on concurrent requests
+  const member = await prisma.$transaction(async (tx) => {
+    const m = await tx.member.upsert({
+      where: { tenantId_email: { tenantId, email } },
+      update: {},
+      create: {
         tenantId,
         email,
         firstName,
@@ -61,11 +53,14 @@ async function ensureMemberForUser(req: AuthenticatedRequest) {
         status: MemberStatus.ACTIVE,
       },
     });
-    await tx.user.update({ where: { id: userId }, data: { memberId: member.id } });
-    return member;
+    // Link user to member if not already linked
+    if (!req.user?.memberId || req.user.memberId !== m.id) {
+      await tx.user.update({ where: { id: userId }, data: { memberId: m.id } });
+      (req.user as any).memberId = m.id;
+    }
+    return m;
   });
-  (req.user as any).memberId = created.id;
-  return created;
+  return member;
 }
 
 export const listMembers = async (req: AuthenticatedRequest, res: Response) => {

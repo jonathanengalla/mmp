@@ -39,6 +39,22 @@ export function createMemberForTenant(tenantId: string, payload: CreateMemberInp
   });
 }
 
+export function upsertMemberByTenantEmail(tenantId: string, payload: CreateMemberInput) {
+  return prisma.member.upsert({
+    where: { tenantId_email: { tenantId, email: payload.email } },
+    update: {},
+    create: {
+      tenantId,
+      email: payload.email,
+      firstName: payload.firstName,
+      lastName: payload.lastName,
+      phone: payload.phone ?? null,
+      address: payload.address ?? null,
+      status: MemberStatus.ACTIVE,
+    },
+  });
+}
+
 export function approveMemberForTenant(tenantId: string, memberId: string, approverUserId?: string) {
   return prisma.member.update({
     where: { id_tenantId: { id: memberId, tenantId } },
