@@ -6,27 +6,21 @@ import { seedDevUser } from "./store";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const reportingRoutes = require("../../services/reporting-service/src/routes").default;
 
-// Guarded billing handlers import (stubbed if missing)
-let billingHandlers: any;
-try {
-  // Path relative to this file; adjust if relocated
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  billingHandlers = require("./billingHandlers");
-} catch (err) {
-  console.warn(
-    "[billing] Handlers module not found, using stub implementations (501).",
-    (err as Error)?.message ?? err
-  );
-
-  const stub = (req: any, res: any) => res.status(501).json({ error: "Billing not implemented" });
-  billingHandlers = {
-    createInvoice: stub,
-    getInvoice: stub,
-    recordInvoicePaymentHandler: stub,
-    createDuesRunHandler: stub,
-    listDuesSummaryHandler: stub,
-  };
-}
+// Local stub billing helpers (until real billing is reintroduced)
+const billingHandlers = {
+  recordInvoicePaymentHandler: (_req: express.Request, res: express.Response) => {
+    console.warn("[billingHandlers] recordInvoicePaymentHandler stub hit; billing not implemented yet");
+    return res.status(501).json({ error: "Billing not implemented yet" });
+  },
+  createDuesRunHandler: (_req: express.Request, res: express.Response) => {
+    console.warn("[billingHandlers] createDuesRunHandler stub hit; billing not implemented yet");
+    return res.status(501).json({ error: "Billing not implemented yet" });
+  },
+  listDuesSummaryHandler: (_req: express.Request, res: express.Response) => {
+    console.warn("[billingHandlers] listDuesSummaryHandler stub hit; billing not implemented yet");
+    return res.status(501).json({ error: "Billing not implemented yet" });
+  },
+};
 
 // Import membership handlers directly (not routes, to avoid express resolution issue)
 // Import membership handlers via require to avoid TS dependency on sibling service types
@@ -83,9 +77,9 @@ const {
 } = billingHandlersFromPayments;
 
 const {
-  recordInvoicePaymentHandler = billingHandlers.recordInvoicePaymentHandler,
-  createDuesRunHandler = billingHandlers.createDuesRunHandler,
-  listDuesSummaryHandler = billingHandlers.listDuesSummaryHandler,
+  recordInvoicePaymentHandler,
+  createDuesRunHandler,
+  listDuesSummaryHandler,
 } = billingHandlers;
 import { emailLogHandler } from "./notifications/emailSender";
 import {
