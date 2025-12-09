@@ -20,6 +20,17 @@ import {
   createMemberPaymentMethod,
   updateMyAvatar,
   uploadPhoto,
+  updateCurrentMember,
+  updateMemberContact,
+  updateMemberRoles,
+  deactivateMemberAccount,
+  adminUpdateAvatar,
+  importMembersPlaceholder,
+  auditMemberPlaceholder,
+  updateProfileCustomFieldSchema,
+  updateCurrentMemberCustomFields,
+  adminGetMemberCustomFields,
+  adminUpdateMemberCustomFields,
 } from "./membershipHandlers";
 import {
   createManualInvoiceHandler,
@@ -49,17 +60,6 @@ const membershipStub = (label: string) => (_req: express.Request, res: express.R
 };
 const createMember = createRegistration;
 const createMemberAdmin = createRegistration;
-const updateCurrentMember = membershipStub("updateCurrentMember");
-const updateMemberContact = membershipStub("updateMemberContact");
-const deactivateMember = membershipStub("deactivateMember");
-const updateMemberRoles = membershipStub("updateMemberRoles");
-const adminUpdateAvatar = membershipStub("adminUpdateAvatar");
-const importMembers = membershipStub("importMembers");
-const auditMember = membershipStub("auditMember");
-const updateProfileCustomFieldSchema = membershipStub("updateProfileCustomFieldSchema");
-const updateCurrentMemberCustomFields = membershipStub("updateCurrentMemberCustomFields");
-const adminGetMemberCustomFields = membershipStub("adminGetMemberCustomFields");
-const adminUpdateMemberCustomFields = membershipStub("adminUpdateMemberCustomFields");
 const __seedDevMember = () => null;
 const duesStub = (label: string) => (_req: express.Request, res: express.Response) => {
   console.warn(`[billing] ${label} stub hit; not implemented in BKS-04 scope.`);
@@ -137,8 +137,8 @@ membershipRouter.get("/members/pending", requireOfficerOrAdmin, listPendingMembe
 membershipRouter.post("/members/admin", requireAdmin, createMemberAdmin);
 
 // Custom fields schema routes
-membershipRouter.get("/custom-fields/profile-schema", requireOfficerOrAdmin, getProfileCustomFieldSchema);
-membershipRouter.put("/custom-fields/profile-schema", requireOfficerOrAdmin, updateProfileCustomFieldSchema);
+membershipRouter.get("/custom-fields/profile-schema", getProfileCustomFieldSchema);
+membershipRouter.put("/custom-fields/profile-schema", updateProfileCustomFieldSchema);
 
 //---------------------------------------------------------------
 // MEMBERSHIP ROUTES - ORDER MATTERS: "me" routes before ":id"
@@ -157,7 +157,7 @@ membershipRouter.post("/members/me/payment-methods", createMemberPaymentMethod);
 membershipRouter.get("/members/search", requireOfficerOrAdmin, searchDirectoryMembers);
 membershipRouter.get("/members", requireOfficerOrAdmin, listMembers);
 membershipRouter.post("/members", requireOfficerOrAdmin, createMember);
-membershipRouter.post("/members/import", requireOfficerOrAdmin, importMembers);
+membershipRouter.post("/members/import", requireOfficerOrAdmin, importMembersPlaceholder);
 
 // Admin member management by ID (these come AFTER "me" routes)
 membershipRouter.patch("/members/:id/avatar", requireAdmin, adminUpdateAvatar);
@@ -168,9 +168,9 @@ membershipRouter.post("/members/:id/approve", requireAdmin, approveMember);
 membershipRouter.post("/members/:id/reject", requireAdmin, rejectMember);
 membershipRouter.patch("/members/:id", requireOfficerOrAdmin, updateMemberContact);
 membershipRouter.post("/members/:id/photo", requireOfficerOrAdmin, uploadPhoto);
-membershipRouter.post("/members/:id/deactivate", requireAdmin, deactivateMember);
+membershipRouter.post("/members/:id/deactivate", requireAdmin, deactivateMemberAccount);
 membershipRouter.put("/members/:id/roles", requireAdmin, updateMemberRoles);
-membershipRouter.get("/members/:id/audit", requireAdmin, auditMember);
+membershipRouter.get("/members/:id/audit", requireAdmin, auditMemberPlaceholder);
 //---------------------------------------------------------------
 
 app.use("/membership", membershipRouter);

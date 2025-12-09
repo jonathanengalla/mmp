@@ -5,7 +5,6 @@ import {
   createMemberForTenant,
   getMemberByIdForTenant,
   listMembersForTenant,
-  upsertMemberByTenantEmail,
   rejectMemberForTenant,
   setVerificationTokenForTenant,
   verifyMemberByToken,
@@ -121,6 +120,102 @@ export const createRegistration = async (req: AuthenticatedRequest, res: Respons
     console.error("[membership] createRegistration error", err);
     return res.status(500).json({ error: "Internal server error" });
   }
+};
+
+export const updateCurrentMember = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const member = await ensureMemberForUser(req);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+    const { phone, address, linkedinUrl, otherSocials } = req.body || {};
+    const updated = await prisma.member.update({
+      where: { id_tenantId: { id: member.id, tenantId: req.user.tenantId } },
+      data: {
+        phone: phone ?? member.phone ?? null,
+        address: address ?? member.address ?? null,
+        linkedinUrl: linkedinUrl ?? (member as any).linkedinUrl ?? null,
+        otherSocials: otherSocials ?? (member as any).otherSocials ?? null,
+      },
+    });
+    return res.json(sanitizeMember(updated));
+  } catch (err) {
+    console.error("[membership] updateCurrentMember error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateMemberContact = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const memberId = req.params.id || req.user.memberId;
+    if (!memberId) return res.status(404).json({ error: "Member not found" });
+    const { phone, address } = req.body || {};
+    const updated = await prisma.member.update({
+      where: { id_tenantId: { id: memberId, tenantId: req.user.tenantId } },
+      data: {
+        phone: phone ?? undefined,
+        address: address ?? undefined,
+      },
+    });
+    return res.json(sanitizeMember(updated));
+  } catch (err) {
+    console.error("[membership] updateMemberContact error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateMemberRoles = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const memberId = req.params.id;
+    if (!memberId) return res.status(400).json({ error: "memberId is required" });
+    const roles = Array.isArray(req.body?.roles) ? req.body.roles : [];
+    const updated = await prisma.member.update({
+      where: { id_tenantId: { id: memberId, tenantId: req.user.tenantId } },
+      data: { roles },
+    });
+    return res.json(sanitizeMember(updated));
+  } catch (err) {
+    console.error("[membership] updateMemberRoles error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deactivateMemberAccount = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const memberId = req.params.id;
+    if (!memberId) return res.status(400).json({ error: "memberId is required" });
+    const updated = await prisma.member.update({
+      where: { id_tenantId: { id: memberId, tenantId: req.user.tenantId } },
+      data: { status: MemberStatus.INACTIVE },
+    });
+    return res.json(sanitizeMember(updated));
+  } catch (err) {
+    console.error("[membership] deactivateMemberAccount error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const adminUpdateAvatar = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const memberId = req.params.id;
+    if (!memberId) return res.status(400).json({ error: "memberId is required" });
+    console.log("[membership] adminUpdateAvatar placeholder", { tenantId: req.user.tenantId, memberId });
+    return res.json({ memberId, avatarUrl: null, success: true });
+  } catch (err) {
+    console.error("[membership] adminUpdateAvatar error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const importMembersPlaceholder = async (_req: AuthenticatedRequest, res: Response) => {
+  return res.json({ imported: 0, skipped: 0 });
+};
+
+export const auditMemberPlaceholder = async (_req: AuthenticatedRequest, res: Response) => {
+  return res.json({ items: [] });
 };
 
 export const approveMember = async (req: AuthenticatedRequest, res: Response) => {
@@ -284,5 +379,39 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
     console.error("[membership] uploadPhoto error", err);
     return res.status(500).json({ error: "Internal server error" });
   }
+};
+
+export const updateProfileCustomFieldSchema = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+  console.log("[membership] updateProfileCustomFieldSchema placeholder", { tenantId: req.user.tenantId });
+  return res.json({ groups: [], fields: [], updatedAt: Date.now() });
+};
+
+export const updateCurrentMemberCustomFields = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const member = await ensureMemberForUser(req);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+    console.log("[membership] updateCurrentMemberCustomFields placeholder", {
+      tenantId: req.user.tenantId,
+      memberId: member.id,
+    });
+    return res.json({ memberId: member.id, fields: req.body?.customFields || {} });
+  } catch (err) {
+    console.error("[membership] updateCurrentMemberCustomFields error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const adminGetMemberCustomFields = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+  console.log("[membership] adminGetMemberCustomFields placeholder");
+  return res.json({ schema: { groups: [], fields: [], updatedAt: Date.now() }, customFields: {} });
+};
+
+export const adminUpdateMemberCustomFields = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+  console.log("[membership] adminUpdateMemberCustomFields placeholder");
+  return res.json({ schema: { groups: [], fields: [], updatedAt: Date.now() }, customFields: req.body?.customFields || {} });
 };
 
