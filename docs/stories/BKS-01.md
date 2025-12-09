@@ -1,4 +1,5 @@
 # BKS-01 — Multi-tenant Prisma schema baseline
+Status: Done
 
 - **Problem summary**: Current schema is minimal and single-tenant; membership, billing, events, roles, and audit data are missing, leaving core flows in memory and blocking persistence.
 - **Goal**: Define and migrate a multi-tenant Prisma schema that covers members, users, roles, invoices/payments, events/registrations, audit logs, and config seeds with `tenant_id` on all rows.

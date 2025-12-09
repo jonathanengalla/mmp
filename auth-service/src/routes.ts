@@ -1,7 +1,9 @@
 import { Router, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { prisma } from "./db/prisma";
-import { getUserFromAuthHeader } from "./utils/auth";
+import { signToken } from "./lib/jwt";
+import { applyTenantScope } from "./tenantGuard";
+import type { AuthenticatedRequest } from "./authMiddleware";
 
 const router = Router();
 
@@ -10,20 +12,29 @@ router.post("/login", async (req: Request, res: Response) => {
     console.log("[auth-service] POST /auth/login headers:", req.headers);
     console.log("[auth-service] POST /auth/login body:", req.body);
 
-    const { email, password } = (req.body || {}) as {
+    const { email, password, tenantId } = (req.body || {}) as {
       email?: string;
       password?: string;
+      tenantId?: string;
     };
 
-    if (!email || !password) {
-      console.warn("[auth-service] Missing email or password", {
+    if (!email || !password || !tenantId) {
+      console.warn("[auth-service] Missing email, password, or tenantId", {
         email,
         passwordPresent: !!password,
+        tenantId,
       });
-      return res.status(400).json({ success: false, error: "Email and password are required" });
+      return res.status(400).json({ success: false, error: "Email, password, and tenantId are required" });
     }
 
-    const user = await prisma.user.findUnique({ where: { email } });
+    const user = await prisma.user.findFirst(
+      applyTenantScope(
+        {
+          where: { email },
+        },
+        tenantId
+      )
+    );
 
     if (!user) {
       console.warn("[auth-service] Invalid credentials for", email);
@@ -36,19 +47,25 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    const token = `user-${user.id}`;
-    console.log("[auth-service] Login OK for", email);
+    const roles = (user.roles || []).map((r) => r.toUpperCase());
+    const token = signToken({
+      userId: user.id,
+      tenantId: user.tenantId,
+      roles,
+    });
+    console.log("[auth-service] Login OK for", email, "tenant", tenantId);
 
     return res.json({
       success: true,
       token,
-      roles: user.roles,
+      roles,
       user: {
         id: user.id,
         email: user.email,
-        roles: user.roles,
+        roles,
+        tenantId: user.tenantId,
       },
-      tenant_id: user.tenantId || "t1",
+      tenant_id: user.tenantId,
       member_id: user.memberId || null,
     });
   } catch (err) {
@@ -57,18 +74,23 @@ router.post("/login", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/me", async (req: Request, res: Response) => {
+router.get("/me", async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user = await getUserFromAuthHeader(req);
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.userId },
+      select: { id: true, email: true, roles: true, tenantId: true, memberId: true },
+    });
     if (!user) return res.status(401).json({ error: "Unauthorized" });
+    const roles = (user.roles || []).map((r) => r.toUpperCase());
     return res.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
-        roles: user.roles,
+        roles,
       },
-      tenant_id: user.tenantId || "t1",
+      tenant_id: user.tenantId,
       member_id: user.memberId || null,
     });
   } catch (err) {

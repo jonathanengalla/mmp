@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "./db/prisma";
-import { getUserFromAuthHeader } from "./utils/auth";
+import { applyTenantScope } from "./tenantGuard";
+import type { AuthenticatedRequest } from "./authMiddleware";
 import {
   EventAttendanceReportItem,
   EventCheckInResult,
@@ -46,13 +47,13 @@ const getMemberContext = (req: Request) => {
     memberId: user.member_id || user.memberId || null,
     email: user.email || `${user.member_id || "member"}@example.com`,
     name: user.name || user.email || "Member",
-    roles: (user.roles as string[] | undefined) || [],
+    roles: ((user.roles as string[] | undefined) || []).map((r) => r.toUpperCase()),
   };
 };
 
 const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
   const { roles } = getMemberContext(req);
-  if (!roles.includes("admin")) {
+  if (!roles.includes("ADMIN")) {
     return res.status(403).json({ error: { message: "Admin only" } });
   }
   return next();
@@ -376,16 +377,22 @@ export const eventCheckoutHandler = async (req: Request, res: Response) => {
   return res.status(201).json(payload);
 };
 
-export const listMyInvoicesHandler = async (req: Request, res: Response) => {
+export const listMyInvoicesHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const user = await getUserFromAuthHeader(req);
-    if (!user || !user.memberId) return res.status(401).json({ error: { message: "Unauthorized" } });
+    if (!req.user) return res.status(401).json({ error: { message: "Unauthorized" } });
+    const memberId = req.user.memberId;
+    if (!memberId) return res.status(403).json({ error: { message: "No member context" } });
 
-    const invoices = await prisma.invoice.findMany({
-      where: { memberId: user.memberId },
-      include: { event: true },
-      orderBy: { issuedAt: "desc" },
-    });
+    const invoices = await prisma.invoice.findMany(
+      applyTenantScope(
+        {
+          where: { memberId },
+          include: { event: true },
+          orderBy: { issuedAt: "desc" },
+        },
+        req.user.tenantId
+      )
+    );
     const items = invoices.map(toInvoiceDto);
     return res.json({ items });
   } catch (err) {

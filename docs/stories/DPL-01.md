@@ -1,4 +1,5 @@
 # DPL-01 — Render DATABASE_URL + migrate deploy pipeline
+Status: Done
 
 - **Problem summary**: Render deploy lacks `DATABASE_URL` and does not run migrations, causing runtime failures and schema drift.
 - **Goal**: Configure Render with required DB env vars and execute `prisma migrate deploy` before start.

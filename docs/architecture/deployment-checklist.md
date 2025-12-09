@@ -5,6 +5,7 @@
 - From `auth-service` root run:
   - `npx prisma migrate dev --schema prisma/schema.prisma --skip-seed`
 - Optional: `npx prisma studio` to visually confirm schema.
+- Copy `auth-service/.env.example` to `auth-service/.env` and replace `JWT_SECRET` with a strong local-only secret.
 
 ## Render Backend
 - `DATABASE_URL` set to the new Render Postgres instance (same as local).
@@ -16,6 +17,8 @@
 - Post-deploy smoke/health check passes (health/readiness or basic API smoke).
 - Render env vars to set:
   - `DATABASE_URL=<Render_Postgres_Internal_URL>`
+  - `JWT_SECRET=<long_random_string>` (must match across auth-service replicas)
+  - `JWT_ALGORITHM=HS256` (optional; default HS256; change only if supported)
 - Recommended Render build step:
   - `npx prisma migrate deploy --schema prisma/schema.prisma`
 - Recommended start command (if not already set):

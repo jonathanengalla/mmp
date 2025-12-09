@@ -1,40 +1,59 @@
-import type { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { JWT_ACCESS_SECRET } from "./config";
-import { findUserById } from "./store";
+import type { NextFunction, Request, Response } from "express";
+import { prisma } from "./db/prisma";
+import { verifyToken } from "./lib/jwt";
 
-export type AuthRequest = Request & {
-  user?:
-    | {
-        memberId?: string;
-        tenantId?: string;
-        roles?: string[];
-        email?: string;
-        [key: string]: any;
-      }
-    | null;
+export type AuthenticatedUser = {
+  userId: string;
+  tenantId: string;
+  roles: string[];
+  email?: string | null;
+  memberId?: string | null;
 };
 
-export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
+export type AuthenticatedRequest = Request & { user?: AuthenticatedUser };
+
+const PUBLIC_PATHS = ["/health", "/auth/health", "/auth/login", "/auth/register"];
+
+const isPublicPath = (path: string) => PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));
+
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  if (isPublicPath(req.path)) {
+    return next();
+  }
+
   const header = req.headers.authorization;
   if (!header || !header.startsWith("Bearer ")) {
     return res.status(401).json({ error: "Missing Authorization header" });
   }
 
-  const token = header.slice("Bearer ".length);
+  const token = header.slice("Bearer ".length).trim();
+  if (!token) return res.status(401).json({ error: "Missing token" });
 
   try {
-    const payload = jwt.verify(token, JWT_ACCESS_SECRET) as { sub: string };
-    const user = findUserById(payload.sub);
+    const payload = verifyToken(token);
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, email: true, tenantId: true, roles: true, memberId: true },
+    });
 
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
+    if (user.tenantId !== payload.tenantId) {
+      return res.status(403).json({ error: "Tenant mismatch" });
+    }
 
-    req.user = user;
+    const roles = (user.roles || []).map((r) => r.toUpperCase());
+    (req as AuthenticatedRequest).user = {
+      userId: user.id,
+      tenantId: user.tenantId,
+      roles,
+      email: user.email,
+      memberId: user.memberId ?? null,
+    };
     return next();
   } catch (err) {
-    console.error("[auth-middleware] Invalid access token", err);
+    console.error("[authMiddleware] Invalid token", err);
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }

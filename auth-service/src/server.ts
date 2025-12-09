@@ -1,7 +1,8 @@
 import express, { Router } from "express";
 import cors from "cors";
 import routes from "./routes";
-import { seedDevUser } from "./store";
+import { authMiddleware } from "./authMiddleware";
+import { requireAnyRole, requireRole } from "./rbac";
 
 // Local reporting stub (501)
 const reportingRoutes = Router();
@@ -279,43 +280,19 @@ app.get("/auth/health", (req, res) => {
   res.status(200).json({ status: "ok", service: "auth-service", scope: "auth" });
 });
 
-// Auth middleware that attaches user context for protected routes
-const authMiddleware = (req: express.Request, _res: express.Response, next: express.NextFunction) => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith("Bearer ")) {
-    // For dev mode, decode the token or use a simple dev context
-    // In real production, verify JWT and extract user info
-    const token = authHeader.slice("Bearer ".length);
-    if (token) {
-      // Dev mode: set a basic user context matching the seeded dev member
-      (req as any).user = {
-        userId: "dev-1",
-        memberId: "m-dev",
-        member_id: "m-dev",
-        tenantId: "t1",
-        roles: ["admin", "member"],
-      };
-    }
-  }
-  next();
-};
-
-// Apply auth middleware to all routes
+// Apply auth middleware to all protected routes (public: /health, /auth/health, /auth/login, /auth/register)
 app.use(authMiddleware);
 
-const requireAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
-  const roles: string[] = ((req as any).user?.roles as string[]) || [];
-  if (roles.includes("admin") || roles.includes("finance_manager")) {
-    return next();
-  }
-  return res.status(403).json({ error: { message: "Admin only" } });
-};
+const requireAdmin = requireRole("ADMIN");
+const requireOfficerOrAdmin = requireAnyRole(["ADMIN", "OFFICER"]);
+const requireMemberOrHigher = requireAnyRole(["ADMIN", "OFFICER", "MEMBER"]);
 
 // Mount auth routes
 app.use("/auth", routes);
 
 // Build membership routes inline
 const membershipRouter = Router();
+membershipRouter.use(requireMemberOrHigher);
 
 // Registration and verification routes
 membershipRouter.post("/members/registrations", createRegistration);
@@ -325,12 +302,12 @@ membershipRouter.post("/members/verify-request", requestVerification);
 membershipRouter.post("/members/verify", verify);
 
 // Admin routes
-membershipRouter.get("/members/pending", listPendingMembers);
-membershipRouter.post("/members/admin", createMemberAdmin);
+membershipRouter.get("/members/pending", requireOfficerOrAdmin, listPendingMembers);
+membershipRouter.post("/members/admin", requireAdmin, createMemberAdmin);
 
 // Custom fields schema routes
-membershipRouter.get("/custom-fields/profile-schema", getProfileCustomFieldSchema);
-membershipRouter.put("/custom-fields/profile-schema", updateProfileCustomFieldSchema);
+membershipRouter.get("/custom-fields/profile-schema", requireOfficerOrAdmin, getProfileCustomFieldSchema);
+membershipRouter.put("/custom-fields/profile-schema", requireOfficerOrAdmin, updateProfileCustomFieldSchema);
 
 //---------------------------------------------------------------
 // MEMBERSHIP ROUTES - ORDER MATTERS: "me" routes before ":id"
@@ -346,29 +323,30 @@ membershipRouter.get("/members/me/payment-methods", getMemberPaymentMethods);
 membershipRouter.post("/members/me/payment-methods", createMemberPaymentMethod);
 
 // Search and list
-membershipRouter.get("/members/search", searchDirectoryMembers);
-membershipRouter.get("/members", listMembers);
-membershipRouter.post("/members", createMember);
-membershipRouter.post("/members/import", importMembers);
+membershipRouter.get("/members/search", requireOfficerOrAdmin, searchDirectoryMembers);
+membershipRouter.get("/members", requireOfficerOrAdmin, listMembers);
+membershipRouter.post("/members", requireOfficerOrAdmin, createMember);
+membershipRouter.post("/members/import", requireOfficerOrAdmin, importMembers);
 
 // Admin member management by ID (these come AFTER "me" routes)
-membershipRouter.patch("/members/:id/avatar", adminUpdateAvatar);
-membershipRouter.get("/members/:id/custom-fields", adminGetMemberCustomFields);
-membershipRouter.patch("/members/:id/custom-fields", adminUpdateMemberCustomFields);
-membershipRouter.get("/members/:id", getMember);
-membershipRouter.post("/members/:id/approve", approveMember);
-membershipRouter.post("/members/:id/reject", rejectMember);
-membershipRouter.patch("/members/:id", updateMemberContact);
-membershipRouter.post("/members/:id/photo", uploadPhoto);
-membershipRouter.post("/members/:id/deactivate", deactivateMember);
-membershipRouter.put("/members/:id/roles", updateMemberRoles);
-membershipRouter.get("/members/:id/audit", auditMember);
+membershipRouter.patch("/members/:id/avatar", requireAdmin, adminUpdateAvatar);
+membershipRouter.get("/members/:id/custom-fields", requireAdmin, adminGetMemberCustomFields);
+membershipRouter.patch("/members/:id/custom-fields", requireAdmin, adminUpdateMemberCustomFields);
+membershipRouter.get("/members/:id", requireOfficerOrAdmin, getMember);
+membershipRouter.post("/members/:id/approve", requireAdmin, approveMember);
+membershipRouter.post("/members/:id/reject", requireAdmin, rejectMember);
+membershipRouter.patch("/members/:id", requireOfficerOrAdmin, updateMemberContact);
+membershipRouter.post("/members/:id/photo", requireOfficerOrAdmin, uploadPhoto);
+membershipRouter.post("/members/:id/deactivate", requireAdmin, deactivateMember);
+membershipRouter.put("/members/:id/roles", requireAdmin, updateMemberRoles);
+membershipRouter.get("/members/:id/audit", requireAdmin, auditMember);
 //---------------------------------------------------------------
 
 app.use("/membership", membershipRouter);
 
 // Build billing routes inline
 const billingRouter = Router();
+billingRouter.use(requireAdmin);
 billingRouter.post("/payment-methods", paymentsBillingHandlers.createPaymentMethod);
 billingRouter.get("/payment-methods", paymentsBillingHandlers.listPaymentMethods);
 billingRouter.post("/payments", paymentsBillingHandlers.createPayment);
@@ -385,7 +363,7 @@ billingRouter.get("/billing/dues/summary", requireAdmin, listDuesSummaryHandler)
 app.use("/billing", billingRouter);
 
 const invoicesRouter = Router();
-invoicesRouter.get("/invoices/me", listMyInvoicesHandler);
+invoicesRouter.get("/invoices/me", requireMemberOrHigher, listMyInvoicesHandler);
 invoicesRouter.post("/invoices/:id/record-payment", requireAdmin, recordInvoicePaymentHandler);
 app.use("/", invoicesRouter);
 app.use("/api", invoicesRouter);
@@ -420,10 +398,6 @@ app.use("/api/reporting", reportingRoutes);
 
 const port = process.env.PORT || 3001;
 
-// Seed dev data for local testing
-seedDevUser().then(() => {
-  console.log("[dev-server] Auth dev user seeded");
-});
 __seedDevMember();
 
 app.listen(port, () => {
