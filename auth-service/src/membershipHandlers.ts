@@ -26,6 +26,26 @@ const sanitizeMember = (m: any) => ({
   tenantId: m.tenantId,
 });
 
+async function ensureMemberForUser(req: AuthenticatedRequest) {
+  if (!req.user) return null;
+  const tenantId = req.user.tenantId;
+  if (req.user.memberId) {
+    const existing = await getMemberByIdForTenant(tenantId, req.user.memberId);
+    if (existing) return existing;
+  }
+  const email = req.user.email || "user@example.com";
+  const firstName = (email.split("@")[0] || "User").split(".")[0] || "User";
+  const created = await createMemberForTenant(tenantId, {
+    email,
+    firstName,
+    lastName: "Member",
+    phone: null,
+    address: null,
+  });
+  (req.user as any).memberId = created.id;
+  return created;
+}
+
 export const listMembers = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
@@ -58,8 +78,8 @@ export const getMember = async (req: AuthenticatedRequest, res: Response) => {
 
 export const getCurrentMember = async (req: AuthenticatedRequest, res: Response) => {
   try {
-    if (!req.user || !req.user.memberId) return res.status(404).json({ error: "Member not found" });
-    const member = await getMemberByIdForTenant(req.user.tenantId, req.user.memberId);
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const member = await ensureMemberForUser(req);
     if (!member) return res.status(404).json({ error: "Member not found" });
     return res.json(sanitizeMember(member));
   } catch (err) {
@@ -159,6 +179,23 @@ export const searchDirectoryMembers = async (req: AuthenticatedRequest, res: Res
     return res.json({ items: filtered.map(sanitizeMember) });
   } catch (err) {
     console.error("[membership] searchDirectoryMembers error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getProfileCustomFieldSchema = async (req: AuthenticatedRequest, res: Response) => {
+  if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+  return res.json({ sections: [], version: 1 });
+};
+
+export const getCurrentMemberCustomFields = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const member = await ensureMemberForUser(req);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+    return res.json({ memberId: member.id, fields: {} });
+  } catch (err) {
+    console.error("[membership] getCurrentMemberCustomFields error", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 };

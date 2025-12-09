@@ -14,6 +14,8 @@ import {
   searchDirectoryMembers,
   rejectMember,
   verify,
+  getProfileCustomFieldSchema,
+  getCurrentMemberCustomFields,
 } from "./membershipHandlers";
 import {
   createManualInvoiceHandler,
@@ -54,9 +56,7 @@ const importMembers = membershipStub("importMembers");
 const auditMember = membershipStub("auditMember");
 const getMemberPaymentMethods = membershipStub("getMemberPaymentMethods");
 const createMemberPaymentMethod = membershipStub("createMemberPaymentMethod");
-const getProfileCustomFieldSchema = membershipStub("getProfileCustomFieldSchema");
 const updateProfileCustomFieldSchema = membershipStub("updateProfileCustomFieldSchema");
-const getCurrentMemberCustomFields = membershipStub("getCurrentMemberCustomFields");
 const updateCurrentMemberCustomFields = membershipStub("updateCurrentMemberCustomFields");
 const adminGetMemberCustomFields = membershipStub("adminGetMemberCustomFields");
 const adminUpdateMemberCustomFields = membershipStub("adminUpdateMemberCustomFields");
