@@ -230,9 +230,8 @@ export const LoginPage: React.FC = () => {
               <Button
                 type="submit"
                 disabled={submitting || offline}
-                loading={submitting}
+                loading={!!submitting}
                 fullWidth
-                size="lg"
               >
                 Sign in
               </Button>

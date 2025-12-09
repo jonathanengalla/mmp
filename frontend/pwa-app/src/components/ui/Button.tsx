@@ -8,6 +8,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
     fullWidth?: boolean;
     as?: "button" | "a";
     href?: string;
+    loading?: boolean;
   };
 
 const colors: Record<Variant, { bg: string; color: string; border: string }> = {
@@ -17,7 +18,16 @@ const colors: Record<Variant, { bg: string; color: string; border: string }> = {
   danger: { bg: "var(--app-color-state-error)", color: "var(--app-color-on-primary)", border: "var(--app-color-state-error)" },
 };
 
-export const Button: React.FC<ButtonProps> = ({ variant = "primary", fullWidth, style, children, as = "button", href, ...props }) => {
+export const Button: React.FC<ButtonProps> = ({
+  variant = "primary",
+  fullWidth,
+  style,
+  children,
+  as = "button",
+  href,
+  loading,
+  ...props
+}) => {
   const palette = colors[variant];
   const sharedStyle: React.CSSProperties = {
     background: palette.bg,
@@ -46,7 +56,7 @@ export const Button: React.FC<ButtonProps> = ({ variant = "primary", fullWidth, 
 
   return (
     <button {...(props as any)} style={sharedStyle}>
-      {children}
+      {loading ? <span>Loading...</span> : children}
     </button>
   );
 };
