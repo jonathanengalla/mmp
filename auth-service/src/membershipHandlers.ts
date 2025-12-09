@@ -222,3 +222,36 @@ export const getCurrentMemberCustomFields = async (req: AuthenticatedRequest, re
   }
 };
 
+export const getMemberPaymentMethods = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const member = await ensureMemberForUser(req);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+    console.log("[membership] current member payment methods returned (empty)", {
+      tenantId: req.user.tenantId,
+      memberId: member.id,
+    });
+    return res.json({ items: [] });
+  } catch (err) {
+    console.error("[membership] getMemberPaymentMethods error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const createMemberPaymentMethod = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const member = await ensureMemberForUser(req);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+    console.log("[membership] createMemberPaymentMethod placeholder", {
+      tenantId: req.user.tenantId,
+      memberId: member.id,
+    });
+    // Stub implementation: accept but do nothing
+    return res.status(201).json({ item: null });
+  } catch (err) {
+    console.error("[membership] createMemberPaymentMethod error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
