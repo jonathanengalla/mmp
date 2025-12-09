@@ -22,7 +22,7 @@
 | BKS-01 | Multi-tenant Prisma schema baseline | 🟢 | Schema/migrations applied to new Render DB |
 | BKS-02 | JWT + tenant-scoped RBAC enforcement | 🟢 | JWT + tenant RBAC implemented; requires `JWT_SECRET` in local `.env` and Render env; QA Gate PASS with auth/JWT smoke tests |
 | BKS-03 | Membership + verification persistence | 🟢 | Membership register/list/approve/search/me now persisted via Prisma with tenant + RBAC; non-scope routes remain stubbed |
-| BKS-04 | Billing/payments persistence and PAN/CVC removal | 🟡 | Billing/payments routes stubbed (501); no PAN/CVC handling |
+| BKS-04 | Billing/payments persistence and PAN/CVC removal | 🟢 | Billing/payments via Prisma; tenant-scoped invoices/payments/payment methods with RBAC; PAN/CVC not stored; advanced flows remain stubbed |
 | BKS-05 | Events persistence with billing linkage | ⚪ | Not started |
 | BKS-06 | Audit & reporting data store | ⚪ | Not started |
 | BKS-07 | Config Center baseline (org profile, feature flags) | ⚪ | Not started |
@@ -45,6 +45,7 @@
 | UIR-04 | Events checkout UX and error states | ⚪ | Not started |
 | UIR-05 | Admin visibility and role-guarded UI | ⚪ | Not started |
 | UIR-06 | Heading/contrast accessibility pass | ⚪ | Not started |
+| UIR-07 | Login form ↔ JWT + tenant contract alignment | 🟢 | Login calls /auth/login with email/password/tenantId; uses VITE_DEFAULT_TENANT_ID; basic 400/401 handling |
 
 ## QA / Gates
 | Code | Status | Notes |
@@ -53,6 +54,8 @@
 | BKS-01 | PASS | Multitenant schema/migrations applied; stubs in place |
 | BKS-02 | PASS | JWT + tenant RBAC gate passed; health/login/protected route smoke tests documented |
 | BKS-03 | PASS | Membership persistence + verification gate passed; core flows smoke-tested with tenant + RBAC; advanced flows documented as stubs |
+| BKS-04 | PASS | Billing/payments persistence + PAN/CVC removal gate passed; core invoice/payment/payment-method flows smoke-tested with tenant + RBAC; advanced flows remain stubbed |
+| UIR-07 | PASS | Login UX aligned with backend: /auth/login requires email/password/tenantId; smoke-tested happy path and basic error handling |
 
 ---
 Last updated: 2025-12-09 00:00 (local)

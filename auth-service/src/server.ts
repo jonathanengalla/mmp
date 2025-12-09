@@ -15,6 +15,19 @@ import {
   rejectMember,
   verify,
 } from "./membershipHandlers";
+import {
+  createManualInvoiceHandler,
+  createPaymentHandler,
+  createPaymentMethodHandler,
+  downloadInvoicePdfHandler,
+  listMemberInvoicesHandler,
+  listPaymentMethodsHandler,
+  payEventFeeHandler,
+  recordInvoicePaymentHandler,
+  runDuesJobHandler,
+  runPaymentRemindersHandler,
+  sendInvoiceHandler,
+} from "./billingHandlers";
 
 // Local reporting stub (501)
 const reportingRoutes = Router();
@@ -22,22 +35,6 @@ reportingRoutes.use((_req, res) => {
   console.warn("[reporting] Stub route hit; reporting-service not implemented yet.");
   return res.status(501).json({ error: "Reporting not implemented yet" });
 });
-
-// Local stub billing helpers (until real billing is reintroduced)
-const billingHandlers = {
-  recordInvoicePaymentHandler: (_req: express.Request, res: express.Response) => {
-    console.warn("[billingHandlers] recordInvoicePaymentHandler stub hit; billing not implemented yet");
-    return res.status(501).json({ error: "Billing not implemented yet" });
-  },
-  createDuesRunHandler: (_req: express.Request, res: express.Response) => {
-    console.warn("[billingHandlers] createDuesRunHandler stub hit; billing not implemented yet");
-    return res.status(501).json({ error: "Billing not implemented yet" });
-  },
-  listDuesSummaryHandler: (_req: express.Request, res: express.Response) => {
-    console.warn("[billingHandlers] listDuesSummaryHandler stub hit; billing not implemented yet");
-    return res.status(501).json({ error: "Billing not implemented yet" });
-  },
-};
 
 // Membership helpers
 const membershipStub = (label: string) => (_req: express.Request, res: express.Response) => {
@@ -64,60 +61,12 @@ const updateCurrentMemberCustomFields = membershipStub("updateCurrentMemberCusto
 const adminGetMemberCustomFields = membershipStub("adminGetMemberCustomFields");
 const adminUpdateMemberCustomFields = membershipStub("adminUpdateMemberCustomFields");
 const __seedDevMember = () => null;
-
-// Import billing handlers via require to avoid TS dependency on sibling service types
-const paymentsBillingHandlers = {
-  createPaymentMethod: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] createPaymentMethod stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  listPaymentMethods: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] listPaymentMethods stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  createPayment: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] createPayment stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  markInvoicePaid: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] markInvoicePaid stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  payEventFee: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] payEventFee stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  createManualInvoice: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] createManualInvoice stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  runDuesJob: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] runDuesJob stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  sendInvoice: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] sendInvoice stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  listMemberInvoices: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] listMemberInvoices stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  downloadInvoicePdf: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] downloadInvoicePdf stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
-  runPaymentReminders: (_req: express.Request, res: express.Response) => {
-    console.warn("[payments-billing] runPaymentReminders stub hit; payments-billing-service not implemented yet.");
-    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
-  },
+const duesStub = (label: string) => (_req: express.Request, res: express.Response) => {
+  console.warn(`[billing] ${label} stub hit; not implemented in BKS-04 scope.`);
+  return res.status(501).json({ error: "Billing not implemented yet" });
 };
-
-const {
-  recordInvoicePaymentHandler,
-  createDuesRunHandler,
-  listDuesSummaryHandler,
-} = billingHandlers;
+const createDuesRunHandler = duesStub("createDuesRunHandler");
+const listDuesSummaryHandler = duesStub("listDuesSummaryHandler");
 import { emailLogHandler } from "./notifications/emailSender";
 import {
   cancelRegistrationHandler,
@@ -228,25 +177,30 @@ app.use("/membership", membershipRouter);
 
 // Build billing routes inline
 const billingRouter = Router();
-billingRouter.use(requireAdmin);
-billingRouter.post("/payment-methods", paymentsBillingHandlers.createPaymentMethod);
-billingRouter.get("/payment-methods", paymentsBillingHandlers.listPaymentMethods);
-billingRouter.post("/payments", paymentsBillingHandlers.createPayment);
-billingRouter.post("/invoices/:id/mark-paid", paymentsBillingHandlers.markInvoicePaid);
-billingRouter.post("/events/:id/pay", paymentsBillingHandlers.payEventFee);
-billingRouter.post("/invoices", paymentsBillingHandlers.createManualInvoice);
-billingRouter.get("/invoices", paymentsBillingHandlers.listMemberInvoices);
-billingRouter.post("/internal/dues/run", paymentsBillingHandlers.runDuesJob);
-billingRouter.post("/invoices/:id/send", paymentsBillingHandlers.sendInvoice);
-billingRouter.get("/invoices/:id/pdf", paymentsBillingHandlers.downloadInvoicePdf);
-billingRouter.post("/internal/payment-reminders/run", paymentsBillingHandlers.runPaymentReminders);
+
+// Payment methods (member-facing, admin/officer can act on behalf via memberId)
+billingRouter.post("/payment-methods", requireMemberOrHigher, createPaymentMethodHandler);
+billingRouter.get("/payment-methods", requireMemberOrHigher, listPaymentMethodsHandler);
+
+// Payments and invoices
+billingRouter.post("/payments", requireMemberOrHigher, createPaymentHandler);
+billingRouter.post("/invoices/:id/mark-paid", requireOfficerOrAdmin, recordInvoicePaymentHandler);
+billingRouter.post("/invoices", requireOfficerOrAdmin, createManualInvoiceHandler);
+billingRouter.get("/invoices", requireMemberOrHigher, listMemberInvoicesHandler);
+
+// Out-of-scope stubs
+billingRouter.post("/events/:id/pay", payEventFeeHandler);
+billingRouter.post("/internal/dues/run", runDuesJobHandler);
+billingRouter.post("/invoices/:id/send", sendInvoiceHandler);
+billingRouter.get("/invoices/:id/pdf", downloadInvoicePdfHandler);
+billingRouter.post("/internal/payment-reminders/run", runPaymentRemindersHandler);
 billingRouter.post("/billing/dues/runs", requireAdmin, createDuesRunHandler);
 billingRouter.get("/billing/dues/summary", requireAdmin, listDuesSummaryHandler);
 app.use("/billing", billingRouter);
 
 const invoicesRouter = Router();
 invoicesRouter.get("/invoices/me", requireMemberOrHigher, listMyInvoicesHandler);
-invoicesRouter.post("/invoices/:id/record-payment", requireAdmin, recordInvoicePaymentHandler);
+invoicesRouter.post("/invoices/:id/record-payment", requireOfficerOrAdmin, recordInvoicePaymentHandler);
 app.use("/", invoicesRouter);
 app.use("/api", invoicesRouter);
 app.get("/dev/email-log", emailLogHandler);

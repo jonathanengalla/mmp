@@ -7,6 +7,8 @@ import { Card, Button, Input } from "../ui";
 import { useSession } from "../hooks/useSession";
 import { useBranding } from "../config/branding";
 
+const DEFAULT_TENANT_ID = import.meta.env.VITE_DEFAULT_TENANT_ID;
+
 export const LoginPage: React.FC = () => {
   const [form, setForm] = useState({ email: "", password: "", mfa_code: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -44,10 +46,20 @@ export const LoginPage: React.FC = () => {
     }
     try {
       setSubmitting(true);
-      const resp = await login({ email: form.email, password: form.password, mfa_code: form.mfa_code || undefined });
+      const resp = await login({
+        email: form.email,
+        password: form.password,
+        tenantId: DEFAULT_TENANT_ID,
+        mfa_code: form.mfa_code || undefined,
+      });
       if (!resp.success) {
         const err = resp.error as any;
         let msg = "Sign in failed. Please check your email and password.";
+        if (resp.status === 400) {
+          msg = "Login configuration error. Please contact an administrator.";
+        } else if (resp.status === 401) {
+          msg = "Invalid email, password, or organization. Please try again.";
+        }
         if (typeof err === "string" && err.trim().length > 0) {
           msg = err;
         } else if (err && typeof err === "object") {
@@ -77,7 +89,10 @@ export const LoginPage: React.FC = () => {
       }
       navigate(redirect, { replace: true });
     } catch (err: any) {
-      const fallback = typeof err?.message === "string" && err.message.trim().length > 0 ? err.message : "Login failed. Please try again.";
+      let fallback = typeof err?.message === "string" && err.message.trim().length > 0 ? err.message : "Login failed. Please try again.";
+      if (typeof err?.message === "string" && err.message.includes("tenantId")) {
+        fallback = "Login configuration error. Please contact an administrator.";
+      }
       console.error("[login] unexpected error", err);
       setToast({ msg: fallback, type: "error" });
     } finally {

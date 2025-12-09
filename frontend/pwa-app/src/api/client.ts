@@ -90,8 +90,14 @@ export const requestVerification = async (email: string) => {
   return json(res);
 };
 
-export const login = async (payload: { email: string; password: string; mfa_code?: string }) => {
-  const body = { email: payload.email, password: payload.password, mfaCode: payload.mfa_code };
+const DEFAULT_TENANT_ID = import.meta.env.VITE_DEFAULT_TENANT_ID;
+
+export const login = async (payload: { email: string; password: string; tenantId?: string; mfa_code?: string }) => {
+  const effectiveTenantId = payload.tenantId || DEFAULT_TENANT_ID;
+  if (!effectiveTenantId) {
+    throw new Error("No tenantId configured. Set VITE_DEFAULT_TENANT_ID or provide tenantId.");
+  }
+  const body = { email: payload.email, password: payload.password, tenantId: effectiveTenantId, mfaCode: payload.mfa_code };
   try {
     const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: "POST",
@@ -102,6 +108,7 @@ export const login = async (payload: { email: string; password: string; mfa_code
     console.log("[client] auth/login", res.status, data);
     return {
       success: res.ok && data?.success !== false,
+      status: res.status,
       token: data?.token,
       access_token: data?.accessToken || data?.access_token,
       refresh_token: data?.refreshToken || data?.refresh_token,

@@ -1,166 +1,216 @@
 import { Request, Response } from "express";
+import { InvoiceStatus } from "@prisma/client";
+import type { AuthenticatedRequest } from "./authMiddleware";
 import {
-  Invoice,
-  InvoiceStatus,
-  RecordInvoicePaymentPayload,
-  DuesSummaryItem,
-  DuesSummaryResponse,
-} from "../../libs/shared/src/models";
-import {
+  createManualInvoice,
   getInvoiceById,
-  markInvoicePaid,
-  createDuesInvoice,
-  getDuesInvoicesByPeriod,
-  getAllDuesInvoices,
+  listMemberInvoices,
+  listTenantInvoices,
+  recordInvoicePayment,
+  listPaymentMethodsForMember,
+  savePaymentMethod,
 } from "./billingStore";
-import { markRegistrationPaidForInvoice } from "./eventsStore";
-import { sendEmail } from "./notifications/emailSender";
-import { buildDuesInvoiceEmail } from "./notifications/emailTemplates";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const membershipHandlers = require("../../membership-service/src/handlers");
 
-const toInvoiceDto = (invoice: Invoice): Invoice => {
-  const statusMap: Record<string, InvoiceStatus> = {
-    void: "cancelled",
-  };
-  return {
-    ...invoice,
-    status: (statusMap[invoice.status] as InvoiceStatus) || invoice.status,
-    paidAt: invoice.paidAt ?? null,
-    paymentMethod: invoice.paymentMethod ?? null,
-    paymentReference: invoice.paymentReference ?? null,
-  };
-};
+const sanitizeInvoice = (inv: any) => ({
+  id: inv.id,
+  invoiceNumber: inv.invoiceNumber,
+  tenantId: inv.tenantId,
+  memberId: inv.memberId,
+  amountCents: inv.amountCents,
+  currency: inv.currency,
+  status: inv.status,
+  issuedAt: inv.issuedAt,
+  dueAt: inv.dueAt,
+  paidAt: inv.paidAt,
+  description: inv.description,
+  source: inv.source ?? null,
+});
 
-export const recordInvoicePaymentHandler = (req: Request, res: Response) => {
+const sanitizePaymentMethod = (pm: any) => ({
+  id: pm.id,
+  tenantId: pm.tenantId,
+  memberId: pm.memberId,
+  brand: pm.brand,
+  last4: pm.last4,
+  expMonth: pm.expMonth,
+  expYear: pm.expYear,
+  label: pm.label,
+  isDefault: pm.isDefault,
+  status: pm.status,
+  createdAt: pm.createdAt,
+  updatedAt: pm.updatedAt,
+  token: pm.token, // token is safe; no PAN/CVC stored
+});
+
+export async function listMemberInvoicesHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { id } = req.params;
-    const tenantId = (req as any).user?.tenantId || "t1";
-    const payload = (req.body || {}) as RecordInvoicePaymentPayload;
-    const updated = markInvoicePaid(tenantId, id, payload);
-    if (updated.eventId) {
-      markRegistrationPaidForInvoice(updated.id);
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const tenantId = req.user.tenantId;
+    const requestedMemberId = (req.query.memberId as string | undefined) || req.user.memberId || null;
+    const isAdmin = req.user.roles.includes("ADMIN") || req.user.roles.includes("OFFICER");
+
+    if (!isAdmin && !req.user.memberId) {
+      return res.status(403).json({ error: "Forbidden" });
     }
-    return res.status(200).json(toInvoiceDto(updated));
+
+    if (!isAdmin && requestedMemberId !== req.user.memberId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    if (isAdmin && !requestedMemberId) {
+      const invoices = await listTenantInvoices(tenantId);
+      return res.json({ items: invoices.map(sanitizeInvoice) });
+    }
+
+    const invoices = await listMemberInvoices(tenantId, requestedMemberId as string);
+    return res.json({ items: invoices.map(sanitizeInvoice) });
+  } catch (err) {
+    console.error("[billing] listMemberInvoicesHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function createManualInvoiceHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const { memberId, amountCents, currency, description, dueDate } = req.body || {};
+    if (!memberId || !amountCents || !currency) {
+      return res.status(400).json({ error: "memberId, amountCents, and currency are required" });
+    }
+    if (Number(amountCents) <= 0) {
+      return res.status(400).json({ error: "amountCents must be > 0" });
+    }
+    const invoice = await createManualInvoice(req.user.tenantId, {
+      memberId,
+      amountCents: Number(amountCents),
+      currency,
+      description,
+      dueDate: dueDate ?? null,
+    });
+    return res.status(201).json(sanitizeInvoice(invoice));
+  } catch (err) {
+    console.error("[billing] createManualInvoiceHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function recordInvoicePaymentHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const invoiceId = req.params.id || (req.body && (req.body.invoiceId as string));
+    const { amountCents, paymentMethodId, externalRef } = req.body || {};
+    if (!invoiceId) return res.status(400).json({ error: "invoiceId is required" });
+    const invoice = await getInvoiceById(req.user.tenantId, invoiceId);
+    if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+
+    const isAdmin = req.user.roles.includes("ADMIN") || req.user.roles.includes("OFFICER");
+    if (!isAdmin && req.user.memberId !== invoice.memberId) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const { invoice: updatedInvoice, payment } = await recordInvoicePayment(req.user.tenantId, {
+      invoiceId,
+      amountCents: amountCents ? Number(amountCents) : invoice.amountCents,
+      methodId: paymentMethodId ?? null,
+      externalRef: externalRef ?? null,
+    });
+    return res.status(200).json({
+      invoice: sanitizeInvoice(updatedInvoice),
+      payment: {
+        id: payment.id,
+        amountCents: payment.amountCents,
+        currency: payment.currency,
+        status: payment.status,
+        reference: payment.reference,
+        processedAt: payment.processedAt,
+      },
+    });
   } catch (err: any) {
     const message = err?.message || "Unable to record payment";
     if (message === "Invoice not found") {
-      return res.status(404).json({ error: { message } });
+      return res.status(404).json({ error: message });
     }
-    return res.status(400).json({ error: { message } });
+    if (message === "Invoice already paid" || message === "Invalid amount") {
+      return res.status(400).json({ error: message });
+    }
+    console.error("[billing] recordInvoicePaymentHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
-};
+}
 
-export const createDuesRunHandler = async (req: Request, res: Response) => {
+export async function listPaymentMethodsHandler(req: AuthenticatedRequest, res: Response) {
   try {
-    const { periodKey, label, amountCents, currency, dueDate } = req.body || {};
-    if (!periodKey || !label || !amountCents || !currency) {
-      return res.status(400).json({ error: { message: "periodKey, label, amountCents, and currency are required" } });
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const isAdmin = req.user.roles.includes("ADMIN") || req.user.roles.includes("OFFICER");
+    const memberId = (req.query.memberId as string | undefined) || req.user.memberId || null;
+
+    if (!isAdmin && !memberId) return res.status(403).json({ error: "Forbidden" });
+    if (!isAdmin && memberId !== req.user.memberId) return res.status(403).json({ error: "Forbidden" });
+    if (!memberId) return res.status(400).json({ error: "memberId is required" });
+
+    const methods = await listPaymentMethodsForMember(req.user.tenantId, memberId);
+    return res.json({ items: methods.map(sanitizePaymentMethod) });
+  } catch (err) {
+    console.error("[billing] listPaymentMethodsHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+export async function createPaymentMethodHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const isAdmin = req.user.roles.includes("ADMIN") || req.user.roles.includes("OFFICER");
+    const memberId = (req.body?.memberId as string | undefined) || req.user.memberId || null;
+    const { token, brand, last4, expMonth, expYear, label } = req.body || {};
+
+    if (!memberId) return res.status(400).json({ error: "memberId is required" });
+    if (!token || !brand || !last4 || !expMonth || !expYear) {
+      return res.status(400).json({ error: "token, brand, last4, expMonth, expYear are required" });
     }
-    const tenantId = (req as any).user?.tenantId || "t1";
-    const members = (await membershipHandlers.getAllActiveMembersForTenant?.(tenantId)) || [];
-    const existingForPeriod = getDuesInvoicesByPeriod(tenantId, periodKey);
-    let createdCount = 0;
-    let skippedExistingCount = 0;
+    if (!isAdmin && memberId !== req.user.memberId) return res.status(403).json({ error: "Forbidden" });
 
-    for (const m of members) {
-      const already = existingForPeriod.find(
-        (inv: Invoice) => inv.memberId === m.id && (inv.status === "unpaid" || inv.status === "pending")
-      );
-      if (already) {
-        skippedExistingCount += 1;
-        continue;
-      }
-      const invoice = createDuesInvoice({
-        tenantId,
-        memberId: m.id,
-        amountCents: Number(amountCents),
-        currency,
-        duesPeriodKey: periodKey,
-        duesLabel: label,
-        dueDate: dueDate ?? null,
-      });
-      createdCount += 1;
-
-      try {
-        if (m.email) {
-          const fullName = `${(m as any).firstName ?? (m as any).first_name ?? ""} ${(m as any).lastName ?? (m as any).last_name ?? ""}`.trim() || null;
-          const emailContent = buildDuesInvoiceEmail({
-            member: { email: m.email, name: fullName },
-            invoice,
-          });
-          void sendEmail({
-            to: m.email,
-            subject: emailContent.subject,
-            text: emailContent.text,
-            html: emailContent.html,
-            template: "dues_invoice_created",
-            meta: { memberId: m.id, invoiceId: invoice.id, tenantId },
-          });
-        }
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("[billing] Email error", err);
-      }
-    }
-
-    return res.status(201).json({
-      periodKey,
-      label,
-      createdCount,
-      skippedExistingCount,
-      amountCentsPerInvoice: Number(amountCents),
-      currency,
+    const pm = await savePaymentMethod(req.user.tenantId, {
+      memberId,
+      token,
+      brand,
+      last4,
+      expiryMonth: Number(expMonth),
+      expiryYear: Number(expYear),
+      label: label ?? null,
     });
-  } catch (err: any) {
-    console.error("[createDuesRunHandler] error", err);
-    return res.status(500).json({ error: { message: "Failed to create dues run" } });
+    return res.status(201).json(sanitizePaymentMethod(pm));
+  } catch (err) {
+    console.error("[billing] createPaymentMethodHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
   }
-};
+}
 
-export const listDuesSummaryHandler = (req: Request, res: Response) => {
-  try {
-    const tenantId = (req as any).user?.tenantId || "t1";
-    const invoices = getAllDuesInvoices(tenantId);
-    const byPeriod = new Map<string, DuesSummaryItem>();
+export async function createPaymentHandler(req: AuthenticatedRequest, res: Response) {
+  req.params.id = req.body?.invoiceId;
+  return recordInvoicePaymentHandler(req, res);
+}
 
-    for (const inv of invoices) {
-      const periodKey = inv.duesPeriodKey || "unknown";
-      const label = inv.duesLabel || inv.description || "Dues";
-      const currency = inv.currency || "PHP";
-      const key = `${tenantId}:${periodKey}`;
-      let bucket = byPeriod.get(key);
-      if (!bucket) {
-        bucket = {
-          periodKey,
-          label,
-          currency,
-          totalCount: 0,
-          unpaidCount: 0,
-          paidCount: 0,
-          amountCentsTotal: 0,
-          amountCentsUnpaid: 0,
-          amountCentsPaid: 0,
-        };
-        byPeriod.set(key, bucket);
-      }
-      bucket.totalCount += 1;
-      bucket.amountCentsTotal += inv.amountCents;
-      if (inv.status === "paid") {
-        bucket.paidCount += 1;
-        bucket.amountCentsPaid += inv.amountCents;
-      } else {
-        bucket.unpaidCount += 1;
-        bucket.amountCentsUnpaid += inv.amountCents;
-      }
-    }
+export function payEventFeeHandler(_req: Request, res: Response) {
+  console.warn("[billing] payEventFeeHandler stub hit; not implemented in BKS-04 scope.");
+  return res.status(501).json({ error: "Event fee payment not implemented yet" });
+}
 
-    const response: DuesSummaryResponse = { items: Array.from(byPeriod.values()).sort((a, b) => a.periodKey.localeCompare(b.periodKey)) };
-    return res.json(response);
-  } catch (err: any) {
-    console.error("[listDuesSummaryHandler] error", err);
-    return res.status(500).json({ error: { message: "Failed to load dues summary" } });
-  }
-};
+export function runDuesJobHandler(_req: Request, res: Response) {
+  console.warn("[billing] runDuesJobHandler stub hit; not implemented in BKS-04 scope.");
+  return res.status(501).json({ error: "Dues job not implemented yet" });
+}
 
+export function sendInvoiceHandler(_req: Request, res: Response) {
+  console.warn("[billing] sendInvoiceHandler stub hit; not implemented in BKS-04 scope.");
+  return res.status(501).json({ error: "Send invoice not implemented yet" });
+}
 
+export function downloadInvoicePdfHandler(_req: Request, res: Response) {
+  console.warn("[billing] downloadInvoicePdfHandler stub hit; not implemented in BKS-04 scope.");
+  return res.status(501).json({ error: "Invoice PDF not implemented yet" });
+}
+
+export function runPaymentRemindersHandler(_req: Request, res: Response) {
+  console.warn("[billing] runPaymentRemindersHandler stub hit; not implemented in BKS-04 scope.");
+  return res.status(501).json({ error: "Payment reminders not implemented yet" });
+}

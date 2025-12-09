@@ -1,66 +1,148 @@
-import { Invoice } from "../../libs/shared/src/models";
+import { InvoiceStatus, PaymentMethodStatus, PaymentStatus } from "@prisma/client";
+import { prisma } from "./db/prisma";
 
-const billingHandlers = {
-  getInvoiceById: (..._args: any[]) => {
-    console.warn("[payments-billing] getInvoiceById stub hit; payments-billing-service not implemented yet.");
-    return undefined;
-  },
-  markInvoicePaidInternal: (..._args: any[]) => {
-    console.warn("[payments-billing] markInvoicePaidInternal stub hit; payments-billing-service not implemented yet.");
-    throw new Error("Billing not implemented");
-  },
-  createDuesInvoice: (..._args: any[]) => {
-    console.warn("[payments-billing] createDuesInvoice stub hit; payments-billing-service not implemented yet.");
-    throw new Error("Billing not implemented");
-  },
-  getDuesInvoicesByPeriod: (..._args: any[]) => {
-    console.warn("[payments-billing] getDuesInvoicesByPeriod stub hit; payments-billing-service not implemented yet.");
-    return [];
-  },
-  getAllDuesInvoices: (..._args: any[]) => {
-    console.warn("[payments-billing] getAllDuesInvoices stub hit; payments-billing-service not implemented yet.");
-    return [];
-  },
+const generateInvoiceNumber = (tenantId: string) => {
+  const rand = Math.floor(Math.random() * 10000)
+    .toString()
+    .padStart(4, "0");
+  return `INV-${tenantId}-${Date.now()}-${rand}`;
 };
 
-const {
-  getInvoiceById: billingGetInvoiceById,
-  markInvoicePaidInternal: billingMarkInvoicePaid,
-  createDuesInvoice: billingCreateDuesInvoice,
-  getDuesInvoicesByPeriod: billingGetDuesInvoicesByPeriod,
-  getAllDuesInvoices: billingGetAllDuesInvoices,
-} = billingHandlers as any;
-
-export function getInvoiceById(tenantId: string, invoiceId: string): Invoice | undefined {
-  return billingGetInvoiceById(tenantId, invoiceId);
-}
-
-export function markInvoicePaid(
+export async function listMemberInvoices(
   tenantId: string,
-  invoiceId: string,
-  payload: { paymentMethod?: string | null; paymentReference?: string | null; paidAt?: string | null }
-): Invoice {
-  return billingMarkInvoicePaid(tenantId, invoiceId, payload);
+  memberId: string,
+  options?: { status?: InvoiceStatus[] }
+) {
+  return prisma.invoice.findMany({
+    where: {
+      tenantId,
+      memberId,
+      ...(options?.status ? { status: { in: options.status } } : {}),
+    },
+    orderBy: { issuedAt: "desc" },
+  });
 }
 
-export function createDuesInvoice(args: {
-  tenantId: string;
+export async function listTenantInvoices(tenantId: string, options?: { status?: InvoiceStatus[] }) {
+  return prisma.invoice.findMany({
+    where: {
+      tenantId,
+      ...(options?.status ? { status: { in: options.status } } : {}),
+    },
+    orderBy: { issuedAt: "desc" },
+  });
+}
+
+export async function getInvoiceById(tenantId: string, invoiceId: string) {
+  return prisma.invoice.findFirst({
+    where: { id: invoiceId, tenantId },
+  });
+}
+
+type CreateManualInvoiceInput = {
   memberId: string;
   amountCents: number;
   currency: string;
-  duesPeriodKey: string;
-  duesLabel: string;
-  dueDate?: string | null;
-}): Invoice {
-  return billingCreateDuesInvoice(args);
+  description?: string;
+  dueDate?: Date | string | null;
+};
+
+export async function createManualInvoice(tenantId: string, input: CreateManualInvoiceInput) {
+  const invoiceNumber = generateInvoiceNumber(tenantId);
+  return prisma.invoice.create({
+    data: {
+      tenantId,
+      memberId: input.memberId,
+      amountCents: input.amountCents,
+      currency: input.currency,
+      description: input.description ?? null,
+      dueAt: input.dueDate ? new Date(input.dueDate) : null,
+      invoiceNumber,
+      status: InvoiceStatus.UNPAID,
+      source: "manual",
+    },
+  });
 }
 
-export function getDuesInvoicesByPeriod(tenantId: string, periodKey: string): Invoice[] {
-  return billingGetDuesInvoicesByPeriod(tenantId, periodKey);
+type RecordInvoicePaymentInput = {
+  invoiceId: string;
+  amountCents: number;
+  methodId?: string | null;
+  externalRef?: string | null;
+};
+
+export async function recordInvoicePayment(tenantId: string, input: RecordInvoicePaymentInput) {
+  const invoice = await prisma.invoice.findFirst({
+    where: { id: input.invoiceId, tenantId },
+  });
+  if (!invoice) throw new Error("Invoice not found");
+  if (invoice.status === InvoiceStatus.PAID) {
+    throw new Error("Invoice already paid");
+  }
+  if (input.amountCents <= 0) throw new Error("Invalid amount");
+
+  const payment = await prisma.payment.create({
+    data: {
+      tenantId,
+      invoiceId: invoice.id,
+      memberId: invoice.memberId,
+      paymentMethodId: input.methodId ?? null,
+      amountCents: input.amountCents,
+      currency: invoice.currency,
+      status: PaymentStatus.SUCCEEDED,
+      reference: input.externalRef ?? null,
+      processedAt: new Date(),
+    },
+  });
+
+  const updatedInvoice = await prisma.invoice.update({
+    where: { id_tenantId: { id: invoice.id, tenantId } },
+    data: {
+      status: InvoiceStatus.PAID,
+      paidAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  return { invoice: updatedInvoice, payment };
 }
 
-export function getAllDuesInvoices(tenantId: string): Invoice[] {
-  return billingGetAllDuesInvoices(tenantId);
+export async function listPaymentMethodsForMember(tenantId: string, memberId: string) {
+  return prisma.paymentMethod.findMany({
+    where: { tenantId, memberId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+type SavePaymentMethodInput = {
+  memberId: string;
+  token: string;
+  brand: string;
+  last4: string;
+  expiryMonth: number;
+  expiryYear: number;
+  label?: string | null;
+};
+
+export async function savePaymentMethod(tenantId: string, input: SavePaymentMethodInput) {
+  const existingDefault = await prisma.paymentMethod.findFirst({
+    where: { tenantId, memberId: input.memberId, isDefault: true },
+  });
+
+  return prisma.paymentMethod.create({
+    data: {
+      tenantId,
+      memberId: input.memberId,
+      token: input.token,
+      brand: input.brand,
+      last4: input.last4,
+      expMonth: input.expiryMonth,
+      expYear: input.expiryYear,
+      label: input.label ?? null,
+      isDefault: existingDefault ? false : true,
+      status: PaymentMethodStatus.ACTIVE,
+    },
+  });
 }
 
 
