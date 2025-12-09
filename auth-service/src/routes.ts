@@ -36,14 +36,37 @@ router.post("/login", async (req: Request, res: Response) => {
       )
     );
 
+    console.log("[auth-service] login lookup result", {
+      email,
+      tenantId,
+      userFound: !!user,
+      userId: user?.id,
+      status: user?.status,
+      roles: user?.roles,
+      memberId: user?.memberId,
+    });
+
     if (!user) {
       console.warn("[auth-service] Invalid credentials for", email);
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    const ok = await bcrypt.compare(password, user.passwordHash);
-    if (!ok) {
+    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    console.log("[auth-service] login password compare", {
+      email,
+      tenantId,
+      userId: user.id,
+      passwordMatches,
+    });
+
+    if (!passwordMatches) {
       console.warn("[auth-service] Invalid credentials for", email);
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
+
+    const isActive = (user as any).status ? (user as any).status === "ACTIVE" : true;
+    if (!isActive) {
+      console.warn("[auth-service] Inactive user", { email, tenantId, userId: user.id, status: (user as any).status });
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
