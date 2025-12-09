@@ -146,13 +146,17 @@ export async function listPaymentMethodsHandler(req: AuthenticatedRequest, res: 
 
     if (!isAdmin && !memberId) return res.status(403).json({ error: "Forbidden" });
     if (!isAdmin && memberId !== req.user.memberId) return res.status(403).json({ error: "Forbidden" });
-    if (!memberId) return res.status(400).json({ error: "memberId is required" });
+
+    if (!memberId) {
+      // Graceful empty response for missing member context
+      return res.json({ items: [] });
+    }
 
     const methods = await listPaymentMethodsForMember(req.user.tenantId, memberId);
     return res.json({ items: methods.map(sanitizePaymentMethod) });
   } catch (err) {
     console.error("[billing] listPaymentMethodsHandler error", err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.json({ items: [] });
   }
 }
 
