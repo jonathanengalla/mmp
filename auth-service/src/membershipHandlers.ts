@@ -203,7 +203,7 @@ export const searchDirectoryMembers = async (req: AuthenticatedRequest, res: Res
 export const getProfileCustomFieldSchema = async (req: AuthenticatedRequest, res: Response) => {
   if (!req.user) return res.status(401).json({ error: "Unauthorized" });
   console.log("[membership] profile custom-field schema returned (empty)", { tenantId: req.user.tenantId });
-  return res.json({ schemaType: "profile", sections: [], version: 1 });
+  return res.json({ groups: [], fields: [], updatedAt: Date.now() });
 };
 
 export const getCurrentMemberCustomFields = async (req: AuthenticatedRequest, res: Response) => {
