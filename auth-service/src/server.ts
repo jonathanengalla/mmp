@@ -18,6 +18,8 @@ import {
   getCurrentMemberCustomFields,
   getMemberPaymentMethods,
   createMemberPaymentMethod,
+  updateMyAvatar,
+  uploadPhoto,
 } from "./membershipHandlers";
 import {
   createManualInvoiceHandler,
@@ -49,10 +51,8 @@ const createMember = createRegistration;
 const createMemberAdmin = createRegistration;
 const updateCurrentMember = membershipStub("updateCurrentMember");
 const updateMemberContact = membershipStub("updateMemberContact");
-const uploadPhoto = membershipStub("uploadPhoto");
 const deactivateMember = membershipStub("deactivateMember");
 const updateMemberRoles = membershipStub("updateMemberRoles");
-const updateMyAvatar = membershipStub("updateMyAvatar");
 const adminUpdateAvatar = membershipStub("adminUpdateAvatar");
 const importMembers = membershipStub("importMembers");
 const auditMember = membershipStub("auditMember");

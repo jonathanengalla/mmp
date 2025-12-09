@@ -255,3 +255,34 @@ export const createMemberPaymentMethod = async (req: AuthenticatedRequest, res: 
   }
 };
 
+export const updateMyAvatar = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const member = await ensureMemberForUser(req);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+    console.log("[membership] updateMyAvatar placeholder", { tenantId: req.user.tenantId, memberId: member.id });
+    // No-op placeholder; accept request and return current member context
+    return res.json({ memberId: member.id, avatarUrl: null, success: true });
+  } catch (err) {
+    console.error("[membership] updateMyAvatar error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const memberId = req.params.id;
+    const member = memberId
+      ? await getMemberByIdForTenant(req.user.tenantId, memberId)
+      : await ensureMemberForUser(req);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+    console.log("[membership] uploadPhoto placeholder", { tenantId: req.user.tenantId, memberId: member.id });
+    // No-op placeholder; respond success with unchanged member
+    return res.json({ memberId: member.id, avatarUrl: null, success: true });
+  } catch (err) {
+    console.error("[membership] uploadPhoto error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
