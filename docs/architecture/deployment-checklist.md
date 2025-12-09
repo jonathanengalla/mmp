@@ -22,6 +22,23 @@
   - `npm start` (from `auth-service`, which runs `node dist/auth-service/src/server.js`)
 - Do NOT run `prisma migrate dev` against Render DB (managed Postgres lacks SUPERUSER/shadow DB support).
 
+### Smoke Test Endpoints (Required Post-Deploy)
+After a Render deploy, run quick checks to ensure the backend is alive:
+
+1. **Basic Service Health**
+   - GET `<SERVICE_URL>/health`
+   - Expected: `{ "status": "ok", "service": "auth-service" }`
+
+2. **Auth Namespace Health**
+   - GET `<SERVICE_URL>/auth/health`
+   - Expected: `{ "status": "ok", "service": "auth-service", "scope": "auth" }`
+
+3. Confirm logs show:
+   - `[health] Basic health check hit` or
+   - `[auth-health] Auth namespace health check hit`
+
+If these fail, do not proceed to front-end integration.
+
 ## Vercel Frontend
 - `VITE_API_BASE_URL` (or equivalent) points to the Render backend URL.
 - Tenant defaults documented for the environment.

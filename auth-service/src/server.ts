@@ -266,6 +266,19 @@ const BODY_LIMIT = process.env.BODY_LIMIT || "10mb";
 app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 
+// -----------------------------------------------------
+// Health Check Endpoints (for Render + Smoke Test)
+// -----------------------------------------------------
+app.get("/health", (req, res) => {
+  console.log("[health] Basic health check hit");
+  res.status(200).json({ status: "ok", service: "auth-service" });
+});
+
+app.get("/auth/health", (req, res) => {
+  console.log("[auth-health] Auth namespace health check hit");
+  res.status(200).json({ status: "ok", service: "auth-service", scope: "auth" });
+});
+
 // Auth middleware that attaches user context for protected routes
 const authMiddleware = (req: express.Request, _res: express.Response, next: express.NextFunction) => {
   const authHeader = req.headers.authorization;
