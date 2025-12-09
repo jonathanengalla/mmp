@@ -1,9 +1,9 @@
 import { Router, Request, Response } from "express";
-import bcrypt from "bcryptjs";
 import { prisma } from "./db/prisma";
 import { signToken } from "./lib/jwt";
 import { applyTenantScope } from "./tenantGuard";
 import type { AuthenticatedRequest } from "./authMiddleware";
+import { verifyPassword } from "./utils/password";
 
 const router = Router();
 
@@ -51,7 +51,7 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
+    const passwordMatches = await verifyPassword(user.passwordHash, password);
     console.log("[auth-service] login password compare", {
       email,
       tenantId,

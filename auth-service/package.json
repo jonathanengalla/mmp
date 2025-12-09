@@ -20,7 +20,8 @@
     "db:migrate": "NODE_ENV=production node scripts/db-migrate.js",
     "db:seed:base": "NODE_ENV=production node scripts/db-seed-base.js",
     "db:reset:test": "NODE_ENV=test node scripts/db-reset-and-seed-test.js",
-    "demo:reset": "node scripts/demo-reset-and-seed.js"
+    "demo:reset": "node scripts/demo-reset-and-seed.js",
+    "hash:dev-password": "npm run build && node scripts/hash-dev-password.js"
   },
   "dependencies": {
     "prisma": "5.22.0",
