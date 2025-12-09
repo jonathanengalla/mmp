@@ -26,12 +26,17 @@ import {
   publishEvent,
   updateEvent,
 } from "./eventsStore";
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const billingHandlers = require("../../payments-billing-service/src/handlers");
-const { createEventInvoice, getInvoiceById } = billingHandlers as {
-  createEventInvoice: (...args: any[]) => any;
-  getInvoiceById: (...args: any[]) => any;
+const billingHandlers = {
+  createEventInvoice: (..._args: any[]) => {
+    console.warn("[payments-billing] createEventInvoice stub hit; payments-billing-service not implemented yet.");
+    throw new Error("Billing not implemented");
+  },
+  getInvoiceById: (..._args: any[]) => {
+    console.warn("[payments-billing] getInvoiceById stub hit; payments-billing-service not implemented yet.");
+    return null;
+  },
 };
+const { createEventInvoice, getInvoiceById } = billingHandlers;
 import { sendEmail } from "./notifications/emailSender";
 import { buildEventInvoiceEmail, buildEventRsvpEmail } from "./notifications/emailTemplates";
 

@@ -7,13 +7,9 @@
     "forceConsistentCasingInFileNames": true,
     "strict": false,
     "skipLibCheck": true,
-    "outDir": "ts-dist",
-    "noEmit": true,
-    "types": ["node"],
-    "paths": {
-      "../../membership-service/src/handlers": ["./src/types/membership-handlers"],
-      "../../payments-billing-service/src/handlers": ["./src/types/payments-handlers"]
-    }
+    "outDir": "dist",
+    "noEmit": false,
+    "types": ["node"]
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts"]
 }

@@ -1,8 +1,27 @@
 import { Invoice } from "../../libs/shared/src/models";
 
-// Use the shared in-memory billing service to keep invoices consistent with checkout
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const billingHandlers = require("../../payments-billing-service/src/handlers");
+const billingHandlers = {
+  getInvoiceById: (..._args: any[]) => {
+    console.warn("[payments-billing] getInvoiceById stub hit; payments-billing-service not implemented yet.");
+    return undefined;
+  },
+  markInvoicePaidInternal: (..._args: any[]) => {
+    console.warn("[payments-billing] markInvoicePaidInternal stub hit; payments-billing-service not implemented yet.");
+    throw new Error("Billing not implemented");
+  },
+  createDuesInvoice: (..._args: any[]) => {
+    console.warn("[payments-billing] createDuesInvoice stub hit; payments-billing-service not implemented yet.");
+    throw new Error("Billing not implemented");
+  },
+  getDuesInvoicesByPeriod: (..._args: any[]) => {
+    console.warn("[payments-billing] getDuesInvoicesByPeriod stub hit; payments-billing-service not implemented yet.");
+    return [];
+  },
+  getAllDuesInvoices: (..._args: any[]) => {
+    console.warn("[payments-billing] getAllDuesInvoices stub hit; payments-billing-service not implemented yet.");
+    return [];
+  },
+};
 
 const {
   getInvoiceById: billingGetInvoiceById,

@@ -19,7 +19,7 @@
 - Recommended Render build step:
   - `npx prisma migrate deploy --schema prisma/schema.prisma`
 - Recommended start command (if not already set):
-  - `node dist/index.js`
+  - `npm start` (from `auth-service`, which runs `node dist/auth-service/src/server.js`)
 - Do NOT run `prisma migrate dev` against Render DB (managed Postgres lacks SUPERUSER/shadow DB support).
 
 ## Vercel Frontend

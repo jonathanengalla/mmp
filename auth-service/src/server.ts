@@ -2,9 +2,13 @@ import express, { Router } from "express";
 import cors from "cors";
 import routes from "./routes";
 import { seedDevUser } from "./store";
-// Reporting routes
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const reportingRoutes = require("../../services/reporting-service/src/routes").default;
+
+// Local reporting stub (501)
+const reportingRoutes = Router();
+reportingRoutes.use((_req, res) => {
+  console.warn("[reporting] Stub route hit; reporting-service not implemented yet.");
+  return res.status(501).json({ error: "Reporting not implemented yet" });
+});
 
 // Local stub billing helpers (until real billing is reintroduced)
 const billingHandlers = {
@@ -22,10 +26,129 @@ const billingHandlers = {
   },
 };
 
-// Import membership handlers directly (not routes, to avoid express resolution issue)
-// Import membership handlers via require to avoid TS dependency on sibling service types
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const membershipHandlers = require("../../membership-service/src/handlers");
+// Membership stubs (501) — removes cross-service dependency on membership-service
+const membershipHandlers = {
+  createRegistration: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] createRegistration stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  requestVerification: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] requestVerification stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  verify: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] verify stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  listMembers: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] listMembers stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  listPendingMembers: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] listPendingMembers stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  createMember: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] createMember stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  createMemberAdmin: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] createMemberAdmin stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  getMember: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] getMember stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  getCurrentMember: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] getCurrentMember stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  updateCurrentMember: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] updateCurrentMember stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  approveMember: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] approveMember stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  rejectMember: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] rejectMember stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  updateMemberContact: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] updateMemberContact stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  uploadPhoto: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] uploadPhoto stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  searchDirectoryMembers: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] searchDirectoryMembers stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  deactivateMember: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] deactivateMember stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  updateMemberRoles: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] updateMemberRoles stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  updateMyAvatar: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] updateMyAvatar stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  adminUpdateAvatar: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] adminUpdateAvatar stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  importMembers: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] importMembers stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  auditMember: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] auditMember stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  getMemberPaymentMethods: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] getMemberPaymentMethods stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  createMemberPaymentMethod: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] createMemberPaymentMethod stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  getProfileCustomFieldSchema: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] getProfileCustomFieldSchema stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  updateProfileCustomFieldSchema: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] updateProfileCustomFieldSchema stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  getCurrentMemberCustomFields: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] getCurrentMemberCustomFields stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  updateCurrentMemberCustomFields: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] updateCurrentMemberCustomFields stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  adminGetMemberCustomFields: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] adminGetMemberCustomFields stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  adminUpdateMemberCustomFields: (_req: express.Request, res: express.Response) => {
+    console.warn("[membership] adminUpdateMemberCustomFields stub hit; membership-service not implemented yet.");
+    return res.status(501).json({ error: "Membership not implemented yet" });
+  },
+  __seedDevMember: () => {
+    console.warn("[membership] __seedDevMember stub hit; membership-service not implemented yet.");
+    return null;
+  },
+};
 const {
   createRegistration,
   requestVerification,
@@ -60,21 +183,52 @@ const {
 } = membershipHandlers;
 
 // Import billing handlers via require to avoid TS dependency on sibling service types
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const billingHandlersFromPayments = require("../../payments-billing-service/src/handlers");
-const {
-  createPaymentMethod,
-  listPaymentMethods,
-  createPayment,
-  markInvoicePaid,
-  payEventFee,
-  createManualInvoice,
-  runDuesJob,
-  sendInvoice,
-  listMemberInvoices,
-  downloadInvoicePdf,
-  runPaymentReminders,
-} = billingHandlersFromPayments;
+const paymentsBillingHandlers = {
+  createPaymentMethod: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] createPaymentMethod stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  listPaymentMethods: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] listPaymentMethods stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  createPayment: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] createPayment stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  markInvoicePaid: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] markInvoicePaid stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  payEventFee: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] payEventFee stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  createManualInvoice: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] createManualInvoice stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  runDuesJob: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] runDuesJob stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  sendInvoice: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] sendInvoice stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  listMemberInvoices: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] listMemberInvoices stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  downloadInvoicePdf: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] downloadInvoicePdf stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+  runPaymentReminders: (_req: express.Request, res: express.Response) => {
+    console.warn("[payments-billing] runPaymentReminders stub hit; payments-billing-service not implemented yet.");
+    return res.status(501).json({ error: "Payments/Billing not implemented yet" });
+  },
+};
 
 const {
   recordInvoicePaymentHandler,
@@ -202,17 +356,17 @@ app.use("/membership", membershipRouter);
 
 // Build billing routes inline
 const billingRouter = Router();
-billingRouter.post("/payment-methods", createPaymentMethod);
-billingRouter.get("/payment-methods", listPaymentMethods);
-billingRouter.post("/payments", createPayment);
-billingRouter.post("/invoices/:id/mark-paid", markInvoicePaid);
-billingRouter.post("/events/:id/pay", payEventFee);
-billingRouter.post("/invoices", createManualInvoice);
-billingRouter.get("/invoices", listMemberInvoices);
-billingRouter.post("/internal/dues/run", runDuesJob);
-billingRouter.post("/invoices/:id/send", sendInvoice);
-billingRouter.get("/invoices/:id/pdf", downloadInvoicePdf);
-billingRouter.post("/internal/payment-reminders/run", runPaymentReminders);
+billingRouter.post("/payment-methods", paymentsBillingHandlers.createPaymentMethod);
+billingRouter.get("/payment-methods", paymentsBillingHandlers.listPaymentMethods);
+billingRouter.post("/payments", paymentsBillingHandlers.createPayment);
+billingRouter.post("/invoices/:id/mark-paid", paymentsBillingHandlers.markInvoicePaid);
+billingRouter.post("/events/:id/pay", paymentsBillingHandlers.payEventFee);
+billingRouter.post("/invoices", paymentsBillingHandlers.createManualInvoice);
+billingRouter.get("/invoices", paymentsBillingHandlers.listMemberInvoices);
+billingRouter.post("/internal/dues/run", paymentsBillingHandlers.runDuesJob);
+billingRouter.post("/invoices/:id/send", paymentsBillingHandlers.sendInvoice);
+billingRouter.get("/invoices/:id/pdf", paymentsBillingHandlers.downloadInvoicePdf);
+billingRouter.post("/internal/payment-reminders/run", paymentsBillingHandlers.runPaymentReminders);
 billingRouter.post("/billing/dues/runs", requireAdmin, createDuesRunHandler);
 billingRouter.get("/billing/dues/summary", requireAdmin, listDuesSummaryHandler);
 app.use("/billing", billingRouter);

@@ -23,4 +23,7 @@ Stabilize core services with multi-tenant, DB-backed flows, enforce JWT-based RB
 - Requires coordination with Theme/UI for contract changes (amountCents, statuses, tenant headers).
 - Interim ops note: billing helpers are stubbed when missing at runtime to avoid MODULE_NOT_FOUND; real billing persistence remains out of scope until BKS-04.
 - Additional resilience note: `auth-service` no longer imports `./billingHandlers`; billing routes return 501 stubs until BKS-04 restores real billing logic.
+- Reporting routes in `auth-service` are stubbed (501) and no longer import from `../../services/reporting-service`; real reporting to be restored in future work.
+- Membership handlers in `auth-service` are stubbed (501) and no longer import from `../../membership-service/src/handlers`; real membership persistence will come via Backend-Stabilization follow-on stories.
+- Payments/Billing handlers in `auth-service` are stubbed (501) and no longer import from `../../payments-billing-service/src/handlers`; real integration deferred to future work.
 
