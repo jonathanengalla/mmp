@@ -21,4 +21,5 @@ Stabilize core services with multi-tenant, DB-backed flows, enforce JWT-based RB
 ## Dependencies/Notes
 - Blocks Deployment-Alignment work that runs migrations.
 - Requires coordination with Theme/UI for contract changes (amountCents, statuses, tenant headers).
+- Interim ops note: billing helpers are stubbed when missing at runtime to avoid MODULE_NOT_FOUND; real billing persistence remains out of scope until BKS-04.
 

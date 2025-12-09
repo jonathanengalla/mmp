@@ -59,7 +59,24 @@ const {
   downloadInvoicePdf,
   runPaymentReminders,
 } = billingHandlers;
-import { recordInvoicePaymentHandler, createDuesRunHandler, listDuesSummaryHandler } from "./billingHandlers";
+
+// Local billing helpers (dues run, invoice record) — fallback to a stub if module missing in dist
+let localBillingHelpers: any;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  localBillingHelpers = require("./billingHandlers");
+} catch (err) {
+  console.warn("[server] billingHandlers module missing; using stub handlers", err);
+  localBillingHelpers = {
+    recordInvoicePaymentHandler: (_req: express.Request, res: express.Response) =>
+      res.status(501).json({ error: { message: "Billing helpers unavailable in this environment." } }),
+    createDuesRunHandler: (_req: express.Request, res: express.Response) =>
+      res.status(501).json({ error: { message: "Billing helpers unavailable in this environment." } }),
+    listDuesSummaryHandler: (_req: express.Request, res: express.Response) =>
+      res.status(501).json({ error: { message: "Billing helpers unavailable in this environment." } }),
+  };
+}
+const { recordInvoicePaymentHandler, createDuesRunHandler, listDuesSummaryHandler } = localBillingHelpers;
 import { emailLogHandler } from "./notifications/emailSender";
 import {
   cancelRegistrationHandler,
