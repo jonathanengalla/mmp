@@ -11,6 +11,7 @@ import {
 } from "./membershipStore";
 import type { AuthenticatedRequest } from "./authMiddleware";
 import { prisma } from "./db/prisma";
+import { listPaymentMethodsForMember, removePaymentMethod, savePaymentMethod } from "./billingStore";
 
 const sanitizeMember = (m: any) => ({
   id: m.id,
@@ -25,6 +26,23 @@ const sanitizeMember = (m: any) => ({
   createdAt: m.createdAt,
   updatedAt: m.updatedAt,
   tenantId: m.tenantId,
+});
+
+const sanitizePaymentMethod = (pm: any) => ({
+  id: pm.id,
+  tenantId: pm.tenantId,
+  memberId: pm.memberId,
+  brand: pm.brand,
+  last4: pm.last4,
+  expMonth: pm.expMonth,
+  expYear: pm.expYear,
+  label: pm.label ?? null,
+  isDefault: pm.isDefault ?? false,
+  status: pm.status ?? "ACTIVE",
+  createdAt: pm.createdAt ? new Date(pm.createdAt).getTime() : Date.now(),
+  updatedAt: pm.updatedAt ? new Date(pm.updatedAt).getTime() : Date.now(),
+  // Do not expose PAN/CVC; token is a non-sensitive reference
+  token: pm.token ?? null,
 });
 
 async function ensureMemberForUser(req: AuthenticatedRequest) {
@@ -322,11 +340,10 @@ export const getMemberPaymentMethods = async (req: AuthenticatedRequest, res: Re
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const member = await ensureMemberForUser(req);
     if (!member) return res.status(404).json({ error: "Member not found" });
-    console.log("[membership] current member payment methods returned (empty)", {
-      tenantId: req.user.tenantId,
-      memberId: member.id,
-    });
-    return res.json({ items: [] });
+    const methods = await listPaymentMethodsForMember(req.user.tenantId, member.id);
+    const sanitized = methods.map(sanitizePaymentMethod);
+    const defaultId = sanitized.find((m) => m.isDefault)?.id ?? null;
+    return res.json({ items: sanitized, defaultId });
   } catch (err) {
     console.error("[membership] getMemberPaymentMethods error", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -338,14 +355,58 @@ export const createMemberPaymentMethod = async (req: AuthenticatedRequest, res: 
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const member = await ensureMemberForUser(req);
     if (!member) return res.status(404).json({ error: "Member not found" });
-    console.log("[membership] createMemberPaymentMethod placeholder", {
-      tenantId: req.user.tenantId,
+    const { brand, last4, expMonth, expYear, label } = req.body || {};
+    if (!brand || !last4 || !expMonth || !expYear) {
+      return res.status(400).json({ error: "brand, last4, expMonth, expYear are required" });
+    }
+    if (!/^\d{4}$/.test(String(last4))) {
+      return res.status(400).json({ error: "last4 must be exactly 4 digits" });
+    }
+
+    // Generate a non-sensitive token placeholder. No PAN/CVC is stored.
+    const token = `dev-token-${brand}-${last4}-${Date.now()}`;
+
+    await savePaymentMethod(req.user.tenantId, {
       memberId: member.id,
+      token,
+      brand,
+      last4: String(last4),
+      expiryMonth: Number(expMonth),
+      expiryYear: Number(expYear),
+      label: label ?? null,
     });
-    // Stub implementation: accept but do nothing
-    return res.status(201).json({ item: null });
+
+    const methods = await listPaymentMethodsForMember(req.user.tenantId, member.id);
+    const sanitized = methods.map(sanitizePaymentMethod);
+    const defaultId = sanitized.find((m) => m.isDefault)?.id ?? null;
+    return res.status(201).json({ items: sanitized, defaultId });
   } catch (err) {
     console.error("[membership] createMemberPaymentMethod error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteMemberPaymentMethod = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const member = await ensureMemberForUser(req);
+    if (!member) return res.status(404).json({ error: "Member not found" });
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ error: "paymentMethodId is required" });
+
+    // Delete within tenant/member scope. Payments will retain history via FK ON DELETE SET NULL.
+    await removePaymentMethod(req.user.tenantId, member.id, id);
+
+    const methods = await listPaymentMethodsForMember(req.user.tenantId, member.id);
+    const sanitized = methods.map(sanitizePaymentMethod);
+    const defaultId = sanitized.find((m) => m.isDefault)?.id ?? null;
+    return res.json({ items: sanitized, defaultId });
+  } catch (err: any) {
+    const message = err?.message || "";
+    if (message.includes("not found")) {
+      return res.status(404).json({ error: "Payment method not found" });
+    }
+    console.error("[membership] deleteMemberPaymentMethod error", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 };

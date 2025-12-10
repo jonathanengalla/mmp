@@ -145,4 +145,16 @@ export async function savePaymentMethod(tenantId: string, input: SavePaymentMeth
   });
 }
 
+export async function removePaymentMethod(tenantId: string, memberId: string, id: string) {
+  const existing = await prisma.paymentMethod.findFirst({
+    where: { id, tenantId, memberId },
+  });
+  if (!existing) {
+    throw new Error("Payment method not found");
+  }
+  return prisma.paymentMethod.delete({
+    where: { id_tenantId: { id, tenantId } },
+  });
+}
+
 

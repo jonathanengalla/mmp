@@ -90,7 +90,7 @@ export const requestVerification = async (email: string) => {
   return json(res);
 };
 
-const DEFAULT_TENANT_ID = import.meta.env.VITE_DEFAULT_TENANT_ID;
+const DEFAULT_TENANT_ID = (import.meta as any).env?.VITE_DEFAULT_TENANT_ID;
 
 export const login = async (payload: { email: string; password: string; tenantId?: string; mfa_code?: string }) => {
   const effectiveTenantId = (payload.tenantId ?? DEFAULT_TENANT_ID ?? "").trim();
@@ -770,7 +770,8 @@ export interface MemberPaymentMethod {
   label?: string | null;
   isDefault: boolean;
   createdAt: number;
-  devPaymentToken: string;
+  token?: string | null; // non-sensitive reference; PAN/CVC never stored
+  status?: string;
 }
 
 export interface MemberPaymentMethodsResponse {
@@ -790,7 +791,12 @@ export const getMemberPaymentMethods = async (token: string): Promise<MemberPaym
   const res = await fetch(`${API_BASE_URL}/membership/members/me/payment-methods`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
-  return json(res);
+  const data = await json(res);
+  const items = Array.isArray(data?.items) ? data.items : [];
+  const defaultId =
+    data?.defaultId ??
+    (items.find((m: MemberPaymentMethod) => (m as any).isDefault)?.id ?? null);
+  return { items, defaultId };
 };
 
 export const createMemberPaymentMethod = async (
@@ -802,7 +808,25 @@ export const createMemberPaymentMethod = async (
     headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  return json(res);
+  const data = await json(res);
+  const items = Array.isArray(data?.items) ? data.items : [];
+  const defaultId =
+    data?.defaultId ??
+    (items.find((m: MemberPaymentMethod) => (m as any).isDefault)?.id ?? null);
+  return { items, defaultId };
+};
+
+export const deleteMemberPaymentMethod = async (token: string, id: string): Promise<MemberPaymentMethodsResponse> => {
+  const res = await fetch(`${API_BASE_URL}/membership/members/me/payment-methods/${id}`, {
+    method: "DELETE",
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  const data = await json(res);
+  const items = Array.isArray(data?.items) ? data.items : [];
+  const defaultId =
+    data?.defaultId ??
+    (items.find((m: MemberPaymentMethod) => (m as any).isDefault)?.id ?? null);
+  return { items, defaultId };
 };
 
 // Admin Manual Member Creation (M-3)

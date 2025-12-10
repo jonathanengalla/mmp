@@ -1,5 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { getMemberPaymentMethods, createMemberPaymentMethod, MemberPaymentMethod, MemberPaymentMethodsResponse } from "../api/client";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  getMemberPaymentMethods,
+  createMemberPaymentMethod,
+  deleteMemberPaymentMethod,
+  MemberPaymentMethod,
+  MemberPaymentMethodsResponse,
+} from "../api/client";
 import { useSession } from "../hooks/useSession";
 import { Toast } from "../components/Toast";
 import { Page } from "../components/primitives/Page";
@@ -45,6 +51,13 @@ export const PaymentMethodsPage: React.FC = () => {
   const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+
+  const normalizeResponse = (resp?: Partial<MemberPaymentMethodsResponse>) => {
+    const items = Array.isArray(resp?.items) ? resp!.items : [];
+    const defaultId = resp?.defaultId ?? items.find((m) => (m as any).isDefault)?.id ?? null;
+    return { items, defaultId };
+  };
 
   const fetchMethods = async () => {
     if (!tokens?.access_token) {
@@ -54,15 +67,16 @@ export const PaymentMethodsPage: React.FC = () => {
     setLoadError(null);
     try {
       const resp: MemberPaymentMethodsResponse = await getMemberPaymentMethods(tokens.access_token);
-      setMethods(resp.items);
-      setDefaultId(resp.defaultId);
+      const normalized = normalizeResponse(resp);
+      setMethods(normalized.items);
+      setDefaultId(normalized.defaultId);
     } catch (err: unknown) {
       const error = err as { status?: number; error?: { message?: string } };
       if (error?.status === 401 || error?.status === 403) {
         logout();
         window.location.href = "/login";
       } else {
-        setLoadError(error?.error?.message || "Failed to load payment methods");
+        setLoadError(error?.error?.message || "We could not load your payment methods. Please try again or contact support if this continues.");
       }
     } finally {
       setLoading(false);
@@ -116,8 +130,9 @@ export const PaymentMethodsPage: React.FC = () => {
         expYear: parseInt(form.expYear, 10),
         label: form.label || undefined,
       });
-      setMethods(resp.items);
-      setDefaultId(resp.defaultId);
+      const normalized = normalizeResponse(resp);
+      setMethods(normalized.items);
+      setDefaultId(normalized.defaultId);
       setForm(initialForm);
       setToast({ msg: "Payment method added", type: "success" });
     } catch (err: unknown) {
@@ -125,6 +140,30 @@ export const PaymentMethodsPage: React.FC = () => {
       setToast({ msg: error?.error?.message || "Failed to add payment method", type: "error" });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const onDelete = async (id: string) => {
+    if (!tokens?.access_token) {
+      window.location.href = "/login";
+      return;
+    }
+    try {
+      const resp = await deleteMemberPaymentMethod(tokens.access_token, id);
+      const normalized = normalizeResponse(resp);
+      setMethods(normalized.items);
+      setDefaultId(normalized.defaultId);
+      setToast({ msg: "Payment method removed", type: "success" });
+    } catch (err: unknown) {
+      const error = err as { error?: { message?: string } };
+      setToast({ msg: error?.error?.message || "Failed to remove payment method", type: "error" });
+    }
+  };
+
+  const focusForm = () => {
+    if (formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      formRef.current.querySelector("input, select")?.focus();
     }
   };
 
@@ -196,9 +235,6 @@ export const PaymentMethodsPage: React.FC = () => {
               color: "var(--app-color-text-muted)",
               background: "var(--app-color-surface-1)",
               borderRadius: "var(--radius-md)",
-              color: "var(--app-color-text-muted)",
-              background: "var(--app-color-surface-1)",
-              borderRadius: "var(--radius-md)",
           }}>
             <svg 
               width="40" 
@@ -212,7 +248,10 @@ export const PaymentMethodsPage: React.FC = () => {
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
               <line x1="1" y1="10" x2="23" y2="10" />
             </svg>
-            <p style={{ margin: 0 }}>No payment methods saved yet</p>
+            <p style={{ margin: "0 0 var(--space-3) 0" }}>You have no saved payment methods yet.</p>
+            <Button variant="primary" onClick={focusForm}>
+              Add payment method
+            </Button>
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)" }}>
@@ -266,6 +305,11 @@ export const PaymentMethodsPage: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                  <div style={{ display: "flex", gap: "var(--space-2)" }}>
+                    <Button variant="secondary" onClick={() => onDelete(method.id)}>
+                      Delete
+                    </Button>
+                  </div>
               </div>
             ))}
           </div>
@@ -274,8 +318,8 @@ export const PaymentMethodsPage: React.FC = () => {
 
       {/* Add new payment method */}
       <div style={{ marginTop: "var(--space-6)" }}>
-        <Card title="Add a New Card">
-          <form onSubmit={onSubmit}>
+        <Card title="Add a Saved Payment Method" description="We only store non-sensitive details (brand, last 4, expiry, label). No full card numbers or CVC are stored.">
+          <form onSubmit={onSubmit} ref={formRef}>
             <div style={{ 
               display: "grid", 
               gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", 
@@ -297,7 +341,12 @@ export const PaymentMethodsPage: React.FC = () => {
                 </select>
               </FormField>
 
-              <FormField label="Last 4 Digits" error={formErrors.last4} required>
+              <FormField
+                label="Last 4 digits (only)"
+                hint="We only store the last 4 digits for identification, never the full card number or CVC."
+                error={formErrors.last4}
+                required
+              >
                 <input
                   name="last4"
                   className={`pr-input ${formErrors.last4 ? "pr-input--error" : ""}`}
@@ -359,7 +408,7 @@ export const PaymentMethodsPage: React.FC = () => {
 
             <div style={{ marginTop: "var(--space-4)" }}>
               <Button type="submit" disabled={submitting} loading={submitting}>
-                Add Card
+                Save payment method
               </Button>
             </div>
           </form>

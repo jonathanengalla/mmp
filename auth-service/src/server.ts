@@ -18,6 +18,7 @@ import {
   getCurrentMemberCustomFields,
   getMemberPaymentMethods,
   createMemberPaymentMethod,
+  deleteMemberPaymentMethod,
   updateMyAvatar,
   uploadPhoto,
   updateCurrentMember,
@@ -152,6 +153,7 @@ membershipRouter.get("/members/me/custom-fields", getCurrentMemberCustomFields);
 membershipRouter.patch("/members/me/custom-fields", updateCurrentMemberCustomFields);
 membershipRouter.get("/members/me/payment-methods", getMemberPaymentMethods);
 membershipRouter.post("/members/me/payment-methods", createMemberPaymentMethod);
+membershipRouter.delete("/members/me/payment-methods/:id", deleteMemberPaymentMethod);
 
 // Search and list
 membershipRouter.get("/members/search", requireOfficerOrAdmin, searchDirectoryMembers);

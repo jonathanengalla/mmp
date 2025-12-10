@@ -21,9 +21,10 @@ vi.mock("../hooks/useSession", () => ({
 vi.mock("../api/client", () => ({
   getMemberPaymentMethods: vi.fn(),
   createMemberPaymentMethod: vi.fn(),
+  deleteMemberPaymentMethod: vi.fn(),
 }));
 
-import { getMemberPaymentMethods, createMemberPaymentMethod } from "../api/client";
+import { getMemberPaymentMethods, createMemberPaymentMethod, deleteMemberPaymentMethod } from "../api/client";
 
 const mockedGetMemberPaymentMethods = vi.mocked(getMemberPaymentMethods);
 const mockedCreateMemberPaymentMethod = vi.mocked(createMemberPaymentMethod);
@@ -39,7 +40,7 @@ const mockPaymentMethods = [
     label: "Personal",
     isDefault: true,
     createdAt: Date.now(),
-    devPaymentToken: "dev_tok_pm-1",
+    token: "dev_tok_pm-1",
   },
   {
     id: "pm-2",
@@ -51,7 +52,7 @@ const mockPaymentMethods = [
     label: null,
     isDefault: false,
     createdAt: Date.now() - 1000,
-    devPaymentToken: "dev_tok_pm-2",
+    token: "dev_tok_pm-2",
   },
 ];
 
@@ -84,7 +85,7 @@ describe("PaymentMethodsPage", () => {
         expect(screen.getAllByText(/Payment Methods/i).length).toBeGreaterThan(0);
       });
 
-      expect(screen.getAllByText(/No payment methods saved yet/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/saved payment methods yet/i).length).toBeGreaterThan(0);
     });
 
     it("shows loading state initially", async () => {
@@ -177,7 +178,7 @@ describe("PaymentMethodsPage", () => {
         label: "Work",
         isDefault: true,
         createdAt: Date.now(),
-        devPaymentToken: "dev_tok_pm-3",
+        token: "dev_tok_pm-3",
       };
 
       mockedCreateMemberPaymentMethod.mockResolvedValue({
@@ -188,7 +189,7 @@ describe("PaymentMethodsPage", () => {
       renderPage();
 
       await waitFor(() => {
-        expect(screen.getAllByText(/No payment methods saved yet/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/saved payment methods yet/i).length).toBeGreaterThan(0);
       });
 
       // Fill form - use selects for brand, month, year
@@ -208,8 +209,8 @@ describe("PaymentMethodsPage", () => {
       const labelInputs = screen.getAllByPlaceholderText(/Optional nickname/i);
       fireEvent.change(labelInputs[0], { target: { value: "Work" } });
 
-      // Submit form (button now says "Add Card")
-      fireEvent.click(screen.getAllByRole("button", { name: /Add Card/i })[0]);
+      // Submit form (button says "Save payment method")
+      fireEvent.click(screen.getAllByRole("button", { name: /Save payment method/i })[0]);
 
       // API should be called with correct payload
       await waitFor(() => {
@@ -234,7 +235,7 @@ describe("PaymentMethodsPage", () => {
       renderPage();
 
       await waitFor(() => {
-        expect(screen.getAllByText(/No payment methods saved yet/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/saved payment methods yet/i).length).toBeGreaterThan(0);
       });
 
       // Only fill last4, leave brand empty
@@ -250,7 +251,7 @@ describe("PaymentMethodsPage", () => {
       if (yearSelect) fireEvent.change(yearSelect, { target: { value: "2030" } });
 
       // Submit
-      fireEvent.click(screen.getAllByRole("button", { name: /Add Card/i })[0]);
+      fireEvent.click(screen.getAllByRole("button", { name: /Save payment method/i })[0]);
 
       await waitFor(() => {
         expect(screen.getAllByText(/Brand is required/i).length).toBeGreaterThan(0);
@@ -269,7 +270,7 @@ describe("PaymentMethodsPage", () => {
       renderPage();
 
       await waitFor(() => {
-        expect(screen.getAllByText(/No payment methods saved yet/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/saved payment methods yet/i).length).toBeGreaterThan(0);
       });
 
       // Fill with invalid last4 (only 3 digits)
@@ -287,7 +288,7 @@ describe("PaymentMethodsPage", () => {
       if (yearSelect) fireEvent.change(yearSelect, { target: { value: "2030" } });
 
       // Submit
-      fireEvent.click(screen.getAllByRole("button", { name: /Add Card/i })[0]);
+      fireEvent.click(screen.getAllByRole("button", { name: /Save payment method/i })[0]);
 
       // Wait a bit for any potential API call
       await new Promise((r) => setTimeout(r, 50));
@@ -326,7 +327,7 @@ describe("PaymentMethodsPage", () => {
       renderPage();
 
       await waitFor(() => {
-        expect(screen.getAllByText(/No payment methods saved yet/i).length).toBeGreaterThan(0);
+        expect(screen.getAllByText(/saved payment methods yet/i).length).toBeGreaterThan(0);
       });
 
       // Fill form
@@ -344,7 +345,7 @@ describe("PaymentMethodsPage", () => {
       if (yearSelect) fireEvent.change(yearSelect, { target: { value: "2030" } });
 
       // Submit
-      fireEvent.click(screen.getAllByRole("button", { name: /Add Card/i })[0]);
+      fireEvent.click(screen.getAllByRole("button", { name: /Save payment method/i })[0]);
 
       await waitFor(() => {
         expect(screen.getAllByText(/Create failed|Failed to add/i).length).toBeGreaterThan(0);
