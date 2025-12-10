@@ -4,6 +4,7 @@ export type JwtPayload = {
   userId: string;
   tenantId: string;
   roles: string[];
+  platformRoles?: string[];
   exp?: number;
 };
 
@@ -18,6 +19,7 @@ export function signToken(payload: JwtPayload): string {
       userId: payload.userId,
       tenantId: payload.tenantId,
       roles: payload.roles,
+      platformRoles: payload.platformRoles ?? [],
       exp,
     },
     JWT_SECRET,

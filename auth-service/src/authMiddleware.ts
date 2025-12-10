@@ -6,6 +6,7 @@ export type AuthenticatedUser = {
   userId: string;
   tenantId: string;
   roles: string[];
+  platformRoles?: string[];
   email?: string | null;
   memberId?: string | null;
 };
@@ -48,6 +49,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
       userId: user.id,
       tenantId: user.tenantId,
       roles,
+      platformRoles: Array.isArray(payload.platformRoles) ? payload.platformRoles : [],
       email: user.email,
       memberId: user.memberId ?? null,
     };

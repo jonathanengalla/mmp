@@ -77,6 +77,8 @@ export const LoginPage: React.FC = () => {
       }
       const access_token = resp.access_token || resp.token;
       if (access_token) {
+        const normalizedRoles =
+          (resp.user?.roles || resp.roles || []).map((r: string) => r.toLowerCase());
         setSession({
           tokens: {
             access_token,
@@ -84,7 +86,7 @@ export const LoginPage: React.FC = () => {
             tenant_id: resp.tenant_id || "t1",
             member_id: resp.member_id,
           },
-          user: resp.user || { email: form.email },
+          user: { ...(resp.user || { email: form.email }), roles: normalizedRoles },
         });
       }
       navigate(redirect, { replace: true });

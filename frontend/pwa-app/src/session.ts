@@ -33,7 +33,13 @@ export const clearSessionTokens = () => {
 export const isAuthenticated = () => !!getSessionTokens()?.access_token;
 
 // Role type for frontend (mirrors backend Role type)
-export type Role = "admin" | "member" | "event_manager" | "finance_manager" | "communications_manager";
+export type Role =
+  | "admin"
+  | "member"
+  | "event_manager"
+  | "finance_manager"
+  | "communications_manager"
+  | "super_admin";
 
 export type SessionUser = {
   id?: string;
@@ -115,7 +121,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const isAdmin = (): boolean => {
-    return hasRole("admin");
+    return hasRole("admin") || hasRole("super_admin");
   };
 
   const value = useMemo<SessionContextValue>(

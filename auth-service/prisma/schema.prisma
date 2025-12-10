@@ -328,6 +328,7 @@ model User {
   email        String   @unique
   passwordHash String
   roles        String[] @default([])
+  platformRoles String[] @default([])
   tenantId     String
   memberId     String?  @unique
   status       MemberStatus @default(ACTIVE)

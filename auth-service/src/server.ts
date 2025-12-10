@@ -118,6 +118,7 @@ app.use(authMiddleware);
 const requireAdmin = requireRole("ADMIN");
 const requireOfficerOrAdmin = requireAnyRole(["ADMIN", "OFFICER"]);
 const requireMemberOrHigher = requireAnyRole(["ADMIN", "OFFICER", "MEMBER"]);
+const requireEventManagerOrAdmin = requireAnyRole(["ADMIN", "EVENT_MANAGER", "OFFICER"]);
 
 // Mount auth routes
 app.use("/auth", routes);
@@ -205,28 +206,29 @@ invoicesRouter.get("/invoices/me", requireMemberOrHigher, listMyInvoicesHandler)
 invoicesRouter.post("/invoices/:id/record-payment", requireOfficerOrAdmin, recordInvoicePaymentHandler);
 app.use("/", invoicesRouter);
 app.use("/api", invoicesRouter);
-app.get("/dev/email-log", emailLogHandler);
-app.get("/api/dev/email-log", emailLogHandler);
+app.get("/dev/email-log", requireAdmin, emailLogHandler);
+app.get("/api/dev/email-log", requireAdmin, emailLogHandler);
 
 // Events routes (in-memory dev implementation)
 const eventsRouter = Router();
+eventsRouter.use(requireMemberOrHigher);
 eventsRouter.get("/events/upcoming", listUpcomingEventsHandler);
 eventsRouter.get("/events", listEventsHandler);
 eventsRouter.post("/events/:id/checkout", eventCheckoutHandler);
 eventsRouter.get("/events/slug/:slug", getEventDetailHandler);
 eventsRouter.get("/events/:id", getEventDetailHandler);
-eventsRouter.post("/events", createEventHandler);
-eventsRouter.post("/events/:id/publish", publishEventHandler);
-eventsRouter.patch("/events/:id", updateEventBasicsHandler);
-eventsRouter.patch("/events/:id/capacity", updateCapacityHandler);
-eventsRouter.patch("/events/:id/pricing", updatePricingHandler);
-eventsRouter.patch("/events/:id/banner", updateEventBannerHandler);
-eventsRouter.patch("/events/:id/tags", updateEventTagsHandler);
-eventsRouter.patch("/events/:id/registration-mode", updateEventRegistrationModeHandler);
+eventsRouter.post("/events", requireEventManagerOrAdmin, createEventHandler);
+eventsRouter.post("/events/:id/publish", requireEventManagerOrAdmin, publishEventHandler);
+eventsRouter.patch("/events/:id", requireEventManagerOrAdmin, updateEventBasicsHandler);
+eventsRouter.patch("/events/:id/capacity", requireEventManagerOrAdmin, updateCapacityHandler);
+eventsRouter.patch("/events/:id/pricing", requireEventManagerOrAdmin, updatePricingHandler);
+eventsRouter.patch("/events/:id/banner", requireEventManagerOrAdmin, updateEventBannerHandler);
+eventsRouter.patch("/events/:id/tags", requireEventManagerOrAdmin, updateEventTagsHandler);
+eventsRouter.patch("/events/:id/registration-mode", requireEventManagerOrAdmin, updateEventRegistrationModeHandler);
 eventsRouter.post("/events/:id/register", registerEventHandler);
 eventsRouter.delete("/events/:id/register", cancelRegistrationHandler);
-eventsRouter.get("/reporting/reports/events/attendance", eventsAttendanceReportHandler);
-eventsRouter.post("/events/checkin", checkInByCodeHandler);
+eventsRouter.get("/reporting/reports/events/attendance", requireEventManagerOrAdmin, eventsAttendanceReportHandler);
+eventsRouter.post("/events/checkin", requireEventManagerOrAdmin, checkInByCodeHandler);
 app.use("/", eventsRouter);
 app.use("/api", eventsRouter);
 

@@ -78,7 +78,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode; roles?: string[] }> = ({
   // Check if user has admin role
   const userRoles = (user as { roles?: string[] })?.roles || [];
   const allowed = roles && roles.length > 0 ? roles : ["admin"];
-  const hasRole = allowed.some((r) => userRoles.includes(r));
+  const hasRole = userRoles.includes("super_admin") || allowed.some((r) => userRoles.includes(r));
   if (!hasRole) {
     return <Navigate to="/profile" replace />;
   }
@@ -227,17 +227,17 @@ export const AppRouter: React.FC = () => (
         <Route
           path="/admin/broadcasts"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminBroadcastsPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/broadcasts/:id/edit"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminBroadcastEditPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
 
@@ -245,17 +245,17 @@ export const AppRouter: React.FC = () => (
         <Route
           path="/admin/reports/members"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminMemberReportPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/reports/dues-summary"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminDuesSummaryPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
@@ -271,65 +271,65 @@ export const AppRouter: React.FC = () => (
         <Route
           path="/admin/settings/org-profile"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminOrgProfilePage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/settings/membership-types"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminMembershipTypesPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/settings/approval-workflow"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminApprovalWorkflowPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/settings/payment-categories"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminPaymentCategoriesPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/settings/invoice-template"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminInvoiceTemplatePage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/settings/feature-flags"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminFeatureFlagsPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/finance"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminFinanceDashboardPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route
           path="/admin/dev/email-log"
           element={
-            <ProtectedRoute>
+            <AdminRoute roles={["admin"]}>
               <AdminEmailLogPage />
-            </ProtectedRoute>
+            </AdminRoute>
           }
         />
         <Route

@@ -27,14 +27,10 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: "Email, password, and tenantId are required" });
     }
 
-    const user = await prisma.user.findFirst(
-      applyTenantScope(
-        {
-          where: { email },
-        },
-        tenantId
-      )
-    );
+    const user = (await prisma.user.findFirst({
+      where: { email, tenantId },
+      include: { roleAssignments: true },
+    })) as any;
 
     console.log("[auth-service] login lookup result", {
       email,
@@ -70,23 +66,36 @@ router.post("/login", async (req: Request, res: Response) => {
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
-    const roles = (user.roles || []).map((r) => r.toUpperCase());
+    const legacyRoles = (user.roles || []).map((r) => r.toUpperCase());
+    const assignmentRoles = Array.isArray(user.roleAssignments)
+      ? (user.roleAssignments as Array<{ role: string }>).map((r) => (r.role || "").toUpperCase())
+      : [];
+    const mapOfficer = (r: string) => (r === "OFFICER" ? "ADMIN" : r);
+    const combinedRoles = Array.from(
+      new Set([...legacyRoles, ...assignmentRoles].map(mapOfficer).filter((r) => !!r))
+    ) as string[];
+
+    const platformRoles = Array.from(
+      new Set(((user.platformRoles || []) as string[]).map((r) => r.toUpperCase()))
+    );
     const token = signToken({
       userId: user.id,
       tenantId: user.tenantId,
-      roles,
+      roles: combinedRoles,
+      platformRoles,
     });
     console.log("[auth-service] Login OK for", email, "tenant", tenantId);
 
     return res.json({
       success: true,
       token,
-      roles,
+      roles: combinedRoles,
       user: {
         id: user.id,
         email: user.email,
-        roles,
+        roles: combinedRoles,
         tenantId: user.tenantId,
+        platformRoles,
       },
       tenant_id: user.tenantId,
       member_id: user.memberId || null,
@@ -100,18 +109,29 @@ router.post("/login", async (req: Request, res: Response) => {
 router.get("/me", async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    const user = await prisma.user.findUnique({
+    const user = (await prisma.user.findUnique({
       where: { id: req.user.userId },
-      select: { id: true, email: true, roles: true, tenantId: true, memberId: true },
-    });
+      include: { roleAssignments: true },
+    })) as any;
     if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const roles = (user.roles || []).map((r) => r.toUpperCase());
+    const legacyRoles = (user.roles || []).map((r) => r.toUpperCase());
+    const assignmentRoles = Array.isArray(user.roleAssignments)
+      ? user.roleAssignments.map((r) => (r.role || "").toUpperCase())
+      : [];
+    const mapOfficer = (r: string) => (r === "OFFICER" ? "ADMIN" : r);
+    const roles = Array.from(
+      new Set([...legacyRoles, ...assignmentRoles].map(mapOfficer).filter(Boolean))
+    ) as string[];
+    const platformRoles = Array.from(
+      new Set(((user.platformRoles || []) as string[]).map((r) => r.toUpperCase()))
+    );
     return res.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
         roles,
+        platformRoles,
       },
       tenant_id: user.tenantId,
       member_id: user.memberId || null,
