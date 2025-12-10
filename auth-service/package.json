@@ -21,23 +21,27 @@
     "db:seed:base": "NODE_ENV=production node scripts/db-seed-base.js",
     "db:reset:test": "NODE_ENV=test node scripts/db-reset-and-seed-test.js",
     "demo:reset": "node scripts/demo-reset-and-seed.js",
-    "hash:dev-password": "npm run build && node scripts/hash-dev-password.js"
+    "hash:dev-password": "npm run build && node scripts/hash-dev-password.js",
+    "seed:rcme": "ts-node --transpile-only scripts/seed-rcme-sandbox.ts",
+    "seed:rcme:reset": "ts-node --transpile-only scripts/seed-rcme-sandbox.ts --reset"
   },
   "dependencies": {
-    "prisma": "5.22.0",
     "@prisma/client": "5.22.0",
     "@prisma/engines": "5.22.0",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
     "express": "^4.22.1",
-    "jsonwebtoken": "^9.0.3"
+    "jsonwebtoken": "^9.0.3",
+    "prisma": "5.22.0"
   },
   "devDependencies": {
+    "@faker-js/faker": "^8.4.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.25",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.2.2"
   }
