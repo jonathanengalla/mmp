@@ -130,11 +130,24 @@ export const PaymentMethodsPage: React.FC = () => {
         expYear: parseInt(form.expYear, 10),
         label: form.label || undefined,
       });
-      const normalized = normalizeResponse(resp);
+      let normalized = normalizeResponse(resp);
+
+      // Fallback: if backend returned empty items unexpectedly, refetch to display the saved method.
+      if (!normalized.items || normalized.items.length === 0) {
+        try {
+          const refreshed = await getMemberPaymentMethods(tokens.access_token);
+          normalized = normalizeResponse(refreshed);
+        } catch (fetchErr) {
+          const error = fetchErr as { error?: { message?: string } };
+          setToast({ msg: error?.error?.message || "Saved, but failed to refresh methods", type: "error" });
+          return;
+        }
+      }
+
       setMethods(normalized.items);
       setDefaultId(normalized.defaultId);
       setForm(initialForm);
-      setToast({ msg: "Payment method added", type: "success" });
+      setToast({ msg: "Payment method saved", type: "success" });
     } catch (err: unknown) {
       const error = err as { error?: { message?: string } };
       setToast({ msg: error?.error?.message || "Failed to add payment method", type: "error" });
@@ -225,7 +238,10 @@ export const PaymentMethodsPage: React.FC = () => {
   }
 
   return (
-    <Page title="Payment Methods" description="Manage your saved cards for dues and event payments">
+    <Page
+      title="Payment Methods"
+      description="We only store non-sensitive card details (brand, last 4, expiry, label). Full card numbers and CVC stay with the payment provider."
+    >
       {/* Saved payment methods */}
       <Card title="Saved Cards">
         {methods.length === 0 ? (
@@ -318,7 +334,10 @@ export const PaymentMethodsPage: React.FC = () => {
 
       {/* Add new payment method */}
       <div style={{ marginTop: "var(--space-6)" }}>
-        <Card title="Add a Saved Payment Method" description="We only store non-sensitive details (brand, last 4, expiry, label). No full card numbers or CVC are stored.">
+        <Card
+          title="Add a Saved Payment Method"
+          description="Store a saved card reference (brand, last 4, expiry, label). OneLedger never stores your full card number or CVC; those will stay with the payment provider."
+        >
           <form onSubmit={onSubmit} ref={formRef}>
             <div style={{ 
               display: "grid", 
@@ -343,7 +362,7 @@ export const PaymentMethodsPage: React.FC = () => {
 
               <FormField
                 label="Last 4 digits (only)"
-                hint="We only store the last 4 digits for identification, never the full card number or CVC."
+                hint="Identification only — we never store your full card number or CVC."
                 error={formErrors.last4}
                 required
               >
