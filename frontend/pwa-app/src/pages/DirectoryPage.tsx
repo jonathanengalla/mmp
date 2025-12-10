@@ -39,13 +39,17 @@ export const DirectoryPage: React.FC = () => {
     }
   }, [tokens]);
 
+  // Initial load
+  useEffect(() => {
+    doSearch("", 0);
+    setOffset(0);
+  }, [doSearch]);
+
   // Debounced search effect
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query.trim()) {
-        doSearch(query, 0);
-        setOffset(0);
-      }
+      doSearch(query.trim(), 0);
+      setOffset(0);
     }, 300);
     return () => clearTimeout(timer);
   }, [query, doSearch]);

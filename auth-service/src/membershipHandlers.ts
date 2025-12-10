@@ -15,17 +15,14 @@ import { listPaymentMethodsForMember, removePaymentMethod, savePaymentMethod } f
 
 const sanitizeMember = (m: any) => ({
   id: m.id,
-  email: m.email,
   firstName: m.firstName,
   lastName: m.lastName,
+  email: m.email,
   status: m.status,
-  phone: m.phone,
-  address: m.address,
-  roles: m.roles,
-  tags: m.tags,
+  phone: m.phone ?? null,
+  classification: Array.isArray(m.tags) && m.tags.length > 0 ? m.tags[0] : null,
+  sponsor: null,
   createdAt: m.createdAt,
-  updatedAt: m.updatedAt,
-  tenantId: m.tenantId,
 });
 
 const sanitizePaymentMethod = (pm: any) => ({
@@ -299,14 +296,26 @@ export const searchDirectoryMembers = async (req: AuthenticatedRequest, res: Res
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const q = (req.query.q as string | undefined)?.trim();
+    const limit = req.query.limit ? Number(req.query.limit) : 25;
+    const offset = req.query.offset ? Number(req.query.offset) : 0;
+
     const members = await listMembersForTenant(req.user.tenantId);
     const filtered = q
       ? members.filter((m) => {
-          const target = `${m.firstName} ${m.lastName} ${m.email}`.toLowerCase();
+          const target = `${m.firstName} ${m.lastName} ${m.email} ${(Array.isArray(m.tags) && m.tags[0]) || ""}`.toLowerCase();
           return target.includes(q.toLowerCase());
         })
       : members;
-    return res.json({ items: filtered.map(sanitizeMember) });
+
+    const total = filtered.length;
+    const page = filtered.slice(offset, offset + limit);
+
+    return res.json({
+      items: page.map(sanitizeMember),
+      total,
+      limit,
+      offset,
+    });
   } catch (err) {
     console.error("[membership] searchDirectoryMembers error", err);
     return res.status(500).json({ error: "Internal server error" });
