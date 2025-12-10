@@ -50,20 +50,23 @@ async function hashPassword(plain: string) {
 }
 
 async function deleteTenantData(tenantId: string) {
-  await prisma.$transaction(async (tx) => {
-    await tx.roleAssignment.deleteMany({ where: { tenantId } });
-    await tx.payment.deleteMany({ where: { tenantId } });
-    await tx.invoice.deleteMany({ where: { tenantId } });
-    await tx.eventRegistration.deleteMany({ where: { tenantId } });
-    await tx.event.deleteMany({ where: { tenantId } });
-    await tx.paymentMethod.deleteMany({ where: { tenantId } });
-    await tx.user.deleteMany({ where: { tenantId } });
-    await tx.member.deleteMany({ where: { tenantId } });
-    await tx.orgProfile.deleteMany({ where: { tenantId } });
-    await tx.featureFlags.deleteMany({ where: { tenantId } });
-    await tx.membershipType.deleteMany({ where: { tenantId } });
-    await tx.tenant.deleteMany({ where: { id: tenantId } });
-  });
+  if (!tenantId) {
+    throw new Error("deleteTenantData called without tenantId");
+  }
+  // Run deletes sequentially to avoid long-running single transaction timeouts
+  await prisma.roleAssignment.deleteMany({ where: { tenantId } });
+  await prisma.auditLog.deleteMany({ where: { tenantId } });
+  await prisma.payment.deleteMany({ where: { tenantId } });
+  await prisma.eventRegistration.deleteMany({ where: { tenantId } });
+  await prisma.invoice.deleteMany({ where: { tenantId } });
+  await prisma.paymentMethod.deleteMany({ where: { tenantId } });
+  await prisma.event.deleteMany({ where: { tenantId } });
+  await prisma.user.deleteMany({ where: { tenantId } });
+  await prisma.member.deleteMany({ where: { tenantId } });
+  await prisma.orgProfile.deleteMany({ where: { tenantId } });
+  await prisma.featureFlags.deleteMany({ where: { tenantId } });
+  await prisma.membershipType.deleteMany({ where: { tenantId } });
+  await prisma.tenant.deleteMany({ where: { id: tenantId } });
 }
 
 async function ensureTenant(options: SeedOptions) {

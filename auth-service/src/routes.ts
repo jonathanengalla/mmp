@@ -12,29 +12,39 @@ router.post("/login", async (req: Request, res: Response) => {
     console.log("[auth-service] POST /auth/login headers:", req.headers);
     console.log("[auth-service] POST /auth/login body:", req.body);
 
-    const { email, password, tenantId } = (req.body || {}) as {
+    const { email, password, tenantId: tenantSlugOrId } = (req.body || {}) as {
       email?: string;
       password?: string;
       tenantId?: string;
     };
 
-    if (!email || !password || !tenantId) {
+    if (!email || !password || !tenantSlugOrId) {
       console.warn("[auth-service] Missing email, password, or tenantId", {
         email,
         passwordPresent: !!password,
-        tenantId,
+        tenantId: tenantSlugOrId,
       });
       return res.status(400).json({ success: false, error: "Email, password, and tenantId are required" });
     }
 
+    // Resolve tenant slug to tenant ID
+    const tenant =
+      (await prisma.tenant.findUnique({ where: { slug: tenantSlugOrId } })) ||
+      (await prisma.tenant.findUnique({ where: { id: tenantSlugOrId } }));
+
+    if (!tenant) {
+      console.warn("[auth-service] Tenant not found", { tenantId: tenantSlugOrId });
+      return res.status(400).json({ success: false, error: "Invalid tenant" });
+    }
+
     const user = (await prisma.user.findFirst({
-      where: { email, tenantId },
+      where: { email, tenantId: tenant.id },
       include: { roleAssignments: true },
     })) as any;
 
     console.log("[auth-service] login lookup result", {
       email,
-      tenantId,
+      tenantId: tenant.id,
       userFound: !!user,
       userId: user?.id,
       status: user?.status,
@@ -50,7 +60,7 @@ router.post("/login", async (req: Request, res: Response) => {
     const passwordMatches = await verifyPassword(user.passwordHash, password);
     console.log("[auth-service] login password compare", {
       email,
-      tenantId,
+      tenantId: tenant.id,
       userId: user.id,
       passwordMatches,
     });
@@ -62,7 +72,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
     const isActive = (user as any).status ? (user as any).status === "ACTIVE" : true;
     if (!isActive) {
-      console.warn("[auth-service] Inactive user", { email, tenantId, userId: user.id, status: (user as any).status });
+      console.warn("[auth-service] Inactive user", { email, tenantId: tenant.id, userId: user.id, status: (user as any).status });
       return res.status(401).json({ success: false, error: "Invalid credentials" });
     }
 
@@ -80,11 +90,11 @@ router.post("/login", async (req: Request, res: Response) => {
     );
     const token = signToken({
       userId: user.id,
-      tenantId: user.tenantId,
+      tenantId: tenant.id,
       roles: combinedRoles,
       platformRoles,
     });
-    console.log("[auth-service] Login OK for", email, "tenant", tenantId);
+    console.log("[auth-service] Login OK for", email, "tenant", tenant.id);
 
     return res.json({
       success: true,
@@ -94,10 +104,10 @@ router.post("/login", async (req: Request, res: Response) => {
         id: user.id,
         email: user.email,
         roles: combinedRoles,
-        tenantId: user.tenantId,
+        tenantId: tenant.id,
         platformRoles,
       },
-      tenant_id: user.tenantId,
+      tenant_id: tenant.id,
       member_id: user.memberId || null,
     });
   } catch (err) {
