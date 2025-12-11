@@ -35,6 +35,9 @@ const MEMBER_USER = {
   lastName: "Cruz",
 };
 
+const ADMIN_AVATAR = "https://robohash.org/rcme-admin.png?size=200x200&set=set4";
+const MEMBER_AVATAR = "https://robohash.org/rcme-member.png?size=200x200&set=set4";
+
 const CLASSIFICATIONS = ["Legal", "Real Estate", "Finance", "Consulting", "Healthcare", "Technology", "Education", "Hospitality"];
 
 type SeedOptions = { reset: boolean };
@@ -110,7 +113,15 @@ async function ensureTenant(options: SeedOptions) {
   return tenant;
 }
 
-async function ensureUserWithMember(tenantId: string, email: string, password: string, firstName: string, lastName: string, roles: string[]) {
+async function ensureUserWithMember(
+  tenantId: string,
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+  roles: string[],
+  avatarUrl?: string
+) {
   const passwordHash = await hashPassword(password);
   const member = await prisma.member.upsert({
     where: { tenantId_email: { tenantId, email } },
@@ -118,6 +129,7 @@ async function ensureUserWithMember(tenantId: string, email: string, password: s
       firstName,
       lastName,
       status: MemberStatus.ACTIVE,
+      ...(avatarUrl ? { avatarUrl } : {}),
     },
     create: {
       tenantId,
@@ -125,6 +137,7 @@ async function ensureUserWithMember(tenantId: string, email: string, password: s
       firstName,
       lastName,
       status: MemberStatus.ACTIVE,
+      ...(avatarUrl ? { avatarUrl } : {}),
     },
   });
 
@@ -388,8 +401,15 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
     },
   ];
 
-  const createdEvents: { id: string; slug: string; priceCents: number; currency: string; paidCount: number; registrations: number }[] =
-    [];
+  const createdEvents: {
+    id: string;
+    slug: string;
+    priceCents: number;
+    currency: string;
+    paidCount: number;
+    registrations: number;
+    startsAt: Date;
+  }[] = [];
 
   for (const evt of eventsData) {
     const event = await prisma.event.upsert({
@@ -552,16 +572,23 @@ async function main() {
   const tenant = await ensureTenant(options);
 
   // Admin and member accounts
-  const admin = await ensureUserWithMember(tenant.id, ADMIN_USER.email, ADMIN_USER.password, ADMIN_USER.firstName, ADMIN_USER.lastName, [
-    "ADMIN",
-  ]);
+  const admin = await ensureUserWithMember(
+    tenant.id,
+    ADMIN_USER.email,
+    ADMIN_USER.password,
+    ADMIN_USER.firstName,
+    ADMIN_USER.lastName,
+    ["ADMIN"],
+    ADMIN_AVATAR
+  );
   const memberUser = await ensureUserWithMember(
     tenant.id,
     MEMBER_USER.email,
     MEMBER_USER.password,
     MEMBER_USER.firstName,
     MEMBER_USER.lastName,
-    ["MEMBER"]
+    ["MEMBER"],
+    MEMBER_AVATAR
   );
 
   // Directory
