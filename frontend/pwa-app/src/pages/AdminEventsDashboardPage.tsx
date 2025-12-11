@@ -14,6 +14,17 @@ const priceLabel = (ev: EventDetailDto) => {
   return `${ev.currency || "PHP"} ${(ev.priceCents / 100).toLocaleString()}`;
 };
 
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
 export const AdminEventsDashboardPage: React.FC = () => {
   const { tokens } = useSession();
   const navigate = useNavigate();
@@ -104,8 +115,8 @@ export const AdminEventsDashboardPage: React.FC = () => {
                         </Tag>
                       </TableCell>
                       <TableCell>
-                        {new Date(ev.startDate).toLocaleString()}
-                        {ev.endDate ? ` - ${new Date(ev.endDate).toLocaleString()}` : ""}
+                        {formatDateTime(ev.startDate)}
+                        {ev.endDate ? ` - ${formatDateTime(ev.endDate)}` : ""}
                       </TableCell>
                       <TableCell>
                         {ev.registrationsCount}/{ev.capacity ?? "—"}

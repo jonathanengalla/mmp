@@ -155,19 +155,28 @@ export const createRegistration = async (req: AuthenticatedRequest, res: Respons
   }
 };
 
+const normalizeOptional = (value: any) => {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === "string" && value.trim() === "") return null;
+  return value;
+};
+
 export const updateCurrentMember = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const member = await ensureMemberForUser(req);
     if (!member) return res.status(404).json({ error: "Member not found" });
-    const { phone, address, linkedinUrl, otherSocials } = req.body || {};
+    const { phone, address, linkedinUrl, otherSocials, firstName, lastName } = req.body || {};
     const updated = await prisma.member.update({
       where: { id_tenantId: { id: member.id, tenantId: req.user.tenantId } },
       data: {
-        phone: phone ?? member.phone ?? null,
-        address: address ?? member.address ?? null,
-        linkedinUrl: linkedinUrl ?? (member as any).linkedinUrl ?? null,
-        otherSocials: otherSocials ?? (member as any).otherSocials ?? null,
+        firstName: normalizeOptional(firstName) ?? member.firstName,
+        lastName: normalizeOptional(lastName) ?? member.lastName,
+        phone: normalizeOptional(phone),
+        address: normalizeOptional(address),
+        linkedinUrl: normalizeOptional(linkedinUrl),
+        otherSocials: normalizeOptional(otherSocials),
       },
     });
     return res.json(sanitizeMember(updated));

@@ -27,10 +27,21 @@ export interface EventCardProps {
   disabled?: boolean;
 }
 
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
 const formatDateRange = (start: string, end?: string | null) => {
-  const startStr = new Date(start).toLocaleString();
+  const startStr = formatDateTime(start);
   if (!end) return startStr;
-  return `${startStr} - ${new Date(end).toLocaleString()}`;
+  return `${startStr} - ${formatDateTime(end)}`;
 };
 
 const formatPrice = (priceCents?: number | null, currency?: string | null) => {

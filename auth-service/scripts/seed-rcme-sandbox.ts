@@ -24,8 +24,8 @@ const ORG_PROFILE = {
 const ADMIN_USER = {
   email: "admin@rcme-dev.com",
   password: "Admin123!",
-  firstName: "Robert",
-  lastName: "Santos",
+  firstName: "RCME",
+  lastName: "Admin",
 };
 
 const MEMBER_USER = {
@@ -36,8 +36,8 @@ const MEMBER_USER = {
 };
 
 // Seeded avatars so admin/member photos persist across resets
-const ADMIN_AVATAR = "https://robohash.org/rcme-admin.png?size=200x200&set=set4";
-const MEMBER_AVATAR = "https://robohash.org/rcme-member.png?size=200x200&set=set4";
+const ADMIN_AVATAR = "https://robohash.org/rcme-admin.png?size=200x200&set=set5";
+const MEMBER_AVATAR = "https://robohash.org/rcme-member.png?size=200x200&set=set5";
 
 const CLASSIFICATIONS = ["Legal", "Real Estate", "Finance", "Consulting", "Healthcare", "Technology", "Education", "Hospitality"];
 
@@ -130,6 +130,10 @@ async function ensureUserWithMember(
       firstName,
       lastName,
       status: MemberStatus.ACTIVE,
+      phone: null,
+      address: null,
+      linkedinUrl: null,
+      otherSocials: null,
       ...(avatarUrl ? { avatarUrl } : {}),
     },
     create: {
@@ -138,6 +142,10 @@ async function ensureUserWithMember(
       firstName,
       lastName,
       status: MemberStatus.ACTIVE,
+      phone: null,
+      address: null,
+      linkedinUrl: null,
+      otherSocials: null,
       ...(avatarUrl ? { avatarUrl } : {}),
     },
   });
@@ -353,17 +361,27 @@ async function createInvoiceWithPayments(params: {
 }
 
 async function seedEvents(tenantId: string, memberIds: string[]) {
-  // Event definitions (2025 timeline + one upcoming relative)
-  const upcomingStart = daysFromNow(30);
-  const upcomingEnd = new Date(upcomingStart.getTime() + 2 * 60 * 60 * 1000);
+  // Event definitions (2025 timeline + one upcoming relative, all in Asia/Manila clean times)
+  const upcomingStart = new Date(
+    `${daysFromNow(30).toISOString().split("T")[0]}T09:00:00+08:00`
+  );
+  const upcomingEnd = new Date(
+    `${daysFromNow(30).toISOString().split("T")[0]}T11:00:00+08:00`
+  );
+
+  const galaStart = new Date("2025-06-15T18:00:00+08:00");
+  const galaEnd = new Date("2025-06-16T00:00:00+08:00"); // midnight next day
+  const insightsDate = "2025-10-03";
+  const insightsStart = new Date(`${insightsDate}T19:00:00+08:00`);
+  const insightsEnd = new Date(`${insightsDate}T20:00:00+08:00`);
 
   const eventsData = [
     {
       title: "RCME Annual Gala Dinner 2025",
       slug: "gala-dinner-2025",
       status: EventStatus.COMPLETED,
-      startsAt: new Date("2025-06-15T18:00:00+08:00"),
-      endsAt: new Date("2025-06-15T22:00:00+08:00"),
+      startsAt: galaStart,
+      endsAt: galaEnd,
       priceCents: 250000,
       currency: "PHP",
       capacity: 100,
@@ -401,11 +419,11 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
       paidCount: 0,
     },
     {
-      title: "Global Insights",
-      slug: "global-insights-2025",
+      title: "Global Insights: Genetic Insights for a World Without Cancer",
+      slug: "global-insights-genetic-cancer",
       status: EventStatus.COMPLETED,
-      startsAt: new Date("2025-09-24T03:00:00+08:00"),
-      endsAt: new Date("2025-09-24T04:00:00+08:00"),
+      startsAt: insightsStart,
+      endsAt: insightsEnd,
       priceCents: 150000,
       currency: "PHP",
       capacity: 60,

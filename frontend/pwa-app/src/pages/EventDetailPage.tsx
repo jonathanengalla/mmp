@@ -8,6 +8,17 @@ import { useSession } from "../hooks/useSession";
 import { cancelEventRegistration, getEventDetail, registerForEvent } from "../api/client";
 import { EventDetailDto } from "../../../../libs/shared/src/models";
 
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("en-PH", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
 const currencyDisplay = (priceCents?: number | null, currency?: string | null) => {
   if (priceCents === null || priceCents === undefined) return "Free";
   const unit = currency || "PHP";
@@ -181,8 +192,8 @@ export const EventDetailPage: React.FC = () => {
                 <div style={{ display: "grid", gap: "var(--space-sm)" }}>
                   <div>
                     <div style={{ color: "var(--app-color-text-muted)" }}>Date / Time</div>
-                    <div>{new Date(event.startDate).toLocaleString()}</div>
-                    {event.endDate && <div>{new Date(event.endDate).toLocaleString()}</div>}
+                    <div>{formatDateTime(event.startDate)}</div>
+                    {event.endDate && <div>{formatDateTime(event.endDate)}</div>}
                   </div>
                   <div>
                     <div style={{ color: "var(--app-color-text-muted)" }}>Location</div>
