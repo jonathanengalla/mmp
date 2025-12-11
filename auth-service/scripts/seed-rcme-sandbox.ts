@@ -338,7 +338,7 @@ async function createInvoiceWithPayments(params: {
       dueAt: dueAt ?? null,
       description,
       eventId: eventId ?? null,
-      source: source ?? null,
+      source: source ? source.toUpperCase() : null,
       paidAt: status === InvoiceStatus.PAID ? new Date() : null,
     },
     create: {
@@ -352,7 +352,7 @@ async function createInvoiceWithPayments(params: {
       dueAt: dueAt ?? null,
       description,
       eventId: eventId ?? null,
-      source: source ?? null,
+      source: source ? source.toUpperCase() : null,
       paidAt: status === InvoiceStatus.PAID ? new Date() : null,
     },
   });

@@ -9,6 +9,10 @@ import {
   RecordInvoicePaymentPayload,
   DuesSummaryItem,
   DuesSummaryResponse,
+  MembersAdminSummary,
+  MemberSelfSummary,
+  EventsAdminSummary,
+  EventsSelfSummary,
 } from "../../../../libs/shared/src/models";
 
 const normalizeApiBaseUrl = (raw?: string): string => {
@@ -86,6 +90,20 @@ export const requestVerification = async (email: string) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),
+  });
+  return json(res);
+};
+
+export const getMembersAdminSummary = async (token: string): Promise<MembersAdminSummary> => {
+  const res = await fetch(`${API_BASE_URL}/membership/admin/summary`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  return json(res);
+};
+
+export const getMyMemberSummary = async (token: string): Promise<MemberSelfSummary> => {
+  const res = await fetch(`${API_BASE_URL}/membership/me/summary`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
 };
@@ -246,6 +264,20 @@ export const listUpcomingEvents = async (token: string): Promise<UpcomingEventDt
   });
   const data = await json(res);
   return data.items || [];
+};
+
+export const getEventsAdminSummary = async (token: string): Promise<EventsAdminSummary> => {
+  const res = await fetch(`${API_BASE_URL}/events/admin/summary`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  return json(res);
+};
+
+export const getMyEventsSummary = async (token: string): Promise<EventsSelfSummary> => {
+  const res = await fetch(`${API_BASE_URL}/events/me/summary`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  return json(res);
 };
 
 export const listEvents = async (

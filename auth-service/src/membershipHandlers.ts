@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { MemberStatus } from "@prisma/client";
+import { EventRegistrationStatus, InvoiceStatus, MemberStatus } from "@prisma/client";
 import {
   approveMemberForTenant,
   createMemberForTenant,
@@ -12,6 +12,7 @@ import {
 import type { AuthenticatedRequest } from "./authMiddleware";
 import { prisma } from "./db/prisma";
 import { listPaymentMethodsForMember, removePaymentMethod, savePaymentMethod } from "./billingStore";
+import type { MemberStatusType, MemberSelfSummary, MembersAdminSummary } from "../../libs/shared/src/models";
 
 const sanitizeMember = (m: any) => {
   const classification = Array.isArray(m.tags) && m.tags.length > 0 ? m.tags[0] : null;
@@ -511,5 +512,134 @@ export const adminUpdateMemberCustomFields = async (req: AuthenticatedRequest, r
   if (!req.user) return res.status(401).json({ error: "Unauthorized" });
   console.log("[membership] adminUpdateMemberCustomFields placeholder");
   return res.json({ schema: { groups: [], fields: [], updatedAt: Date.now() }, customFields: req.body?.customFields || {} });
+};
+
+const hasAnyRole = (userRoles: string[] | undefined, allowed: string[]) => {
+  const roles = userRoles || [];
+  return allowed.some((role) => roles.includes(role));
+};
+
+const mapMemberStatus = (status: MemberStatus): MemberStatusType => {
+  switch (status) {
+    case MemberStatus.ACTIVE:
+      return "ACTIVE";
+    case MemberStatus.PENDING_VERIFICATION:
+      return "PENDING_VERIFICATION";
+    case MemberStatus.SUSPENDED:
+      return "SUSPENDED";
+    case MemberStatus.INACTIVE:
+    default:
+      return "INACTIVE";
+  }
+};
+
+export const getMembershipAdminSummary = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const allowedRoles = ["ADMIN", "FINANCE_MANAGER", "EVENT_MANAGER", "COMMUNICATIONS_MANAGER", "SUPER_ADMIN"];
+    if (!hasAnyRole(req.user.roles, allowedRoles)) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const tenantId = req.user.tenantId;
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const members = await prisma.member.findMany({
+      where: { tenantId },
+      select: { status: true, createdAt: true, tags: true },
+    });
+
+    const summary: MembersAdminSummary = {
+      totalActive: 0,
+      pendingApproval: 0,
+      inactiveOrSuspended: 0,
+      joinedLast30Days: 0,
+      supporterOnlyCount: 0,
+    };
+
+    members.forEach((m) => {
+      if (m.status === MemberStatus.ACTIVE) {
+        summary.totalActive += 1;
+        if (m.createdAt && m.createdAt >= thirtyDaysAgo) {
+          summary.joinedLast30Days += 1;
+        }
+      } else if (m.status === MemberStatus.PENDING_VERIFICATION) {
+        summary.pendingApproval += 1;
+      } else if (m.status === MemberStatus.INACTIVE || m.status === MemberStatus.SUSPENDED) {
+        summary.inactiveOrSuspended += 1;
+      }
+
+      const tags = Array.isArray(m.tags) ? m.tags : [];
+      const hasSupporterTag = tags.some(
+        (tag) => typeof tag === "string" && tag.toLowerCase().includes("supporter")
+      );
+      if (hasSupporterTag) {
+        summary.supporterOnlyCount = (summary.supporterOnlyCount || 0) + 1;
+      }
+    });
+
+    return res.json(summary);
+  } catch (err) {
+    console.error("[membership] getMembershipAdminSummary error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getMembershipSelfSummary = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const memberId = req.user.memberId;
+    if (!memberId) return res.status(400).json({ error: "Member ID missing" });
+
+    const tenantId = req.user.tenantId;
+    const member = await prisma.member.findFirst({
+      where: { tenantId, id: memberId },
+      select: { status: true, createdAt: true },
+    });
+    if (!member) return res.status(404).json({ error: "Member not found" });
+
+    const now = new Date();
+    const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+
+    const eventsAttendedThisYear = await prisma.eventRegistration.count({
+      where: {
+        tenantId,
+        memberId,
+        event: {
+          startsAt: {
+            gte: startOfYear,
+            lte: now,
+          },
+        },
+        OR: [
+          { status: EventRegistrationStatus.CHECKED_IN },
+          { checkInAt: { not: null } },
+        ],
+      },
+    });
+
+    const outstanding = await prisma.invoice.aggregate({
+      where: {
+        tenantId,
+        memberId,
+        source: "DUES",
+        status: { in: [InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE] },
+      },
+      _sum: { amountCents: true },
+    });
+
+    const response: MemberSelfSummary = {
+      status: mapMemberStatus(member.status),
+      memberSince: member.createdAt?.toISOString(),
+      eventsAttendedThisYear,
+      outstandingDuesCents: outstanding._sum.amountCents ?? 0,
+    };
+
+    return res.json(response);
+  } catch (err) {
+    console.error("[membership] getMembershipSelfSummary error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
 };
 

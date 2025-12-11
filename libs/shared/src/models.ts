@@ -83,6 +83,23 @@ export interface Member extends Profile {
   customFields?: Record<string, string | number | boolean | null>;
 }
 
+export type MemberStatusType = "ACTIVE" | "PENDING_VERIFICATION" | "INACTIVE" | "SUSPENDED";
+
+export interface MembersAdminSummary {
+  totalActive: number;
+  pendingApproval: number;
+  inactiveOrSuspended: number;
+  joinedLast30Days: number;
+  supporterOnlyCount?: number;
+}
+
+export interface MemberSelfSummary {
+  status: MemberStatusType;
+  memberSince?: string;
+  eventsAttendedThisYear?: number;
+  outstandingDuesCents?: number;
+}
+
 // =============================================================================
 // Role Management Types
 // =============================================================================
@@ -336,6 +353,28 @@ export interface EventCheckInResult {
   registrationId: string;
   checkInStatus: "checked_in";
   checkedInAt: string;
+}
+
+export interface EventsAdminSummary {
+  upcomingEventsCount: number;
+  nextEvent?: {
+    id: string;
+    title: string;
+    startsAt: string;
+  } | null;
+  registrationsNext30Days: {
+    registrationsCount: number;
+    capacityTotal?: number | null;
+  };
+  eventRevenueThisYearCents: number;
+  freeEventsCount: number;
+  paidEventsCount: number;
+}
+
+export interface EventsSelfSummary {
+  myUpcomingRegistrations: number;
+  eventsAttendedThisYear: number;
+  openRegistrationsCount: number;
 }
 
 // =============================================================================

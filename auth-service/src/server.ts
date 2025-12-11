@@ -32,6 +32,8 @@ import {
   updateCurrentMemberCustomFields,
   adminGetMemberCustomFields,
   adminUpdateMemberCustomFields,
+  getMembershipAdminSummary,
+  getMembershipSelfSummary,
 } from "./membershipHandlers";
 import {
   createManualInvoiceHandler,
@@ -83,6 +85,8 @@ import {
   checkInByCodeHandler,
   listEventsHandler,
   listMyInvoicesHandler,
+  getEventsAdminSummary,
+  getEventsSelfSummary,
 } from "./eventsHandlers";
 
 const app = express();
@@ -116,6 +120,14 @@ const requireOfficerOrAdmin = requireAnyRole(["ADMIN", "OFFICER"]);
 const requireMemberOrHigher = requireAnyRole(["ADMIN", "OFFICER", "MEMBER"]);
 const requireEventManagerOrAdmin = requireAnyRole(["ADMIN", "EVENT_MANAGER", "OFFICER"]);
 const requireAdminOrFinance = requireAnyRole(["ADMIN", "OFFICER", "FINANCE_MANAGER"]);
+const requireMembershipSummaryAdmin = requireAnyRole([
+  "ADMIN",
+  "FINANCE_MANAGER",
+  "EVENT_MANAGER",
+  "COMMUNICATIONS_MANAGER",
+  "SUPER_ADMIN",
+]);
+const requireEventsSummaryAdmin = requireAnyRole(["ADMIN", "EVENT_MANAGER", "FINANCE_MANAGER", "SUPER_ADMIN"]);
 
 // Reporting routes (after guards are defined)
 const reportingRoutes = Router();
@@ -134,6 +146,8 @@ membershipRouter.post("/registrations", createRegistration);
 membershipRouter.post("/registrations/:token/verify", verify);
 membershipRouter.post("/members/verify-request", requestVerification);
 membershipRouter.post("/members/verify", verify);
+membershipRouter.get("/admin/summary", requireMembershipSummaryAdmin, getMembershipAdminSummary);
+membershipRouter.get("/me/summary", requireMemberOrHigher, getMembershipSelfSummary);
 
 // Admin routes
 membershipRouter.get("/members/pending", requireOfficerOrAdmin, listPendingMembers);
@@ -215,6 +229,8 @@ app.get("/api/dev/email-log", requireAdmin, emailLogHandler);
 // Events routes (in-memory dev implementation)
 const eventsRouter = Router();
 eventsRouter.use(requireMemberOrHigher);
+eventsRouter.get("/events/admin/summary", requireEventsSummaryAdmin, getEventsAdminSummary);
+eventsRouter.get("/events/me/summary", getEventsSelfSummary);
 eventsRouter.get("/events/upcoming", listUpcomingEventsHandler);
 eventsRouter.get("/events", listEventsHandler);
 eventsRouter.post("/events/:id/checkout", eventCheckoutHandler);

@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import { EventRegistrationStatus as PrismaEventRegistrationStatus, EventStatus as PrismaEventStatus, InvoiceStatus as PrismaInvoiceStatus } from "@prisma/client";
 import { prisma } from "./db/prisma";
 import { applyTenantScope } from "./tenantGuard";
 import type { AuthenticatedRequest } from "./authMiddleware";
@@ -13,6 +14,8 @@ import {
   InvoiceStatus,
   UpcomingEventDto,
   EventStatus,
+  EventsAdminSummary,
+  EventsSelfSummary,
 } from "../../libs/shared/src/models";
 import {
   addRegistration,
@@ -59,6 +62,11 @@ const getMemberContext = (req: Request) => {
     name: user.name || user.email || "Member",
     roles: ((user.roles as string[] | undefined) || []).map((r) => r.toUpperCase()),
   };
+};
+
+const hasAnyRole = (roles: string[] | undefined, allowed: string[]) => {
+  const userRoles = roles || [];
+  return allowed.some((role) => userRoles.includes(role));
 };
 
 const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
@@ -745,4 +753,138 @@ export const checkInByCodeHandler = [
     res.json(payload);
   },
 ];
+
+export const getEventsAdminSummary = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: { message: "Unauthorized" } });
+    const allowedRoles = ["ADMIN", "EVENT_MANAGER", "FINANCE_MANAGER", "SUPER_ADMIN"];
+    if (!hasAnyRole(req.user.roles, allowedRoles)) {
+      return res.status(403).json({ error: { message: "Forbidden" } });
+    }
+
+    const tenantId = req.user.tenantId;
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+
+    const upcomingEvents = await prisma.event.findMany({
+      where: {
+        tenantId,
+        status: PrismaEventStatus.PUBLISHED,
+        startsAt: { gt: now },
+      },
+      select: { id: true, title: true, startsAt: true, capacity: true, priceCents: true },
+      orderBy: { startsAt: "asc" },
+    });
+
+    const eventsInNext30Days = upcomingEvents.filter((ev) => ev.startsAt <= thirtyDaysFromNow);
+    const windowEventIds = eventsInNext30Days.map((ev) => ev.id);
+
+    const registrationsCount = windowEventIds.length
+      ? await prisma.eventRegistration.count({
+          where: {
+            tenantId,
+            eventId: { in: windowEventIds },
+            status: { not: PrismaEventRegistrationStatus.CANCELLED },
+          },
+        })
+      : 0;
+
+    const capacityTotalRaw = eventsInNext30Days
+      .map((ev) => ev.capacity)
+      .filter((c): c is number => typeof c === "number");
+    const capacityTotal = capacityTotalRaw.length ? capacityTotalRaw.reduce((sum, c) => sum + c, 0) : undefined;
+
+    const revenueAgg = await prisma.invoice.aggregate({
+      where: {
+        tenantId,
+        source: "EVT",
+        status: PrismaInvoiceStatus.PAID,
+        OR: [
+          { paidAt: { gte: startOfYear, lte: now } },
+          { AND: [{ paidAt: null }, { updatedAt: { gte: startOfYear, lte: now } }] },
+        ],
+      },
+      _sum: { amountCents: true },
+    });
+
+    const summary: EventsAdminSummary = {
+      upcomingEventsCount: upcomingEvents.length,
+      nextEvent: upcomingEvents[0]
+        ? {
+            id: upcomingEvents[0].id,
+            title: upcomingEvents[0].title,
+            startsAt: upcomingEvents[0].startsAt.toISOString(),
+          }
+        : null,
+      registrationsNext30Days: {
+        registrationsCount,
+        capacityTotal,
+      },
+      eventRevenueThisYearCents: revenueAgg._sum.amountCents ?? 0,
+      freeEventsCount: upcomingEvents.filter((ev) => (ev.priceCents ?? 0) === 0).length,
+      paidEventsCount: upcomingEvents.filter((ev) => (ev.priceCents ?? 0) > 0).length,
+    };
+
+    return res.json(summary);
+  } catch (err) {
+    console.error("[events] getEventsAdminSummary error", err);
+    return res.status(500).json({ error: { message: "Internal server error" } });
+  }
+};
+
+export const getEventsSelfSummary = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: { message: "Unauthorized" } });
+    const memberId = req.user.memberId;
+    if (!memberId) return res.status(400).json({ error: { message: "Member ID missing" } });
+
+    const tenantId = req.user.tenantId;
+    const now = new Date();
+    const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+
+    const upcomingPublishedEvents = await prisma.event.findMany({
+      where: { tenantId, status: PrismaEventStatus.PUBLISHED, startsAt: { gt: now } },
+      select: { id: true },
+    });
+    const upcomingIds = upcomingPublishedEvents.map((ev) => ev.id);
+
+    const myUpcomingRegistrations = upcomingIds.length
+      ? await prisma.eventRegistration.count({
+          where: {
+            tenantId,
+            memberId,
+            eventId: { in: upcomingIds },
+            status: { not: PrismaEventRegistrationStatus.CANCELLED },
+            event: { status: PrismaEventStatus.PUBLISHED, startsAt: { gt: now } },
+          },
+        })
+      : 0;
+
+    const eventsAttendedThisYear = await prisma.eventRegistration.count({
+      where: {
+        tenantId,
+        memberId,
+        event: { startsAt: { gte: startOfYear, lte: now } },
+        OR: [
+          { status: PrismaEventRegistrationStatus.CHECKED_IN },
+          { checkInAt: { not: null } },
+        ],
+      },
+    });
+
+    const openRegistrationsCount = Math.max(upcomingIds.length - myUpcomingRegistrations, 0);
+
+    const summary: EventsSelfSummary = {
+      myUpcomingRegistrations,
+      eventsAttendedThisYear,
+      openRegistrationsCount,
+    };
+
+    return res.json(summary);
+  } catch (err) {
+    console.error("[events] getEventsSelfSummary error", err);
+    return res.status(500).json({ error: { message: "Internal server error" } });
+  }
+};
 

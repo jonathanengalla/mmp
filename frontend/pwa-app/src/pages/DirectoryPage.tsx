@@ -1,13 +1,20 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { searchDirectoryMembers, MemberDirectoryEntry, MemberDirectorySearchResponse } from "../api/client";
+import {
+  searchDirectoryMembers,
+  MemberDirectoryEntry,
+  MemberDirectorySearchResponse,
+  getMembersAdminSummary,
+  getMyMemberSummary,
+} from "../api/client";
 import { useSession } from "../hooks/useSession";
 import { Toast } from "../components/Toast";
 import { PageShell, Card, Button, Input, Badge, Table, TableCard } from "../ui";
+import type { MembersAdminSummary, MemberSelfSummary } from "../../../../libs/shared/src/models";
 
 const PAGE_SIZE = 20;
 
 export const DirectoryPage: React.FC = () => {
-  const { tokens } = useSession();
+  const { tokens, hasRole } = useSession();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MemberDirectoryEntry[]>([]);
   const [total, setTotal] = useState(0);
@@ -16,6 +23,182 @@ export const DirectoryPage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [adminSummary, setAdminSummary] = useState<MembersAdminSummary | null>(null);
+  const [selfSummary, setSelfSummary] = useState<MemberSelfSummary | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState<boolean>(true);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  const isAdminSummaryView =
+    hasRole?.("admin") ||
+    hasRole?.("finance_manager") ||
+    hasRole?.("event_manager") ||
+    hasRole?.("communications_manager") ||
+    hasRole?.("super_admin");
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadSummary = async () => {
+      if (!tokens?.access_token) {
+        setSummaryLoading(false);
+        setAdminSummary(null);
+        setSelfSummary(null);
+        return;
+      }
+      setSummaryLoading(true);
+      setSummaryError(null);
+      try {
+        if (isAdminSummaryView) {
+          const data = await getMembersAdminSummary(tokens.access_token);
+          if (!cancelled) {
+            setAdminSummary(data);
+            setSelfSummary(null);
+          }
+        } else {
+          const data = await getMyMemberSummary(tokens.access_token);
+          if (!cancelled) {
+            setSelfSummary(data);
+            setAdminSummary(null);
+          }
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setSummaryError(err?.message || err?.error?.message || "Unable to load member summary right now");
+          setAdminSummary(null);
+          setSelfSummary(null);
+        }
+      } finally {
+        if (!cancelled) setSummaryLoading(false);
+      }
+    };
+    loadSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [tokens?.access_token, isAdminSummaryView]);
+
+  const formatMemberStatus = (status?: string) => {
+    const normalized = (status || "").toUpperCase();
+    if (normalized === "ACTIVE") return "Active";
+    if (normalized === "PENDING_VERIFICATION") return "Pending approval";
+    if (normalized === "SUSPENDED") return "Suspended";
+    if (normalized === "INACTIVE") return "Inactive";
+    return status || "Unknown";
+  };
+
+  const formatDate = (iso?: string) => {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString();
+  };
+
+  const formatCurrency = (cents?: number, currency = "PHP") => {
+    const amount = (cents ?? 0) / 100;
+    return new Intl.NumberFormat("en-PH", { style: "currency", currency, minimumFractionDigits: 0 }).format(amount);
+  };
+
+  const renderNumber = (value: number | undefined) =>
+    summaryLoading ? <div className="pr-skeleton" style={{ height: 22, width: 64 }} /> : <span>{value ?? 0}</span>;
+
+  const renderAdminSummaryTiles = () => {
+    const showSupporterTile = summaryLoading || (adminSummary && (adminSummary.supporterOnlyCount ?? 0) > 0);
+    return (
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--app-space-sm)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        }}
+      >
+        <Card>
+          <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Active members</div>
+          <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>
+            {renderNumber(adminSummary?.totalActive ?? 0)}
+          </div>
+          <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
+            +{adminSummary?.joinedLast30Days ?? 0} in last 30 days
+          </div>
+        </Card>
+        <Card>
+          <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Pending approvals</div>
+          <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>{renderNumber(adminSummary?.pendingApproval ?? 0)}</div>
+          <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>Awaiting verification</div>
+        </Card>
+        <Card>
+          <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Inactive / suspended</div>
+          <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>
+            {renderNumber(adminSummary?.inactiveOrSuspended ?? 0)}
+          </div>
+          <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>Across the tenant</div>
+        </Card>
+        {showSupporterTile && (
+          <Card>
+            <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Supporters / donors</div>
+            <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>
+              {renderNumber(adminSummary?.supporterOnlyCount ?? 0)}
+            </div>
+            <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>Tagged as supporters</div>
+          </Card>
+        )}
+      </div>
+    );
+  };
+
+  const renderMemberSummaryTiles = () => {
+    const summary = selfSummary;
+    const showEngagement = summaryLoading || summary?.eventsAttendedThisYear !== undefined;
+    const showDues = summaryLoading || summary?.outstandingDuesCents !== undefined;
+
+    return (
+      <div
+        style={{
+          display: "grid",
+          gap: "var(--app-space-sm)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+        }}
+      >
+        <Card>
+          <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>My status</div>
+          <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>
+            {summaryLoading ? <div className="pr-skeleton" style={{ height: 22, width: 120 }} /> : formatMemberStatus(summary?.status)}
+          </div>
+          <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
+            Member since {formatDate(summary?.memberSince)}
+          </div>
+        </Card>
+        {showEngagement && (
+          <Card>
+            <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>My engagement</div>
+            <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>
+              {summaryLoading ? (
+                <div className="pr-skeleton" style={{ height: 22, width: 64 }} />
+              ) : (
+                summary?.eventsAttendedThisYear ?? 0
+              )}
+            </div>
+            <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
+              events attended this year
+            </div>
+          </Card>
+        )}
+        {showDues && (
+          <Card>
+            <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Outstanding dues</div>
+            <div style={{ fontSize: "1.4rem", fontWeight: 700 }}>
+              {summaryLoading ? (
+                <div className="pr-skeleton" style={{ height: 22, width: 100 }} />
+              ) : (
+                formatCurrency(summary?.outstandingDuesCents)
+              )}
+            </div>
+            <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
+              Based on dues invoices
+            </div>
+          </Card>
+        )}
+      </div>
+    );
+  };
 
   const doSearch = useCallback(async (searchQuery: string, searchOffset: number) => {
     if (!tokens?.access_token) return;
@@ -91,6 +274,15 @@ export const DirectoryPage: React.FC = () => {
 
   return (
     <PageShell title="Member Directory" description="Search members by name or email">
+      <div style={{ marginBottom: "var(--app-space-lg)" }}>
+        {summaryError && (
+          <Card>
+            <div style={{ color: "var(--app-color-state-error)" }}>{summaryError}</div>
+          </Card>
+        )}
+        {!summaryError && (isAdminSummaryView ? renderAdminSummaryTiles() : renderMemberSummaryTiles())}
+      </div>
+
       {/* Search card */}
       <Card>
         <form onSubmit={handleSearch}>
