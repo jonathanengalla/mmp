@@ -38,6 +38,13 @@ export function listUpcomingPublishedEvents(referenceDate: Date = new Date()): E
   return listPublishedEvents().filter((e) => e.startDate >= now);
 }
 
+export function setEvent(record: EventRecord): EventRecord {
+  eventsById.set(record.id, { ...record });
+  eventsBySlug.set(record.slug, record.id);
+  refreshCounts(record);
+  return record;
+}
+
 interface CreateEventInput {
   title: string;
   description?: string | null;

@@ -4,7 +4,7 @@ import { Modal } from "../components/ui/Modal";
 import { FormField } from "../components/primitives/FormField";
 import { Toast } from "../components/Toast";
 import { Invoice, RecordInvoicePaymentPayload } from "../../../../libs/shared/src/models";
-import { listMyInvoices, recordInvoicePayment } from "../api/client";
+import { listMyInvoices, listTenantInvoices, recordInvoicePayment } from "../api/client";
 import { useSession } from "../hooks/useSession";
 import { Card, Button, Badge, PageShell, Input } from "../ui";
 
@@ -30,10 +30,11 @@ const InvoicesPage: React.FC = () => {
       setLoading(false);
       return;
     }
+    const isAdminFinance = hasRole?.("admin") || hasRole?.("finance_manager") || hasRole?.("super_admin");
     try {
       setLoading(true);
-      const resp = await listMyInvoices(token);
-      setInvoices(resp.items ?? resp);
+      const resp = isAdminFinance ? await listTenantInvoices(token, { limit: 200 }) : await listMyInvoices(token);
+      setInvoices((resp as any).items ?? (resp as any));
       setError(null);
     } catch (e: any) {
       setError(e?.message || "Failed to load invoices");

@@ -252,7 +252,7 @@ export const EventDetailPage: React.FC = () => {
                   {registrationMode === "pay_now" && !registrationDisabled && !isRegistered && (
                     <Button onClick={() => navigate(checkoutPath)}>Go to checkout</Button>
                   )}
-                  <Button variant="secondary" onClick={() => navigate("/events/upcoming")}>
+                  <Button variant="secondary" onClick={() => navigate("/events")}>
                     Back to events
                   </Button>
                 </div>

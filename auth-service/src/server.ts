@@ -45,6 +45,7 @@ import {
   runDuesJobHandler,
   runPaymentRemindersHandler,
   sendInvoiceHandler,
+  listTenantInvoicesPaginatedHandler,
 } from "./billingHandlers";
 
 // Local reporting stub (501)
@@ -119,6 +120,7 @@ const requireAdmin = requireRole("ADMIN");
 const requireOfficerOrAdmin = requireAnyRole(["ADMIN", "OFFICER"]);
 const requireMemberOrHigher = requireAnyRole(["ADMIN", "OFFICER", "MEMBER"]);
 const requireEventManagerOrAdmin = requireAnyRole(["ADMIN", "EVENT_MANAGER", "OFFICER"]);
+const requireAdminOrFinance = requireAnyRole(["ADMIN", "OFFICER", "FINANCE_MANAGER"]);
 
 // Mount auth routes
 app.use("/auth", routes);
@@ -190,6 +192,7 @@ billingRouter.post("/payments", requireMemberOrHigher, createPaymentHandler);
 billingRouter.post("/invoices/:id/mark-paid", requireOfficerOrAdmin, recordInvoicePaymentHandler);
 billingRouter.post("/invoices", requireOfficerOrAdmin, createManualInvoiceHandler);
 billingRouter.get("/invoices", requireMemberOrHigher, listMemberInvoicesHandler);
+billingRouter.get("/invoices/tenant", requireAdminOrFinance, listTenantInvoicesPaginatedHandler);
 
 // Out-of-scope stubs
 billingRouter.post("/events/:id/pay", payEventFeeHandler);

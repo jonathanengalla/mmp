@@ -10,6 +10,9 @@ import {
   listPaymentMethodsForMember,
   savePaymentMethod,
 } from "./billingStore";
+import { prisma } from "./db/prisma";
+import { applyTenantScope } from "./tenantGuard";
+import { toInvoiceDto } from "./eventsHandlers";
 
 const sanitizeInvoice = (inv: any) => ({
   id: inv.id,
@@ -41,6 +44,36 @@ const sanitizePaymentMethod = (pm: any) => ({
   updatedAt: pm.updatedAt,
   token: pm.token, // token is safe; no PAN/CVC stored
 });
+
+export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const roles = (req.user.roles || []).map((r) => r.toUpperCase());
+    const isPrivileged = roles.includes("ADMIN") || roles.includes("OFFICER") || roles.includes("FINANCE_MANAGER");
+    if (!isPrivileged) return res.status(403).json({ error: "Forbidden" });
+
+    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    const where = applyTenantScope({ where: {} }, req.user.tenantId).where;
+
+    const [total, invoices] = await Promise.all([
+      prisma.invoice.count({ where }),
+      prisma.invoice.findMany({
+        where,
+        include: { event: true, member: true },
+        orderBy: { issuedAt: "desc" },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+
+    const items = invoices.map(toInvoiceDto);
+    return res.json({ items, total, limit, offset });
+  } catch (err) {
+    console.error("[billing] listTenantInvoicesPaginatedHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
 
 export async function listMemberInvoicesHandler(req: AuthenticatedRequest, res: Response) {
   try {

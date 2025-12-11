@@ -248,6 +248,20 @@ export const listUpcomingEvents = async (token: string): Promise<UpcomingEventDt
   return data.items || [];
 };
 
+export const listEvents = async (
+  token: string,
+  params: { limit?: number; offset?: number } = {}
+): Promise<{ items: EventDetailDto[]; total: number; limit: number; offset: number }> => {
+  const search = new URLSearchParams();
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.offset) search.set("offset", String(params.offset));
+  const query = search.toString();
+  const res = await fetch(`${API_BASE_URL}/events${query ? `?${query}` : ""}`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  return json(res);
+};
+
 export const getEventDetail = async (token: string | null, idOrSlug: string): Promise<EventDetailDto> => {
   const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
   let res = await fetch(`${API_BASE_URL}/events/slug/${idOrSlug}`, { headers });
@@ -292,6 +306,20 @@ export const listMyInvoices = async (token: string): Promise<Invoice[]> => {
   });
   const data = await json(res);
   return data.items || [];
+};
+
+export const listTenantInvoices = async (
+  token: string,
+  params: { limit?: number; offset?: number } = {}
+): Promise<{ items: Invoice[]; total: number; limit: number; offset: number }> => {
+  const search = new URLSearchParams();
+  if (params.limit) search.set("limit", String(params.limit));
+  if (params.offset) search.set("offset", String(params.offset));
+  const query = search.toString();
+  const res = await fetch(`${API_BASE_URL}/billing/invoices/tenant${query ? `?${query}` : ""}`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  return json(res);
 };
 
 export const recordInvoicePayment = async (

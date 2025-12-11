@@ -123,7 +123,7 @@ export const EventCheckoutPage: React.FC = () => {
               <div>You’re registered for {event.title}. This event does not require payment.</div>
               <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
                 <Button onClick={() => navigate(detailPath)}>View event details</Button>
-                <Button variant="secondary" onClick={() => navigate("/events/upcoming")}>
+                <Button variant="secondary" onClick={() => navigate("/events")}>
                   Back to events
                 </Button>
               </div>

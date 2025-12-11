@@ -12,6 +12,7 @@ import {
   Invoice,
   InvoiceStatus,
   UpcomingEventDto,
+  EventStatus,
 } from "../../libs/shared/src/models";
 import {
   addRegistration,
@@ -22,10 +23,10 @@ import {
   ensureMemberRegistrationForCheckout,
   linkInvoiceToRegistration,
   listEvents,
-  listUpcomingPublishedEvents,
   markCheckInByCode,
   publishEvent,
   updateEvent,
+  setEvent,
 } from "./eventsStore";
 const billingHandlers = {
   createEventInvoice: (..._args: any[]) => {
@@ -40,6 +41,17 @@ const billingHandlers = {
 const { createEventInvoice, getInvoiceById } = billingHandlers;
 import { sendEmail } from "./notifications/emailSender";
 import { buildEventInvoiceEmail, buildEventRsvpEmail } from "./notifications/emailTemplates";
+
+const PAYMENT_STATUS_MAP: Record<string, "unpaid" | "pending" | "paid"> = {
+  PAID: "paid",
+  paid: "paid",
+  PENDING: "pending",
+  pending: "pending",
+  OVERDUE: "pending",
+  UNPAID: "unpaid",
+  unpaid: "unpaid",
+  DRAFT: "unpaid",
+};
 
 const getMemberContext = (req: Request) => {
   const user = (req as any).user || {};
@@ -57,6 +69,73 @@ const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
     return res.status(403).json({ error: { message: "Admin only" } });
   }
   return next();
+};
+
+const prismaRegistrationToRecord = (reg: any, event: any): EventRegistration => {
+  const memberName = reg.member ? `${reg.member.firstName ?? ""} ${reg.member.lastName ?? ""}`.trim() : reg.memberId;
+  const paymentStatus = reg.invoice ? PAYMENT_STATUS_MAP[reg.invoice.status] || "unpaid" : undefined;
+  const status = reg.status === "CANCELLED" ? "cancelled" : "registered";
+  const checkInStatus = reg.status === "CHECKED_IN" ? "checked_in" : "not_checked_in";
+  return {
+    memberId: reg.memberId,
+    email: reg.member?.email ?? `${reg.memberId}@example.com`,
+    name: memberName || reg.member?.email || reg.memberId,
+    status,
+    registrationStatus: reg.status === "CHECKED_IN" ? "checked_in" : status,
+    ticketCode: reg.checkInCode || `EVT-${event.slug}-${reg.id.slice(0, 8)}`,
+    registrationId: reg.id,
+    paymentStatus,
+    invoiceId: reg.invoiceId ?? null,
+    createdAt: reg.createdAt ? reg.createdAt.toISOString() : new Date().toISOString(),
+    checkInStatus,
+    checkedInAt: reg.checkInAt ? reg.checkInAt.getTime() : null,
+  };
+};
+
+const prismaEventToRecord = (e: any): EventRecord => {
+  const regMode: "rsvp" | "pay_now" = e.priceCents && e.priceCents > 0 ? "pay_now" : "rsvp";
+  const registrations = (e.registrations || []).map((reg: any) => prismaRegistrationToRecord(reg, e));
+  const registrationCount = registrations.filter((r) => r.status === "registered" || r.registrationStatus === "registered").length;
+  return {
+    id: e.id,
+    slug: e.slug,
+    title: e.title,
+    description: e.description ?? null,
+    startDate: e.startsAt ? new Date(e.startsAt).toISOString() : e.startDate ?? new Date().toISOString(),
+    endDate: e.endsAt ? new Date(e.endsAt).toISOString() : e.endDate ?? null,
+    location: e.location ?? null,
+    capacity: e.capacity ?? null,
+    price: e.priceCents ?? e.price ?? null,
+    priceCents: e.priceCents ?? e.price ?? null,
+    currency: e.currency ?? null,
+    status: (e.status?.toLowerCase?.() || e.status || "draft") as EventStatus,
+    registrationsCount: registrationCount,
+    invoiceIds: registrations.map((r) => r.invoiceId).filter(Boolean) as string[],
+    bannerImageUrl: e.bannerUrl ?? e.bannerImageUrl ?? null,
+    tags: Array.isArray(e.tags) ? e.tags : [],
+    registrationMode: regMode,
+    registrations,
+    createdAt: e.createdAt ? new Date(e.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: e.updatedAt ? new Date(e.updatedAt).toISOString() : new Date().toISOString(),
+  };
+};
+
+const loadEventFromDbIntoStore = async (tenantId: string, idOrSlug: string, bySlug = false): Promise<EventRecord | null> => {
+  const existing = bySlug ? getEventBySlug(idOrSlug) : getEventById(idOrSlug);
+  if (existing) return existing;
+  const where = bySlug ? { slug: idOrSlug } : { id: idOrSlug };
+  const event = await prisma.event.findFirst(
+    applyTenantScope(
+      {
+        where,
+        include: { registrations: { include: { member: true, invoice: true } } },
+      },
+      tenantId
+    )
+  );
+  if (!event) return null;
+  const record = prismaEventToRecord(event);
+  return setEvent(record);
 };
 
 const toUpcomingDto = (e: EventRecord, currentMemberId?: string | null): UpcomingEventDto => {
@@ -149,14 +228,15 @@ const toAttendanceDto = (e: EventRecord): EventAttendanceReportItem => ({
   invoiceIds: e.invoiceIds ?? [],
 });
 
-const toInvoiceDto = (invoice: any): Invoice => {
+export const toInvoiceDto = (invoice: any): Invoice => {
   const statusMap: Record<string, InvoiceStatus> = {
     void: "cancelled",
   };
+  const amountCents = invoice.amountCents ?? invoice.amount ?? 0;
   return {
     id: invoice.id,
     memberId: invoice.memberId,
-    amountCents: invoice.amount,
+    amountCents,
     currency: invoice.currency,
     status: (statusMap[invoice.status] as InvoiceStatus) || (invoice.status as InvoiceStatus),
     description: invoice.description || invoice.type || "Invoice",
@@ -171,16 +251,61 @@ const toInvoiceDto = (invoice: any): Invoice => {
   };
 };
 
-export const listUpcomingEventsHandler = (req: Request, res: Response) => {
+export const listUpcomingEventsHandler = async (req: Request, res: Response) => {
   const { memberId } = getMemberContext(req);
-  const items = listUpcomingPublishedEvents().map((e) => toUpcomingDto(e, memberId));
+  const tenantId = (req as any).user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+  const now = new Date();
+  const events = await prisma.event.findMany(
+    applyTenantScope(
+      {
+        where: { status: "PUBLISHED", startsAt: { gte: now } },
+        orderBy: { startsAt: "asc" },
+        include: { registrations: { include: { member: true, invoice: true } } },
+      },
+      tenantId
+    )
+  );
+  const mapped = events.map(prismaEventToRecord);
+  mapped.forEach(setEvent);
+  const items = mapped.map((e) => toUpcomingDto(e, memberId));
   res.json({ items });
 };
 
-export const listEventsHandler = [ensureAdmin, (_req: Request, res: Response) => {
-  const items = listEvents().map((e) => toDetailDto(e));
-  res.json({ items });
-}];
+export const listEventsHandler = async (req: Request, res: Response) => {
+  const { memberId, roles } = getMemberContext(req);
+  const tenantId = (req as any).user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+  const isPrivileged = roles.includes("ADMIN") || roles.includes("OFFICER") || roles.includes("EVENT_MANAGER");
+  const now = new Date();
+  const recentCompletedCutoff = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+  const baseWhere: any = isPrivileged
+    ? {}
+    : {
+        OR: [
+          { status: "PUBLISHED", startsAt: { gte: now } },
+          { status: "COMPLETED", startsAt: { gte: recentCompletedCutoff } },
+        ],
+      };
+
+  const where = applyTenantScope({ where: baseWhere }, tenantId).where;
+  const [total, events] = await Promise.all([
+    prisma.event.count({ where }),
+    prisma.event.findMany({
+      where,
+      orderBy: { startsAt: "asc" },
+      include: { registrations: { include: { member: true, invoice: true } } },
+      skip: offset,
+      take: limit,
+    }),
+  ]);
+  const mapped = events.map(prismaEventToRecord);
+  mapped.forEach(setEvent);
+  const items = mapped.map((e) => toDetailDto(e, memberId));
+  res.json({ items, total, limit, offset });
+};
 
 export const createEventHandler = [
   ensureAdmin,
@@ -269,11 +394,13 @@ export const updateEventBasicsHandler = [
   },
 ];
 
-export const registerEventHandler = (req: Request, res: Response) => {
+export const registerEventHandler = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { memberId, email, name } = getMemberContext(req);
+  const tenantId = (req as any).user?.tenantId;
   if (!memberId) return res.status(401).json({ error: { message: "Unauthorized" } });
-  const event = getEventById(id);
+  if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+  const event = (await loadEventFromDbIntoStore(tenantId, id)) || getEventById(id);
   if (!event) return res.status(404).json({ error: { message: "Event not found" } });
   if (event.status !== "published") return res.status(400).json({ error: { message: "Event not open for registration" } });
 
@@ -299,9 +426,11 @@ export const cancelRegistrationHandler = (req: Request, res: Response) => {
 export const eventCheckoutHandler = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { memberId, email, name } = getMemberContext(req);
+  const tenantId = (req as any).user?.tenantId;
   if (!memberId) return res.status(401).json({ error: { message: "Unauthorized" } });
+  if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
 
-  const event = getEventById(id) || getEventBySlug(id);
+  const event = (await loadEventFromDbIntoStore(tenantId, id)) || (await loadEventFromDbIntoStore(tenantId, id, true)) || getEventById(id) || getEventBySlug(id);
   if (!event || event.status !== "published") {
     return res.status(404).json({ error: { message: "Event not found" } });
   }
@@ -313,7 +442,6 @@ export const eventCheckoutHandler = async (req: Request, res: Response) => {
     return res.status(400).json({ error: { message: e?.message || "Unable to register for event" } });
   }
   const registration = ensured.registration;
-  const tenantId = (req as any).user?.tenantId || "t1";
 
   if (event.registrationMode === "rsvp") {
     const detailDto = toDetailDto(ensured.event, memberId);
@@ -403,8 +531,21 @@ export const listMyInvoicesHandler = async (req: AuthenticatedRequest, res: Resp
 
 export const eventsAttendanceReportHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const statusFilter = (req.query.status as string | undefined) || undefined;
+    const tenantId = (req as any).user?.tenantId;
+    if (listEvents().length === 0 && tenantId) {
+      const events = await prisma.event.findMany(
+        applyTenantScope(
+          {
+            where: {},
+            include: { registrations: { include: { member: true, invoice: true } } },
+          },
+          tenantId
+        )
+      );
+      events.map(prismaEventToRecord).forEach(setEvent);
+    }
     let items = listEvents();
     if (statusFilter && statusFilter !== "all") {
       items = items.filter((e) => e.status === statusFilter);
@@ -413,11 +554,15 @@ export const eventsAttendanceReportHandler = [
   },
 ];
 
-export const getEventDetailHandler = (req: Request, res: Response) => {
+export const getEventDetailHandler = async (req: Request, res: Response) => {
   const id = (req.params as any).id;
   const slug = (req.params as any).slug;
   const { memberId } = getMemberContext(req);
-  const event = slug ? getEventBySlug(slug) : getEventById(id);
+  const tenantId = (req as any).user?.tenantId;
+  let event = slug ? getEventBySlug(slug) : getEventById(id);
+  if (!event && tenantId) {
+    event = slug ? await loadEventFromDbIntoStore(tenantId, slug, true) : await loadEventFromDbIntoStore(tenantId, id);
+  }
   if (!event) return res.status(404).json({ error: { message: "Event not found" } });
   res.json(toDetailDto(event, memberId));
 };

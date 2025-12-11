@@ -153,7 +153,7 @@ export const AppRouter: React.FC = () => (
           path="/events"
           element={
             <ProtectedRoute>
-              <Navigate to="/events/upcoming" replace />
+              <EventsPage />
             </ProtectedRoute>
           }
         />
@@ -161,7 +161,7 @@ export const AppRouter: React.FC = () => (
           path="/events/upcoming"
           element={
             <ProtectedRoute>
-              <UpcomingEventsPage />
+              <EventsPage />
             </ProtectedRoute>
           }
         />

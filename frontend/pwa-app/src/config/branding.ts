@@ -30,14 +30,14 @@ export const branding: BrandingConfig = {
     topNav: [
       { label: "Profile", path: "/profile" },
       { label: "Directory", path: "/directory" },
-      { label: "Events", path: "/events/upcoming" },
+  { label: "Events", path: "/events" },
       { label: "Invoices", path: "/invoices" },
       { label: "Payment Methods", path: "/billing/payment-methods" },
     ],
     sideNav: [
       { label: "Profile", path: "/profile" },
       { label: "Directory", path: "/directory" },
-      { label: "Events", path: "/events/upcoming" },
+  { label: "Events", path: "/events" },
       { label: "Invoices", path: "/invoices" },
       { label: "Payment Methods", path: "/billing/payment-methods" },
     ],

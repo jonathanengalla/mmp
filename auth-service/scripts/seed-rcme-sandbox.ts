@@ -203,8 +203,8 @@ async function seedDirectory(tenantId: string) {
   for (let i = 0; i < 20; i++) {
     await createMember(MemberStatus.ACTIVE);
   }
-  // 3 Prospective (use PENDING_VERIFICATION)
-  for (let i = 0; i < 3; i++) {
+  // ~20 Prospective (use PENDING_VERIFICATION)
+  for (let i = 0; i < 20; i++) {
     await createMember(MemberStatus.PENDING_VERIFICATION);
   }
   // 2 Honorary -> map to INACTIVE

@@ -8,6 +8,7 @@ import {
   getDuesSummary,
   listMyInvoices,
   listEventAttendanceReport,
+  listTenantInvoices,
   Invoice,
   DuesSummaryResponse,
   EventAttendanceReportItem,
@@ -34,7 +35,7 @@ const formatMoney = (amountCents: number | null | undefined, currency?: string) 
 };
 
 export const AdminFinanceDashboardPage: React.FC = () => {
-  const { tokens } = useSession();
+  const { tokens, hasRole } = useSession();
   const token = tokens?.access_token || null;
 
   const [duesState, setDuesState] = React.useState<LoadState<DashboardDuesRow[]>>({
@@ -83,7 +84,8 @@ export const AdminFinanceDashboardPage: React.FC = () => {
       // invoices
       try {
         setInvoicesState((prev) => ({ ...prev, loading: true, error: null }));
-        const invResp: any = await listMyInvoices(token);
+        const useTenantScope = hasRole?.("admin") || hasRole?.("finance_manager") || hasRole?.("super_admin");
+        const invResp: any = useTenantScope ? await listTenantInvoices(token, { limit: 200 }) : await listMyInvoices(token);
         if (!cancelled) {
           const items: DashboardInvoice[] = (invResp.items ?? invResp) as DashboardInvoice[];
           setInvoicesState({ loading: false, error: null, data: items });
