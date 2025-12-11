@@ -109,6 +109,7 @@ export const UpcomingEventsPage: React.FC = () => {
             const detailPath = `/events/${slugOrId}`;
             const checkoutPath = `/events/${slugOrId}/checkout`;
             const regMode = ev.registrationMode === "pay_now" ? "pay_now" : "rsvp";
+            const status = ev.status || (new Date(ev.startDate).getTime() < Date.now() ? "completed" : undefined);
             const isPayNow = regMode === "pay_now";
             const remainingCapacity =
               ev.capacity != null ? Math.max(ev.capacity - (ev.registrationsCount || 0), 0) : null;
@@ -135,6 +136,7 @@ export const UpcomingEventsPage: React.FC = () => {
                 id={ev.event_id}
                 slug={ev.slug}
                 title={ev.title}
+                status={status}
                 description={ev.description}
                 startDate={ev.startDate}
                 endDate={ev.endDate}
@@ -148,6 +150,7 @@ export const UpcomingEventsPage: React.FC = () => {
                 remainingCapacity={remainingCapacity}
                 priceCents={ev.priceCents}
                 currency={ev.currency}
+                invoiceRequired={regMode === "pay_now"}
                 primaryLabel={primaryLabel}
                 secondaryLabel={secondaryLabel}
                 onPrimaryClick={() => navigate(isPayNow && !ev.isRegistered ? checkoutPath : detailPath)}

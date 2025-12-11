@@ -7,6 +7,7 @@ export interface EventCardProps {
   id: string;
   slug?: string | null;
   title: string;
+  status?: string | null;
   description?: string | null;
   startDate: string;
   endDate?: string | null;
@@ -20,6 +21,7 @@ export interface EventCardProps {
   remainingCapacity?: number | null;
   priceCents?: number | null;
   currency?: string | null;
+  invoiceRequired?: boolean | null;
   onPrimaryClick: () => void;
   onSecondaryClick?: () => void;
   primaryLabel: string;
@@ -52,6 +54,7 @@ const formatPrice = (priceCents?: number | null, currency?: string | null) => {
 
 export const EventCard: React.FC<EventCardProps> = ({
   title,
+  status,
   description,
   startDate,
   endDate,
@@ -65,6 +68,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   remainingCapacity,
   priceCents,
   currency,
+  invoiceRequired,
   onPrimaryClick,
   onSecondaryClick,
   primaryLabel,
@@ -72,6 +76,10 @@ export const EventCard: React.FC<EventCardProps> = ({
   disabled,
 }) => {
   const isPastEvent = new Date(startDate).getTime() < Date.now();
+  const isCompleted = (status || "").toLowerCase() === "completed";
+  const isFree = priceCents === 0 || priceCents === null || priceCents === undefined;
+  const showInvoicePill = !isCompleted && !isFree && (invoiceRequired ?? registrationMode === "pay_now");
+  const showFreeTag = !isCompleted && isFree;
   const modeLabel = registrationMode === "pay_now" ? "Invoice required" : "RSVP";
   const paymentLabel =
     paymentStatus === "paid"
@@ -138,9 +146,11 @@ export const EventCard: React.FC<EventCardProps> = ({
               )}
             </div>
             <div style={{ display: "flex", gap: "var(--space-xxs)", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              <Tag variant={registrationMode === "pay_now" ? "warning" : "info"}>{modeLabel}</Tag>
+              {!isCompleted && showInvoicePill && <Tag variant="warning">{modeLabel}</Tag>}
+              {!isCompleted && showFreeTag && <Tag variant="info">Free event</Tag>}
               {isRegistered && <Tag variant="success">{registrationLabel}</Tag>}
               {paymentLabel && <Tag variant={paymentStatus === "paid" ? "success" : "warning"}>{paymentLabel}</Tag>}
+              {isCompleted && <Tag variant="default">Completed</Tag>}
             </div>
           </div>
 
@@ -173,14 +183,14 @@ export const EventCard: React.FC<EventCardProps> = ({
                 Registration cancelled
               </Tag>
             )}
-            {isPastEvent && (
+            {(isPastEvent || isCompleted) && (
               <Tag variant="default" size="sm">
                 Event ended
               </Tag>
             )}
           </div>
 
-          {!isPastEvent && (
+          {!isPastEvent && !isCompleted && (
             <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
               <Button onClick={onPrimaryClick} disabled={disabled}>
                 {primaryLabel}
@@ -192,7 +202,7 @@ export const EventCard: React.FC<EventCardProps> = ({
               )}
             </div>
           )}
-          {isPastEvent && (
+          {(isPastEvent || isCompleted) && (
             <div style={{ color: "var(--app-color-text-muted)" }}>
               Registration closed
             </div>
