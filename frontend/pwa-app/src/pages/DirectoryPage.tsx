@@ -30,7 +30,7 @@ export const DirectoryPage: React.FC = () => {
       });
       setResults(resp.items);
       setTotal(resp.total);
-      setHasSearched(true);
+      setHasSearched(searchQuery.trim().length > 0);
     } catch (err: unknown) {
       const error = err as { error?: { message?: string } };
       setLoadError(error?.error?.message || "Failed to search directory");
@@ -39,16 +39,18 @@ export const DirectoryPage: React.FC = () => {
     }
   }, [tokens]);
 
-  // Initial load
-  useEffect(() => {
-    doSearch("", 0);
-    setOffset(0);
-  }, [doSearch]);
-
   // Debounced search effect
   useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setResults([]);
+      setTotal(0);
+      setHasSearched(false);
+      setOffset(0);
+      return;
+    }
     const timer = setTimeout(() => {
-      doSearch(query.trim(), 0);
+      doSearch(trimmed, 0);
       setOffset(0);
     }, 300);
     return () => clearTimeout(timer);

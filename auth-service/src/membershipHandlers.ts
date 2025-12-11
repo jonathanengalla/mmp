@@ -13,17 +13,35 @@ import type { AuthenticatedRequest } from "./authMiddleware";
 import { prisma } from "./db/prisma";
 import { listPaymentMethodsForMember, removePaymentMethod, savePaymentMethod } from "./billingStore";
 
-const sanitizeMember = (m: any) => ({
-  id: m.id,
-  firstName: m.firstName,
-  lastName: m.lastName,
-  email: m.email,
-  status: m.status,
-  phone: m.phone ?? null,
-  classification: Array.isArray(m.tags) && m.tags.length > 0 ? m.tags[0] : null,
-  sponsor: null,
-  createdAt: m.createdAt,
-});
+const sanitizeMember = (m: any) => {
+  const classification = Array.isArray(m.tags) && m.tags.length > 0 ? m.tags[0] : null;
+  return {
+    id: m.id,
+    email: m.email,
+    firstName: m.firstName,
+    lastName: m.lastName,
+    first_name: m.firstName,
+    last_name: m.lastName,
+    status: m.status,
+    phone: m.phone ?? null,
+    address: m.address ?? null,
+    linkedinUrl: (m as any).linkedinUrl ?? null,
+    otherSocials: (m as any).otherSocials ?? null,
+    avatarUrl: (m as any).avatarUrl ?? null,
+    avatar_url: (m as any).avatarUrl ?? null,
+    classification,
+    sponsor: null,
+    createdAt: m.createdAt,
+    created_at: m.createdAt,
+  };
+};
+
+const saveMemberAvatar = (tenantId: string, memberId: string, avatarUrl: string | null) => {
+  return prisma.member.update({
+    where: { id_tenantId: { id: memberId, tenantId } },
+    data: { avatarUrl },
+  });
+};
 
 const sanitizePaymentMethod = (pm: any) => ({
   id: pm.id,
@@ -217,8 +235,9 @@ export const adminUpdateAvatar = async (req: AuthenticatedRequest, res: Response
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const memberId = req.params.id;
     if (!memberId) return res.status(400).json({ error: "memberId is required" });
-    console.log("[membership] adminUpdateAvatar placeholder", { tenantId: req.user.tenantId, memberId });
-    return res.json({ memberId, avatarUrl: null, success: true });
+    const avatarUrl = req.body?.avatarUrl ?? null;
+    const updated = await saveMemberAvatar(req.user.tenantId, memberId, avatarUrl);
+    return res.json({ memberId: updated.id, avatarUrl: updated.avatarUrl ?? null, success: true });
   } catch (err) {
     console.error("[membership] adminUpdateAvatar error", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -425,9 +444,9 @@ export const updateMyAvatar = async (req: AuthenticatedRequest, res: Response) =
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const member = await ensureMemberForUser(req);
     if (!member) return res.status(404).json({ error: "Member not found" });
-    console.log("[membership] updateMyAvatar placeholder", { tenantId: req.user.tenantId, memberId: member.id });
-    // No-op placeholder; accept request and return current member context
-    return res.json({ memberId: member.id, avatarUrl: null, success: true });
+    const avatarUrl = req.body?.avatarUrl ?? null;
+    const updated = await saveMemberAvatar(req.user.tenantId, member.id, avatarUrl);
+    return res.json({ memberId: updated.id, avatarUrl: updated.avatarUrl ?? null, success: true });
   } catch (err) {
     console.error("[membership] updateMyAvatar error", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -442,9 +461,9 @@ export const uploadPhoto = async (req: AuthenticatedRequest, res: Response) => {
       ? await getMemberByIdForTenant(req.user.tenantId, memberId)
       : await ensureMemberForUser(req);
     if (!member) return res.status(404).json({ error: "Member not found" });
-    console.log("[membership] uploadPhoto placeholder", { tenantId: req.user.tenantId, memberId: member.id });
-    // No-op placeholder; respond success with unchanged member
-    return res.json({ memberId: member.id, avatarUrl: null, success: true });
+    const avatarUrl = req.body?.avatarUrl ?? null;
+    const updated = await saveMemberAvatar(req.user.tenantId, member.id, avatarUrl);
+    return res.json({ memberId: updated.id, avatarUrl: updated.avatarUrl ?? null, success: true });
   } catch (err) {
     console.error("[membership] uploadPhoto error", err);
     return res.status(500).json({ error: "Internal server error" });

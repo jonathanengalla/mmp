@@ -6,6 +6,7 @@ import InvoicesPage from "../pages/InvoicesPage";
 
 vi.mock("../api/client", () => ({
   listMyInvoices: vi.fn(),
+  listTenantInvoices: vi.fn(),
   recordInvoicePayment: vi.fn(),
 }));
 
@@ -22,6 +23,23 @@ describe("InvoicesPage", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     (api.listMyInvoices as any).mockResolvedValue({
+      items: [
+        {
+          id: "inv-1",
+          memberId: "m1",
+          amountCents: 2500,
+          currency: "PHP",
+          status: "unpaid",
+          description: "Event: Gala",
+          eventId: "e1",
+          eventTitle: "Gala Night",
+          source: "event",
+          dueDate: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    });
+    (api.listTenantInvoices as any).mockResolvedValue({
       items: [
         {
           id: "inv-1",

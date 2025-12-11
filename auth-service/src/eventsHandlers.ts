@@ -17,14 +17,12 @@ import {
 import {
   addRegistration,
   cancelRegistration,
-  createEvent,
   getEventById,
   getEventBySlug,
   ensureMemberRegistrationForCheckout,
   linkInvoiceToRegistration,
   listEvents,
   markCheckInByCode,
-  publishEvent,
   updateEvent,
   setEvent,
 } from "./eventsStore";
@@ -70,6 +68,33 @@ const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
   }
   return next();
 };
+
+const slugifyTitle = (title: string, fallback: string) => {
+  const base = title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)+/g, "");
+  return base || fallback;
+};
+
+const generateUniqueSlugForTenant = async (tenantId: string, title: string) => {
+  const base = slugifyTitle(title, `event-${Date.now()}`);
+  let candidate = base;
+  let counter = 1;
+  // loop until we find a slug that does not exist for this tenant
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const existing = await prisma.event.findFirst({
+      where: { tenantId, slug: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+    candidate = `${base}-${counter++}`;
+  }
+};
+
+const EVENT_RELATIONS = { registrations: { include: { member: true, invoice: true } } };
 
 const prismaRegistrationToRecord = (reg: any, event: any): EventRegistration => {
   const memberName = reg.member ? `${reg.member.firstName ?? ""} ${reg.member.lastName ?? ""}`.trim() : reg.memberId;
@@ -309,88 +334,166 @@ export const listEventsHandler = async (req: Request, res: Response) => {
 
 export const createEventHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
-  const { title, description, startDate, endDate, capacity, priceCents, price, currency, tags, registrationMode, location } =
-    req.body || {};
-  if (!title || !startDate) {
-    return res.status(400).json({ error: { message: "title and startDate are required" } });
-  }
+  async (req: Request, res: Response) => {
+    const tenantId = (req as any).user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
 
-  const cap = capacity === null || capacity === undefined ? null : Number(capacity);
-  const priceValue = priceCents ?? price;
-  const priceCentsValue = priceValue === null || priceValue === undefined ? null : Number(priceValue);
+    const { title, description, startDate, endDate, capacity, priceCents, price, currency, tags, location } = req.body || {};
+    if (!title || !startDate) {
+      return res.status(400).json({ error: { message: "title and startDate are required" } });
+    }
 
-  const record = createEvent({
-    title,
-    description,
-    startDate,
-    endDate,
-    capacity: Number.isNaN(cap as number) ? null : cap,
-    priceCents: Number.isNaN(priceCentsValue as number) ? null : priceCentsValue,
-    currency: currency ?? null,
-    tags,
-    registrationMode: registrationMode === "pay_now" ? "pay_now" : "rsvp",
-    location,
-  });
+    const start = new Date(startDate);
+    if (Number.isNaN(start.getTime())) {
+      return res.status(400).json({ error: { message: "Invalid startDate" } });
+    }
+    const end = endDate ? new Date(endDate) : start;
+    if (Number.isNaN(end.getTime())) {
+      return res.status(400).json({ error: { message: "Invalid endDate" } });
+    }
 
-  res.status(201).json(toDetailDto(record));
+    const cap = capacity === null || capacity === undefined ? null : Number(capacity);
+    const priceValue = priceCents ?? price;
+    const priceCentsValue = priceValue === null || priceValue === undefined ? null : Number(priceValue);
+
+    try {
+      const slug = await generateUniqueSlugForTenant(tenantId, title);
+      const created = await prisma.event.create({
+        data: {
+          tenantId,
+          title,
+          slug,
+          description: description ?? null,
+          location: location ?? null,
+          status: "DRAFT",
+          bannerUrl: null,
+          capacity: Number.isNaN(cap as number) ? null : cap,
+          priceCents: Number.isNaN(priceCentsValue as number) ? null : priceCentsValue,
+          currency: currency ?? null,
+          tags: Array.isArray(tags) ? tags : [],
+          startsAt: start,
+          endsAt: end,
+        },
+        include: EVENT_RELATIONS,
+      });
+      const record = setEvent(prismaEventToRecord(created));
+      return res.status(201).json(toDetailDto(record));
+    } catch (err) {
+      console.error("[events] createEventHandler error", err);
+      return res.status(500).json({ error: { message: "Failed to create event" } });
+    }
   },
 ];
 
 export const publishEventHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
-  const { id } = req.params;
-  const updated = publishEvent(id);
-  if (!updated) return res.status(404).json({ error: { message: "Event not found" } });
-  res.json(toDetailDto(updated));
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const tenantId = (req as any).user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+    try {
+      const updated = await prisma.event.update({
+        where: { id_tenantId: { id, tenantId } },
+        data: { status: "PUBLISHED" },
+        include: EVENT_RELATIONS,
+      });
+      const record = setEvent(prismaEventToRecord(updated));
+      return res.json(toDetailDto(record));
+    } catch (err: any) {
+      if (err?.code === "P2025") return res.status(404).json({ error: { message: "Event not found" } });
+      console.error("[events] publishEventHandler error", err);
+      return res.status(500).json({ error: { message: "Unable to publish event" } });
+    }
   },
 ];
 
 export const updateCapacityHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { capacity } = req.body || {};
-  const cap = capacity === null || capacity === undefined ? null : Number(capacity);
-  const updated = updateEvent(id, { capacity: Number.isNaN(cap as number) ? null : cap });
-  if (!updated) return res.status(404).json({ error: { message: "Event not found" } });
-  res.json(toDetailDto(updated));
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const tenantId = (req as any).user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+    const { capacity } = req.body || {};
+    const cap = capacity === null || capacity === undefined ? null : Number(capacity);
+    const nextCap = Number.isNaN(cap as number) ? null : cap;
+    try {
+      const updated = await prisma.event.update({
+        where: { id_tenantId: { id, tenantId } },
+        data: { capacity: nextCap },
+        include: EVENT_RELATIONS,
+      });
+      const record = setEvent(prismaEventToRecord(updated));
+      return res.json(toDetailDto(record));
+    } catch (err: any) {
+      if (err?.code === "P2025") return res.status(404).json({ error: { message: "Event not found" } });
+      console.error("[events] updateCapacityHandler error", err);
+      return res.status(500).json({ error: { message: "Unable to update capacity" } });
+    }
   },
 ];
 
 export const updatePricingHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
-  const { id } = req.params;
-  const { priceCents, currency, price } = req.body || {};
-  const priceValue = priceCents ?? price;
-  const priceCentsValue = priceValue === null || priceValue === undefined ? null : Number(priceValue);
-  const updated = updateEvent(id, {
-    priceCents: Number.isNaN(priceCentsValue as number) ? null : priceCentsValue,
-    price: Number.isNaN(priceCentsValue as number) ? null : priceCentsValue,
-    currency: currency ?? null,
-  });
-  if (!updated) return res.status(404).json({ error: { message: "Event not found" } });
-  res.json(toDetailDto(updated));
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const tenantId = (req as any).user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+    const { priceCents, currency, price } = req.body || {};
+    const priceValue = priceCents ?? price;
+    const priceCentsValue = priceValue === null || priceValue === undefined ? null : Number(priceValue);
+    const nextPrice = Number.isNaN(priceCentsValue as number) ? null : priceCentsValue;
+    try {
+      const updated = await prisma.event.update({
+        where: { id_tenantId: { id, tenantId } },
+        data: { priceCents: nextPrice, currency: currency ?? null },
+        include: EVENT_RELATIONS,
+      });
+      const record = setEvent(prismaEventToRecord(updated));
+      return res.json(toDetailDto(record));
+    } catch (err: any) {
+      if (err?.code === "P2025") return res.status(404).json({ error: { message: "Event not found" } });
+      console.error("[events] updatePricingHandler error", err);
+      return res.status(500).json({ error: { message: "Unable to update pricing" } });
+    }
   },
 ];
 
 export const updateEventBasicsHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const { id } = req.params;
+    const tenantId = (req as any).user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
     const { title, description, startDate, endDate, location } = req.body || {};
-    const patch: Partial<EventRecord> = {};
-    if (title !== undefined) patch.title = title;
-    if (description !== undefined) patch.description = description;
-    if (startDate !== undefined) patch.startDate = startDate;
-    if (endDate !== undefined) patch.endDate = endDate;
-    if (location !== undefined) patch.location = location;
 
-    const updated = updateEvent(id, patch);
-    if (!updated) return res.status(404).json({ error: { message: "Event not found" } });
-    res.json(toDetailDto(updated));
+    const data: any = {};
+    if (title !== undefined) data.title = title;
+    if (description !== undefined) data.description = description ?? null;
+    if (startDate !== undefined) {
+      const start = new Date(startDate);
+      if (Number.isNaN(start.getTime())) return res.status(400).json({ error: { message: "Invalid startDate" } });
+      data.startsAt = start;
+    }
+    if (endDate !== undefined) {
+      const end = endDate ? new Date(endDate) : null;
+      if (end && Number.isNaN(end.getTime())) return res.status(400).json({ error: { message: "Invalid endDate" } });
+      data.endsAt = end ?? data.startsAt ?? undefined;
+    }
+    if (location !== undefined) data.location = location ?? null;
+
+    try {
+      const updated = await prisma.event.update({
+        where: { id_tenantId: { id, tenantId } },
+        data,
+        include: EVENT_RELATIONS,
+      });
+      const record = setEvent(prismaEventToRecord(updated));
+      return res.json(toDetailDto(record));
+    } catch (err: any) {
+      if (err?.code === "P2025") return res.status(404).json({ error: { message: "Event not found" } });
+      console.error("[events] updateEventBasicsHandler error", err);
+      return res.status(500).json({ error: { message: "Unable to update event" } });
+    }
   },
 ];
 
@@ -569,23 +672,47 @@ export const getEventDetailHandler = async (req: Request, res: Response) => {
 
 export const updateEventBannerHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const { id } = req.params;
+    const tenantId = (req as any).user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
     const { bannerImageUrl } = req.body || {};
-    const updated = updateEvent(id, { bannerImageUrl: bannerImageUrl ?? null });
-    if (!updated) return res.status(404).json({ error: { message: "Event not found" } });
-    res.json(toDetailDto(updated));
+    try {
+      const updated = await prisma.event.update({
+        where: { id_tenantId: { id, tenantId } },
+        data: { bannerUrl: bannerImageUrl ?? null },
+        include: EVENT_RELATIONS,
+      });
+      const record = setEvent(prismaEventToRecord(updated));
+      return res.json(toDetailDto(record));
+    } catch (err: any) {
+      if (err?.code === "P2025") return res.status(404).json({ error: { message: "Event not found" } });
+      console.error("[events] updateEventBannerHandler error", err);
+      return res.status(500).json({ error: { message: "Unable to update banner" } });
+    }
   },
 ];
 
 export const updateEventTagsHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const { id } = req.params;
+    const tenantId = (req as any).user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
     const tags = Array.isArray(req.body?.tags) ? req.body.tags : [];
-    const updated = updateEvent(id, { tags });
-    if (!updated) return res.status(404).json({ error: { message: "Event not found" } });
-    res.json(toDetailDto(updated));
+    try {
+      const updated = await prisma.event.update({
+        where: { id_tenantId: { id, tenantId } },
+        data: { tags },
+        include: EVENT_RELATIONS,
+      });
+      const record = setEvent(prismaEventToRecord(updated));
+      return res.json(toDetailDto(record));
+    } catch (err: any) {
+      if (err?.code === "P2025") return res.status(404).json({ error: { message: "Event not found" } });
+      console.error("[events] updateEventTagsHandler error", err);
+      return res.status(500).json({ error: { message: "Unable to update tags" } });
+    }
   },
 ];
 
