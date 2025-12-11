@@ -170,10 +170,15 @@ function daysFromNow(days: number) {
 async function seedDirectory(tenantId: string) {
   const members: { id: string; email: string; status: MemberStatus }[] = [];
 
-  const createMember = async (status: MemberStatus) => {
+  const createMember = async (status: MemberStatus, forcedEmail?: string) => {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
-    const email = faker.internet.email({ firstName, lastName, provider: "example.com" }).toLowerCase();
+    // Use a deterministic email when provided so pending members are guaranteed unique/count-correct.
+    const email =
+      forcedEmail ||
+      faker.internet
+        .email({ firstName, lastName, provider: "example.com" })
+        .toLowerCase();
     const member = await prisma.member.upsert({
       where: { tenantId_email: { tenantId, email } },
       update: {
@@ -203,9 +208,10 @@ async function seedDirectory(tenantId: string) {
   for (let i = 0; i < 20; i++) {
     await createMember(MemberStatus.ACTIVE);
   }
-  // ~20 Prospective (use PENDING_VERIFICATION)
+  // 20 Prospective (use PENDING_VERIFICATION) with deterministic emails to avoid accidental drops
   for (let i = 0; i < 20; i++) {
-    await createMember(MemberStatus.PENDING_VERIFICATION);
+    const email = `pending${i + 1}@${TENANT_SLUG}.com`;
+    await createMember(MemberStatus.PENDING_VERIFICATION, email);
   }
   // 2 Honorary -> map to INACTIVE
   for (let i = 0; i < 2; i++) {

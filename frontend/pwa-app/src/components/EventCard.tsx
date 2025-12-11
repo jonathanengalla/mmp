@@ -60,6 +60,7 @@ export const EventCard: React.FC<EventCardProps> = ({
   secondaryLabel,
   disabled,
 }) => {
+  const isPastEvent = new Date(startDate).getTime() < Date.now();
   const modeLabel = registrationMode === "pay_now" ? "Invoice required" : "RSVP";
   const paymentLabel =
     paymentStatus === "paid"
@@ -161,18 +162,30 @@ export const EventCard: React.FC<EventCardProps> = ({
                 Registration cancelled
               </Tag>
             )}
-          </div>
-
-          <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-            <Button onClick={onPrimaryClick} disabled={disabled}>
-              {primaryLabel}
-            </Button>
-            {secondaryLabel && onSecondaryClick && (
-              <Button variant="secondary" onClick={onSecondaryClick} disabled={disabled}>
-                {secondaryLabel}
-              </Button>
+            {isPastEvent && (
+              <Tag variant="default" size="sm">
+                Event ended
+              </Tag>
             )}
           </div>
+
+          {!isPastEvent && (
+            <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
+              <Button onClick={onPrimaryClick} disabled={disabled}>
+                {primaryLabel}
+              </Button>
+              {secondaryLabel && onSecondaryClick && (
+                <Button variant="secondary" onClick={onSecondaryClick} disabled={disabled}>
+                  {secondaryLabel}
+                </Button>
+              )}
+            </div>
+          )}
+          {isPastEvent && (
+            <div style={{ color: "var(--app-color-text-muted)" }}>
+              Registration closed
+            </div>
+          )}
         </div>
       </div>
     </Card>
