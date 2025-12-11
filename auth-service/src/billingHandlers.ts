@@ -1,15 +1,7 @@
 import { Request, Response } from "express";
 import { InvoiceStatus } from "@prisma/client";
 import type { AuthenticatedRequest } from "./authMiddleware";
-import {
-  createManualInvoice,
-  getInvoiceById,
-  listMemberInvoices,
-  listTenantInvoices,
-  recordInvoicePayment,
-  listPaymentMethodsForMember,
-  savePaymentMethod,
-} from "./billingStore";
+import { createManualInvoice, getInvoiceById, recordInvoicePayment, listPaymentMethodsForMember, savePaymentMethod } from "./billingStore";
 import { prisma } from "./db/prisma";
 import { applyTenantScope } from "./tenantGuard";
 import { toInvoiceDto } from "./eventsHandlers";
@@ -27,6 +19,33 @@ const sanitizeInvoice = (inv: any) => ({
   paidAt: inv.paidAt,
   description: inv.description,
   source: inv.source ?? null,
+});
+
+const sanitizeInvoiceDetailed = (inv: any) => ({
+  id: inv.id,
+  invoiceNumber: inv.invoiceNumber,
+  memberId: inv.memberId,
+  member: inv.member
+    ? {
+        id: inv.member.id,
+        firstName: inv.member.firstName,
+        lastName: inv.member.lastName,
+        email: inv.member.email,
+      }
+    : undefined,
+  eventId: inv.eventId,
+  event: inv.event
+    ? {
+        id: inv.event.id,
+        title: inv.event.title,
+      }
+    : undefined,
+  description: inv.description,
+  amountCents: inv.amountCents,
+  currency: inv.currency,
+  status: inv.status,
+  dueDate: inv.dueAt,
+  createdAt: inv.createdAt,
 });
 
 const sanitizePaymentMethod = (pm: any) => ({
@@ -52,23 +71,79 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     const isPrivileged = roles.includes("ADMIN") || roles.includes("OFFICER") || roles.includes("FINANCE_MANAGER");
     if (!isPrivileged) return res.status(403).json({ error: "Forbidden" });
 
-    const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
-    const offset = Math.max(Number(req.query.offset) || 0, 0);
-    const where = applyTenantScope({ where: {} }, req.user.tenantId).where;
+    const page = Math.max(parseInt((req.query.page as string) || "1", 10), 1);
+    const pageSize = Math.max(Math.min(parseInt((req.query.pageSize as string) || "50", 10), 200), 1);
+    const search = (req.query.search as string | undefined)?.trim();
+    const status = (req.query.status as string | undefined) || undefined;
 
-    const [total, invoices] = await Promise.all([
+    const where: any = { tenantId: req.user.tenantId };
+    if (status && status !== "all") {
+      where.status = status as InvoiceStatus;
+    }
+    if (search) {
+      where.OR = [
+        { invoiceNumber: { contains: search, mode: "insensitive" } },
+        { description: { contains: search, mode: "insensitive" } },
+        { member: { firstName: { contains: search, mode: "insensitive" } } },
+        { member: { lastName: { contains: search, mode: "insensitive" } } },
+        { member: { email: { contains: search, mode: "insensitive" } } },
+        { event: { title: { contains: search, mode: "insensitive" } } },
+      ];
+    }
+
+    const [total, invoices, outstanding, overdue, recentPaid] = await Promise.all([
       prisma.invoice.count({ where }),
       prisma.invoice.findMany({
         where,
         include: { event: true, member: true },
-        orderBy: { issuedAt: "desc" },
-        skip: offset,
-        take: limit,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.invoice.aggregate({
+        where: { tenantId: req.user.tenantId, status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] } },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      prisma.invoice.aggregate({
+        where: { tenantId: req.user.tenantId, status: "OVERDUE" },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId: req.user.tenantId,
+          status: "PAID",
+          updatedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+        },
+        _sum: { amountCents: true },
+        _count: true,
       }),
     ]);
 
-    const items = invoices.map(toInvoiceDto);
-    return res.json({ items, total, limit, offset });
+    return res.json({
+      invoices: invoices.map(sanitizeInvoiceDetailed),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+      summary: {
+        outstanding: {
+          count: outstanding._count || 0,
+          totalCents: outstanding._sum.amountCents || 0,
+        },
+        overdue: {
+          count: overdue._count || 0,
+          totalCents: overdue._sum.amountCents || 0,
+        },
+        paidLast30Days: {
+          count: recentPaid._count || 0,
+          totalCents: recentPaid._sum.amountCents || 0,
+        },
+      },
+    });
   } catch (err) {
     console.error("[billing] listTenantInvoicesPaginatedHandler error", err);
     return res.status(500).json({ error: "Internal server error" });
@@ -80,23 +155,66 @@ export async function listMemberInvoicesHandler(req: AuthenticatedRequest, res: 
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const tenantId = req.user.tenantId;
     const requestedMemberId = (req.query.memberId as string | undefined) || req.user.memberId || null;
-    const isAdmin = req.user.roles.includes("ADMIN") || req.user.roles.includes("OFFICER");
+    const status = (req.query.status as string | undefined) || "all";
+    const page = Math.max(parseInt((req.query.page as string) || "1", 10), 1);
+    const pageSize = Math.max(Math.min(parseInt((req.query.pageSize as string) || "50", 10), 200), 1);
+    const isAdmin = req.user.roles.includes("ADMIN") || req.user.roles.includes("OFFICER") || req.user.roles.includes("FINANCE_MANAGER");
 
     if (!isAdmin && !req.user.memberId) {
       return res.status(403).json({ error: "Forbidden" });
     }
-
     if (!isAdmin && requestedMemberId !== req.user.memberId) {
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    if (isAdmin && !requestedMemberId) {
-      const invoices = await listTenantInvoices(tenantId);
-      return res.json({ items: invoices.map(sanitizeInvoice) });
+    const where: any = { tenantId };
+    if (isAdmin && requestedMemberId) where.memberId = requestedMemberId;
+    if (!isAdmin && requestedMemberId) where.memberId = requestedMemberId;
+
+    if (status === "outstanding") {
+      where.status = { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] };
+    } else if (status === "paid") {
+      where.status = "PAID";
     }
 
-    const invoices = await listMemberInvoices(tenantId, requestedMemberId as string);
-    return res.json({ items: invoices.map(sanitizeInvoice) });
+    const [invoices, total] = await Promise.all([
+      prisma.invoice.findMany({
+        where,
+        orderBy: { dueAt: "asc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          event: { select: { id: true, title: true } },
+        },
+      }),
+      prisma.invoice.count({ where }),
+    ]);
+
+    const outstanding = await prisma.invoice.aggregate({
+      where: {
+        tenantId,
+        ...(where.memberId ? { memberId: where.memberId } : {}),
+        status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] },
+      },
+      _sum: { amountCents: true },
+      _count: true,
+    });
+
+    return res.json({
+      invoices: invoices.map(sanitizeInvoiceDetailed),
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+      summary: {
+        outstanding: {
+          count: outstanding._count || 0,
+          totalCents: outstanding._sum.amountCents || 0,
+        },
+      },
+    });
   } catch (err) {
     console.error("[billing] listMemberInvoicesHandler error", err);
     return res.status(500).json({ error: "Internal server error" });

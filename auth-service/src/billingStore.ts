@@ -1,12 +1,6 @@
 import { InvoiceStatus, PaymentMethodStatus, PaymentStatus } from "@prisma/client";
 import { prisma } from "./db/prisma";
-
-const generateInvoiceNumber = (tenantId: string) => {
-  const rand = Math.floor(Math.random() * 10000)
-    .toString()
-    .padStart(4, "0");
-  return `INV-${tenantId}-${Date.now()}-${rand}`;
-};
+import { generateInvoiceNumber, InvoiceNumberType } from "./utils/invoiceNumber";
 
 export async function listMemberInvoices(
   tenantId: string,
@@ -48,7 +42,7 @@ type CreateManualInvoiceInput = {
 };
 
 export async function createManualInvoice(tenantId: string, input: CreateManualInvoiceInput) {
-  const invoiceNumber = generateInvoiceNumber(tenantId);
+  const invoiceNumber = await generateInvoiceNumber(tenantId, "DUES");
   return prisma.invoice.create({
     data: {
       tenantId,
@@ -58,7 +52,7 @@ export async function createManualInvoice(tenantId: string, input: CreateManualI
       description: input.description ?? null,
       dueAt: input.dueDate ? new Date(input.dueDate) : null,
       invoiceNumber,
-      status: InvoiceStatus.UNPAID,
+      status: InvoiceStatus.ISSUED,
       source: "manual",
     },
   });
@@ -76,9 +70,6 @@ export async function recordInvoicePayment(tenantId: string, input: RecordInvoic
     where: { id: input.invoiceId, tenantId },
   });
   if (!invoice) throw new Error("Invoice not found");
-  if (invoice.status === InvoiceStatus.PAID) {
-    throw new Error("Invoice already paid");
-  }
   if (input.amountCents <= 0) throw new Error("Invalid amount");
 
   const payment = await prisma.payment.create({
@@ -95,11 +86,25 @@ export async function recordInvoicePayment(tenantId: string, input: RecordInvoic
     },
   });
 
+  const aggregate = await prisma.payment.aggregate({
+    where: { tenantId, invoiceId: invoice.id },
+    _sum: { amountCents: true },
+  });
+  const totalPaid = aggregate._sum.amountCents || 0;
+  const remaining = invoice.amountCents - totalPaid;
+
+  let nextStatus: InvoiceStatus = InvoiceStatus.PARTIALLY_PAID;
+  let paidAt: Date | null = invoice.paidAt ?? null;
+  if (remaining <= 0) {
+    nextStatus = InvoiceStatus.PAID;
+    paidAt = new Date();
+  }
+
   const updatedInvoice = await prisma.invoice.update({
     where: { id_tenantId: { id: invoice.id, tenantId } },
     data: {
-      status: InvoiceStatus.PAID,
-      paidAt: new Date(),
+      status: nextStatus,
+      paidAt,
       updatedAt: new Date(),
     },
   });
