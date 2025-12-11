@@ -33,6 +33,32 @@ export const AdminMemberReportPage: React.FC = () => {
   const [totalItems, setTotalItems] = useState(0);
   const [customFieldSchema, setCustomFieldSchema] = useState<ProfileCustomFieldSchema | null>(null);
 
+  const normalizeStatusParam = (status: string | undefined) => {
+    if (!status || status === "all") return undefined;
+    const map: Record<string, string> = {
+      active: "ACTIVE",
+      pending: "PENDING_VERIFICATION",
+      inactive: "INACTIVE",
+      suspended: "SUSPENDED",
+    };
+    return map[status.toLowerCase()];
+  };
+
+  const statusBadgeVariant = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === "active") return "success";
+    if (s === "pending_verification" || s === "pending") return "warning";
+    if (s === "suspended") return "danger";
+    if (s === "inactive") return "default";
+    return "default";
+  };
+
+  const statusBadgeLabel = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === "pending_verification") return "pending";
+    return s;
+  };
+
   // Edit roles modal state
   const [editRolesModal, setEditRolesModal] = useState<{
     open: boolean;
@@ -66,12 +92,7 @@ export const AdminMemberReportPage: React.FC = () => {
       return;
     }
     try {
-      const statusParam =
-        statusFilter === "pending"
-          ? "PENDING_VERIFICATION"
-          : statusFilter === "all" || statusFilter === ""
-          ? undefined
-          : statusFilter.toUpperCase();
+      const statusParam = normalizeStatusParam(statusFilter);
       const [resp, schema] = await Promise.all([
         listMembersReport(tokens.access_token, { status: statusParam, page, page_size: pageSize }),
         getProfileCustomFieldSchema(tokens.access_token),
@@ -320,8 +341,8 @@ export const AdminMemberReportPage: React.FC = () => {
       </TableCell>
       <TableCell>{m.email}</TableCell>
       <TableCell>
-        <Tag variant={m.status === "active" ? "success" : m.status === "pending" ? "warning" : "default"}>
-          {m.status}
+        <Tag variant={statusBadgeVariant(m.status)}>
+          {statusBadgeLabel(m.status)}
         </Tag>
       </TableCell>
       <TableCell>
@@ -390,7 +411,7 @@ export const AdminMemberReportPage: React.FC = () => {
             <option value="active">Active</option>
             <option value="pending">Pending</option>
             <option value="inactive">Inactive</option>
-            <option value="rejected">Rejected</option>
+            <option value="suspended">Suspended</option>
           </select>
           <Button
             variant="secondary"
