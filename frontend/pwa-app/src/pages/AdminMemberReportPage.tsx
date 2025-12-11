@@ -63,11 +63,21 @@ export const AdminMemberReportPage: React.FC = () => {
       return;
     }
     try {
+      const statusParam =
+        statusFilter === "pending"
+          ? "PENDING_VERIFICATION"
+          : statusFilter
+          ? statusFilter.toUpperCase()
+          : undefined;
       const [resp, schema] = await Promise.all([
-        listMembersReport(tokens.access_token, { status: statusFilter || undefined }),
+        listMembersReport(tokens.access_token, { status: statusParam }),
         getProfileCustomFieldSchema(tokens.access_token),
       ]);
-      setItems(resp.items || []);
+      const normalized = (resp.items || []).map((m) => ({
+        ...m,
+        status: m.status ? m.status.toLowerCase() : "",
+      }));
+      setItems(normalized);
       setCustomFieldSchema(schema);
     } catch (err: any) {
       setToast({ msg: err?.error?.message || "Failed to load report", type: "error" });
