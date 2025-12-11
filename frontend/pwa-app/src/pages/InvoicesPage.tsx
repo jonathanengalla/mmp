@@ -81,6 +81,29 @@ const InvoicesPage: React.FC = () => {
     return { label: s.toLowerCase(), cls: "bg-gray-100 text-gray-800" };
   };
 
+  const getTypeLabel = (inv: any) => {
+    // Prefer canonical source; fall back to invoice number segment so DUES/EVT/DON never show as Other
+    const source = (inv.source || "").toUpperCase();
+    const fromSource =
+      source === "DUES"
+        ? "Dues"
+        : source === "EVT"
+        ? "Event"
+        : source === "DONATION" || source === "DON"
+        ? "Donation"
+        : source === "OTHER"
+        ? "Other"
+        : undefined;
+
+    if (fromSource) return fromSource;
+
+    const seg = inv.invoiceNumber?.split("-")?.[2]?.toUpperCase();
+    if (seg === "DUES") return "Dues";
+    if (seg === "EVT") return "Event";
+    if (seg === "DON") return "Donation";
+    return "Other";
+  };
+
   const handleRefresh = () => {
     setPage(1);
     loadInvoices();
@@ -252,15 +275,7 @@ const InvoicesPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {invoices.map((inv) => {
-                    const source = (inv.source || "").toUpperCase();
-                    const typeLabel =
-                      source === "EVT"
-                        ? "Event"
-                        : source === "DONATION" || source === "DON"
-                        ? "Donations"
-                        : source === "DUES"
-                        ? "Dues"
-                        : "Other";
+                    const typeLabel = getTypeLabel(inv);
                     const due = inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-PH") : "-";
                     const badge = statusBadge(inv.status);
                     return (
