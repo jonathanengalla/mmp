@@ -15,7 +15,8 @@ export async function listMembersReport(req: AuthenticatedRequest, res: Response
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const tenantId = req.user.tenantId;
-    const statusFilter = normalizeStatus(req.query.status as string | undefined);
+    const statusRaw = (req.query.status as string | undefined) || undefined;
+    const statusFilter = normalizeStatus(statusRaw);
     const page = Math.max(parseInt((req.query.page as string) || "1", 10), 1);
     const pageSize = Math.max(Math.min(parseInt((req.query.page_size as string) || "20", 10), 100), 1);
 

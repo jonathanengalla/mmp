@@ -27,7 +27,10 @@ export const AdminMemberReportPage: React.FC = () => {
   const [items, setItems] = useState<MemberReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20);
+  const [totalItems, setTotalItems] = useState(0);
   const [customFieldSchema, setCustomFieldSchema] = useState<ProfileCustomFieldSchema | null>(null);
 
   // Edit roles modal state
@@ -66,11 +69,11 @@ export const AdminMemberReportPage: React.FC = () => {
       const statusParam =
         statusFilter === "pending"
           ? "PENDING_VERIFICATION"
-          : statusFilter
-          ? statusFilter.toUpperCase()
-          : undefined;
+          : statusFilter === "all" || statusFilter === ""
+          ? undefined
+          : statusFilter.toUpperCase();
       const [resp, schema] = await Promise.all([
-        listMembersReport(tokens.access_token, { status: statusParam }),
+        listMembersReport(tokens.access_token, { status: statusParam, page, page_size: pageSize }),
         getProfileCustomFieldSchema(tokens.access_token),
       ]);
       const normalized = (resp.items || []).map((m) => ({
@@ -78,6 +81,7 @@ export const AdminMemberReportPage: React.FC = () => {
         status: m.status ? m.status.toLowerCase() : "",
       }));
       setItems(normalized);
+      setTotalItems(resp.totalItems ?? 0);
       setCustomFieldSchema(schema);
     } catch (err: any) {
       setToast({ msg: err?.error?.message || "Failed to load report", type: "error" });
@@ -89,7 +93,7 @@ export const AdminMemberReportPage: React.FC = () => {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokens]);
+  }, [tokens, page, statusFilter]);
 
   const openEditRolesModal = (member: MemberReportItem) => {
     setEditRolesModal({
@@ -382,13 +386,19 @@ export const AdminMemberReportPage: React.FC = () => {
             className="pr-input"
             style={{ maxWidth: 200 }}
           >
-            <option value="">All</option>
+            <option value="all">All</option>
             <option value="active">Active</option>
             <option value="pending">Pending</option>
             <option value="inactive">Inactive</option>
             <option value="rejected">Rejected</option>
           </select>
-          <Button variant="secondary" onClick={load}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setPage(1);
+              load();
+            }}
+          >
             Apply
           </Button>
         </div>
@@ -430,8 +440,39 @@ export const AdminMemberReportPage: React.FC = () => {
                   <TableHeadCell align="right">Actions</TableHeadCell>
                 </TableRow>
               </TableHeader>
-              <TableBody>{rows}</TableBody>
+            <TableBody>{rows}</TableBody>
             </Table>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "var(--space-3)",
+              }}
+            >
+              <div style={{ color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+                {`Showing ${items.length === 0 ? 0 : (page - 1) * pageSize + 1}-${Math.min(
+                  page * pageSize,
+                  totalItems
+                )} of ${totalItems}`}
+              </div>
+              <div style={{ display: "flex", gap: "var(--space-2)", alignItems: "center" }}>
+                <Button variant="ghost" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                  Previous
+                </Button>
+                <span style={{ color: "var(--app-color-text-secondary)", fontSize: "var(--font-body-sm)" }}>
+                  Page {page} of {Math.max(1, Math.ceil(totalItems / pageSize))}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= Math.ceil(totalItems / pageSize)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
           </TableCard>
         )}
       </Card>
