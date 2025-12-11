@@ -300,23 +300,30 @@ export const eventCheckout = async (token: string, eventId: string): Promise<Eve
   return json(res);
 };
 
-export const listMyInvoices = async (token: string): Promise<Invoice[]> => {
-  const res = await fetch(`${API_BASE_URL}/invoices/me`, {
+export const listMyInvoices = async (
+  token: string,
+  params: { status?: "all" | "outstanding" | "paid"; page?: number; pageSize?: number } = {}
+) => {
+  const search = new URLSearchParams();
+  if (params.status && params.status !== "all") search.set("status", params.status);
+  if (params.page) search.set("page", String(params.page));
+  if (params.pageSize) search.set("pageSize", String(params.pageSize));
+  const res = await fetch(`${API_BASE_URL}/invoices/me?${search.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
-  const data = await json(res);
-  return data.items || [];
+  return json(res);
 };
 
 export const listTenantInvoices = async (
   token: string,
-  params: { limit?: number; offset?: number } = {}
-): Promise<{ items: Invoice[]; total: number; limit: number; offset: number }> => {
+  params: { status?: string; search?: string; page?: number; pageSize?: number } = {}
+) => {
   const search = new URLSearchParams();
-  if (params.limit) search.set("limit", String(params.limit));
-  if (params.offset) search.set("offset", String(params.offset));
-  const query = search.toString();
-  const res = await fetch(`${API_BASE_URL}/billing/invoices/tenant${query ? `?${query}` : ""}`, {
+  if (params.status && params.status !== "all") search.set("status", params.status);
+  if (params.search) search.set("search", params.search);
+  if (params.page) search.set("page", String(params.page));
+  if (params.pageSize) search.set("pageSize", String(params.pageSize));
+  const res = await fetch(`${API_BASE_URL}/admin/finance/invoices?${search.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);
