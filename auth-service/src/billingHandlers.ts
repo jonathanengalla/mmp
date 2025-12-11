@@ -369,3 +369,90 @@ export function runPaymentRemindersHandler(_req: Request, res: Response) {
   console.warn("[billing] runPaymentRemindersHandler stub hit; not implemented in BKS-04 scope.");
   return res.status(501).json({ error: "Payment reminders not implemented yet" });
 }
+
+export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const tenantId = req.user.tenantId;
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    // Normalize allowed sources (supports legacy lowercase)
+    const duesEventSources = ["DUES", "EVT", "dues", "event", "EVENT"];
+    const donationSources = ["DONATION", "donation"];
+
+    const [outstanding, overdue, paidLast30Days, totalDonations, donationsLast30Days] = await Promise.all([
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          source: { in: duesEventSources },
+          status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] },
+        },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          source: { in: duesEventSources },
+          status: "OVERDUE",
+        },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          status: "PAID",
+          updatedAt: { gte: thirtyDaysAgo },
+        },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          source: { in: donationSources },
+          status: "PAID",
+        },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          source: { in: donationSources },
+          status: "PAID",
+          updatedAt: { gte: thirtyDaysAgo },
+        },
+        _sum: { amountCents: true },
+        _count: true,
+      }),
+    ]);
+
+    return res.json({
+      outstanding: {
+        count: outstanding._count || 0,
+        totalCents: outstanding._sum.amountCents || 0,
+      },
+      overdue: {
+        count: overdue._count || 0,
+        totalCents: overdue._sum.amountCents || 0,
+      },
+      paidLast30Days: {
+        count: paidLast30Days._count || 0,
+        totalCents: paidLast30Days._sum.amountCents || 0,
+      },
+      totalDonations: {
+        count: totalDonations._count || 0,
+        totalCents: totalDonations._sum.amountCents || 0,
+      },
+      donationsLast30Days: {
+        count: donationsLast30Days._count || 0,
+        totalCents: donationsLast30Days._sum.amountCents || 0,
+      },
+    });
+  } catch (err) {
+    console.error("[billing] getFinanceSummaryHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};

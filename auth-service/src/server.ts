@@ -46,6 +46,7 @@ import {
   runPaymentRemindersHandler,
   sendInvoiceHandler,
   listTenantInvoicesPaginatedHandler,
+  getFinanceSummaryHandler,
 } from "./billingHandlers";
 import { listMembersReport } from "./reportingHandlers";
 
@@ -191,6 +192,7 @@ billingRouter.post("/invoices/:id/mark-paid", requireOfficerOrAdmin, recordInvoi
 billingRouter.post("/invoices", requireOfficerOrAdmin, createManualInvoiceHandler);
 billingRouter.get("/invoices", requireMemberOrHigher, listMemberInvoicesHandler);
 billingRouter.get("/invoices/tenant", requireAdminOrFinance, listTenantInvoicesPaginatedHandler);
+billingRouter.get("/admin/finance/summary", requireAdminOrFinance, getFinanceSummaryHandler);
 
 // Out-of-scope stubs
 billingRouter.post("/events/:id/pay", payEventFeeHandler);

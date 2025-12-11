@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { listMyInvoices, listTenantInvoices } from "../api/client";
+import { listMyInvoices, listTenantInvoices, getFinanceSummary } from "../api/client";
 import { useSession } from "../hooks/useSession";
 import { Card, Button, PageShell, Input } from "../ui";
 
@@ -17,6 +17,7 @@ const InvoicesPage: React.FC = () => {
     null
   );
   const [summary, setSummary] = useState<any>(null);
+  const [financeSummary, setFinanceSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -32,20 +33,25 @@ const InvoicesPage: React.FC = () => {
     try {
       setLoading(true);
       if (isAdminFinance) {
-        const resp = await listTenantInvoices(token, {
-          status: statusFilter === "all" ? undefined : statusFilter,
-          search: search || undefined,
-          page,
-          pageSize,
-        });
-        setInvoices(resp.invoices || resp.items || []);
-        setPagination(resp.pagination || null);
-        setSummary(resp.summary || null);
+        const [invoiceResp, summaryResp] = await Promise.all([
+          listTenantInvoices(token, {
+            status: statusFilter === "all" ? undefined : statusFilter,
+            search: search || undefined,
+            page,
+            pageSize,
+          }),
+          getFinanceSummary(token),
+        ]);
+        setInvoices(invoiceResp.invoices || invoiceResp.items || []);
+        setPagination(invoiceResp.pagination || null);
+        setSummary(invoiceResp.summary || null);
+        setFinanceSummary(summaryResp || null);
       } else {
         const resp = await listMyInvoices(token, { status: statusFilter as MemberStatus, page, pageSize });
         setInvoices(resp.invoices || resp.items || []);
         setPagination(resp.pagination || null);
         setSummary(resp.summary || null);
+        setFinanceSummary(null);
       }
       setError(null);
     } catch (e: any) {
@@ -110,7 +116,7 @@ const InvoicesPage: React.FC = () => {
             style={{
               display: "grid",
               gap: "var(--app-space-sm)",
-              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gridTemplateColumns: isAdminFinance ? "repeat(auto-fit, minmax(200px, 1fr))" : "repeat(auto-fit, minmax(240px, 1fr))",
             }}
           >
             <Card>
@@ -118,31 +124,53 @@ const InvoicesPage: React.FC = () => {
                 {isAdminFinance ? "Outstanding balance" : "My outstanding balance"}
               </div>
               <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700 }}>
-                {formatCurrency(summary.outstanding?.totalCents || 0)}
+                {formatCurrency((financeSummary?.outstanding?.totalCents ?? summary.outstanding?.totalCents) || 0)}
               </div>
               <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
-                {summary.outstanding?.count || 0} invoices
+                {(financeSummary?.outstanding?.count ?? summary.outstanding?.count) || 0} invoices
               </div>
             </Card>
-            {isAdminFinance && summary.overdue && (
+            {isAdminFinance && (
               <Card>
                 <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Overdue</div>
                 <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-state-error)" }}>
-                  {formatCurrency(summary.overdue.totalCents || 0)}
+                  {formatCurrency((financeSummary?.overdue?.totalCents ?? summary.overdue?.totalCents) || 0)}
                 </div>
                 <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
-                  {summary.overdue.count || 0} invoices
+                  {(financeSummary?.overdue?.count ?? summary.overdue?.count) || 0} invoices
                 </div>
               </Card>
             )}
-            {isAdminFinance && summary.paidLast30Days && (
+            {isAdminFinance && (
               <Card>
                 <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Paid (last 30 days)</div>
                 <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-state-success)" }}>
-                  {formatCurrency(summary.paidLast30Days.totalCents || 0)}
+                  {formatCurrency((financeSummary?.paidLast30Days?.totalCents ?? summary.paidLast30Days?.totalCents) || 0)}
                 </div>
                 <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
-                  {summary.paidLast30Days.count || 0} invoices
+                  {(financeSummary?.paidLast30Days?.count ?? summary.paidLast30Days?.count) || 0} invoices
+                </div>
+              </Card>
+            )}
+            {isAdminFinance && financeSummary && (
+              <Card>
+                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Total donations</div>
+                <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-text-primary)" }}>
+                  {formatCurrency(financeSummary.totalDonations?.totalCents || 0)}
+                </div>
+                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
+                  {financeSummary.totalDonations?.count || 0} donations
+                </div>
+              </Card>
+            )}
+            {isAdminFinance && financeSummary && (
+              <Card>
+                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Donations (last 30 days)</div>
+                <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-text-primary)" }}>
+                  {formatCurrency(financeSummary.donationsLast30Days?.totalCents || 0)}
+                </div>
+                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
+                  {financeSummary.donationsLast30Days?.count || 0} donations
                 </div>
               </Card>
             )}

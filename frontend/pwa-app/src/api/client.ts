@@ -323,7 +323,14 @@ export const listTenantInvoices = async (
   if (params.search) search.set("search", params.search);
   if (params.page) search.set("page", String(params.page));
   if (params.pageSize) search.set("pageSize", String(params.pageSize));
-  const res = await fetch(`${API_BASE_URL}/admin/finance/invoices?${search.toString()}`, {
+  const res = await fetch(`${API_BASE_URL}/billing/invoices/tenant?${search.toString()}`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  return json(res);
+};
+
+export const getFinanceSummary = async (token: string) => {
+  const res = await fetch(`${API_BASE_URL}/billing/admin/finance/summary`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);

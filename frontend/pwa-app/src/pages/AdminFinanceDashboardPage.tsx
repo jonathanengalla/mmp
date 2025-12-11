@@ -85,9 +85,9 @@ export const AdminFinanceDashboardPage: React.FC = () => {
       try {
         setInvoicesState((prev) => ({ ...prev, loading: true, error: null }));
         const useTenantScope = hasRole?.("admin") || hasRole?.("finance_manager") || hasRole?.("super_admin");
-        const invResp: any = useTenantScope ? await listTenantInvoices(token, { limit: 200 }) : await listMyInvoices(token);
+        const invResp: any = useTenantScope ? await listTenantInvoices(token, { pageSize: 200 }) : await listMyInvoices(token);
         if (!cancelled) {
-          const items: DashboardInvoice[] = (invResp.items ?? invResp) as DashboardInvoice[];
+          const items: DashboardInvoice[] = (invResp?.invoices ?? invResp?.items ?? []) as DashboardInvoice[];
           setInvoicesState({ loading: false, error: null, data: items });
         }
       } catch (err: any) {

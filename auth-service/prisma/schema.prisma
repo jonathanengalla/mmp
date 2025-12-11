@@ -184,6 +184,9 @@ model Invoice {
   @@unique([id, tenantId], map: "Invoice_id_tenantId_key")
   @@index([tenantId, memberId], map: "Invoice_tenant_member_idx")
   @@index([tenantId, status], map: "Invoice_tenant_status_idx")
+  @@index([tenantId, source, status], map: "Invoice_tenant_source_status_idx")
+  @@index([tenantId, status, updatedAt], map: "Invoice_tenant_status_updated_idx")
+  @@index([source, status, updatedAt], map: "Invoice_source_status_updated_idx")
 }
 
 model PaymentMethod {
