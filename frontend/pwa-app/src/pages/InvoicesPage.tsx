@@ -252,7 +252,15 @@ const InvoicesPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {invoices.map((inv) => {
-                    const typeLabel = inv.event ? "Event" : "Dues";
+                    const source = (inv.source || "").toUpperCase();
+                    const typeLabel =
+                      source === "EVT"
+                        ? "Event"
+                        : source === "DONATION" || source === "DON"
+                        ? "Donations"
+                        : source === "DUES"
+                        ? "Dues"
+                        : "Other";
                     const due = inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-PH") : "-";
                     const badge = statusBadge(inv.status);
                     return (

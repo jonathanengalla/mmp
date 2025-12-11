@@ -338,12 +338,14 @@ export const AdminFinanceDashboardPage: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        {inv.source === "dues" && <Tag variant="info">Dues</Tag>}
-                        {inv.source === "event" && <Tag variant="success">Event</Tag>}
-                        {!inv.source && <Tag variant="default">Manual</Tag>}
-                        {inv.source && inv.source !== "dues" && inv.source !== "event" && (
-                          <Tag variant="default">{inv.source}</Tag>
-                        )}
+                        {(() => {
+                          const source = (inv.source || "").toUpperCase();
+                          if (source === "DUES") return <Tag variant="info">Dues</Tag>;
+                          if (source === "EVT") return <Tag variant="success">Event</Tag>;
+                          if (source === "DONATION" || source === "DON") return <Tag variant="info">Donations</Tag>;
+                          if (!source) return <Tag variant="default">Manual</Tag>;
+                          return <Tag variant="default">{source}</Tag>;
+                        })()}
                       </TableCell>
                       <TableCell align="right">{formatMoney(inv.amountCents, inv.currency)}</TableCell>
                       <TableCell>

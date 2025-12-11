@@ -16,7 +16,12 @@ const SOURCE_TO_TYPE: Record<string, InvoiceNumberType> = {
 
 export async function generateInvoiceNumber(tenantId: string, source?: string) {
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
-  const slug = (tenant?.slug || "TENANT").toUpperCase();
+  const rawSlug = tenant?.slug || "TENANT";
+  // For rcme-dev (and any -dev suffix), drop the -DEV in the invoice number prefix
+  let slug = rawSlug.toUpperCase();
+  if (slug.endsWith("-DEV")) {
+    slug = slug.replace(/-DEV$/i, "");
+  }
   const year = new Date().getFullYear();
   const type = SOURCE_TO_TYPE[source || ""] || "DUES";
   const typePrefix = type;
