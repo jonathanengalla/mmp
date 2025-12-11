@@ -303,14 +303,16 @@ export const listEventsHandler = async (req: Request, res: Response) => {
   if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
   const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
   const offset = Math.max(Number(req.query.offset) || 0, 0);
-  const isPrivileged = roles.includes("ADMIN") || roles.includes("OFFICER") || roles.includes("EVENT_MANAGER");
+  const normalizedRoles = roles.map((r) => r.toUpperCase());
+  const isPrivileged = normalizedRoles.some((r) => ["ADMIN", "OFFICER", "EVENT_MANAGER", "ROLE_ADMIN", "ROLE_OFFICER", "ROLE_EVENT_MANAGER"].includes(r));
   const now = new Date();
   const recentCompletedCutoff = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
   const baseWhere: any = isPrivileged
     ? {}
     : {
         OR: [
-          { status: "PUBLISHED", startsAt: { gte: now } },
+          // Show all published events (past and future) to non-privileged users; still include recent completed.
+          { status: "PUBLISHED" },
           { status: "COMPLETED", startsAt: { gte: recentCompletedCutoff } },
         ],
       };

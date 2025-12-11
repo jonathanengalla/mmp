@@ -12,7 +12,7 @@ routes:
     service: payments-billing-service
     auth_required: true
   - prefix: /api/events
-    service: events-service
+    service: auth-service
     auth_required: true
   - prefix: /api/communications
     service: communications-service
