@@ -316,13 +316,14 @@ export const listMyInvoices = async (
 
 export const listTenantInvoices = async (
   token: string,
-  params: { status?: string; search?: string; page?: number; pageSize?: number } = {}
+  params: { status?: string; search?: string; page?: number; pageSize?: number; source?: string } = {}
 ) => {
   const search = new URLSearchParams();
   if (params.status && params.status !== "all") search.set("status", params.status);
   if (params.search) search.set("search", params.search);
   if (params.page) search.set("page", String(params.page));
   if (params.pageSize) search.set("pageSize", String(params.pageSize));
+  if (params.source) search.set("source", params.source);
   const res = await fetch(`${API_BASE_URL}/billing/invoices/tenant?${search.toString()}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });

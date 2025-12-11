@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { InvoiceStatus } from "@prisma/client";
+import { InvoiceStatus, PaymentStatus } from "@prisma/client";
 import type { AuthenticatedRequest } from "./authMiddleware";
 import { createManualInvoice, getInvoiceById, recordInvoicePayment, listPaymentMethodsForMember, savePaymentMethod } from "./billingStore";
 import { prisma } from "./db/prisma";
@@ -76,10 +76,14 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     const pageSize = Math.max(Math.min(parseInt((req.query.pageSize as string) || "50", 10), 200), 1);
     const search = (req.query.search as string | undefined)?.trim();
     const status = (req.query.status as string | undefined) || undefined;
+    const source = (req.query.source as string | undefined)?.toUpperCase();
 
     const where: any = { tenantId: req.user.tenantId };
     if (status && status !== "all") {
       where.status = status as InvoiceStatus;
+    }
+    if (source) {
+      where.source = source;
     }
     if (search) {
       where.OR = [
@@ -102,19 +106,19 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
         take: pageSize,
       }),
       prisma.invoice.aggregate({
-        where: { tenantId: req.user.tenantId, status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] } },
+        where: { tenantId: req.user.tenantId, status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] as any } },
         _sum: { amountCents: true },
         _count: true,
       }),
       prisma.invoice.aggregate({
-        where: { tenantId: req.user.tenantId, status: "OVERDUE" },
+        where: { tenantId: req.user.tenantId, status: "OVERDUE" as any },
         _sum: { amountCents: true },
         _count: true,
       }),
       prisma.invoice.aggregate({
         where: {
           tenantId: req.user.tenantId,
-          status: "PAID",
+          status: "PAID" as any,
           updatedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
         },
         _sum: { amountCents: true },
@@ -195,7 +199,7 @@ export async function listMemberInvoicesHandler(req: AuthenticatedRequest, res: 
       where: {
         tenantId,
         ...(where.memberId ? { memberId: where.memberId } : {}),
-        status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] },
+        status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] as any },
       },
       _sum: { amountCents: true },
       _count: true,
@@ -380,18 +384,21 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
     const duesEventOtherSources = ["DUES", "EVT", "OTHER"];
     const donationSources = ["DONATION"];
 
-    const [outstanding, overdue, paidLast30Days, totalDonations, donationsLast30Days, revenueMix] = await Promise.all([
+    const activeDuesStatuses = ["ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE"] as any;
+
+    const [outstanding, overdue, paidLast30Days, totalDonations, donationsLast30Days, revenueMix, duesBilled, duesPaid] =
+      await Promise.all([
       prisma.invoice.aggregate({
         where: {
           tenantId,
           OR: [
             {
               source: { in: duesEventOtherSources },
-              status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] },
+              status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] as any },
             },
             {
               source: { in: donationSources },
-              status: { in: ["ISSUED", "OVERDUE"] },
+              status: { in: ["ISSUED", "OVERDUE"] as any },
             },
           ],
         },
@@ -402,7 +409,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         where: {
           tenantId,
           source: { in: duesEventOtherSources.concat(donationSources) },
-          status: "OVERDUE",
+          status: "OVERDUE" as any,
         },
         _sum: { amountCents: true },
         _count: true,
@@ -445,6 +452,27 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         _sum: { amountCents: true },
         _count: true,
       }),
+      // Dues billed total (exclude draft/void/failed)
+      prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          source: "DUES",
+          status: { in: activeDuesStatuses as any },
+        },
+        _sum: { amountCents: true },
+      }),
+      // Dues paid total (payments on DUES invoices)
+      prisma.payment.aggregate({
+        where: {
+          tenantId,
+          status: PaymentStatus.SUCCEEDED,
+          invoice: {
+            source: "DUES",
+            status: { in: activeDuesStatuses as any },
+          },
+        },
+        _sum: { amountCents: true },
+      }),
     ]);
 
     const mixBuckets = {
@@ -483,6 +511,11 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         totalCents: donationsLast30Days._sum.amountCents || 0,
       },
       revenueMix: mixBuckets,
+      duesSummary: {
+        billedTotalCents: duesBilled._sum.amountCents || 0,
+        paidTotalCents: duesPaid._sum.amountCents || 0,
+        outstandingCents: Math.max((duesBilled._sum.amountCents || 0) - (duesPaid._sum.amountCents || 0), 0),
+      },
     });
   } catch (err) {
     console.error("[billing] getFinanceSummaryHandler error", err);

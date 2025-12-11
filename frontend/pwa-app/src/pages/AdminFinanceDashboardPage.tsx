@@ -4,20 +4,10 @@ import { Card } from "../components/primitives/Card";
 import { Table, TableBody, TableCell, TableHeadCell, TableHeader, TableRow, TableCard } from "../components/ui/Table";
 import { Tag } from "../components/primitives/Tag";
 import { useSession } from "../hooks/useSession";
-import {
-  getDuesSummary,
-  listMyInvoices,
-  listEventAttendanceReport,
-  listTenantInvoices,
-  getFinanceSummary,
-  Invoice,
-  DuesSummaryResponse,
-  EventAttendanceReportItem,
-} from "../api/client";
+import { listMyInvoices, listEventAttendanceReport, listTenantInvoices, getFinanceSummary } from "../api/client";
 
-type DashboardDuesRow = DuesSummaryResponse["items"][number];
-type DashboardInvoice = Invoice;
-type DashboardEventRow = EventAttendanceReportItem & { totalAmountCents?: number; registeredCount?: number };
+type DashboardInvoice = any;
+type DashboardEventRow = any;
 
 interface LoadState<T> {
   loading: boolean;
@@ -39,11 +29,6 @@ export const AdminFinanceDashboardPage: React.FC = () => {
   const { tokens, hasRole } = useSession();
   const token = tokens?.access_token || null;
 
-  const [duesState, setDuesState] = React.useState<LoadState<DashboardDuesRow[]>>({
-    loading: true,
-    error: null,
-    data: null,
-  });
   const [invoicesState, setInvoicesState] = React.useState<LoadState<DashboardInvoice[]>>({
     loading: true,
     error: null,
@@ -55,33 +40,22 @@ export const AdminFinanceDashboardPage: React.FC = () => {
     data: null,
   });
   const [financeSummary, setFinanceSummary] = React.useState<any>(null);
+  const [duesInvoicesState, setDuesInvoicesState] = React.useState<LoadState<DashboardInvoice[]>>({
+    loading: true,
+    error: null,
+    data: null,
+  });
 
   React.useEffect(() => {
     let cancelled = false;
 
     const loadAll = async () => {
       if (!token) {
-        setDuesState({ loading: false, error: "Not authenticated", data: null });
         setInvoicesState({ loading: false, error: "Not authenticated", data: null });
         setEventsState({ loading: false, error: "Not authenticated", data: null });
+        setDuesInvoicesState({ loading: false, error: "Not authenticated", data: null });
+        setFinanceSummary(null);
         return;
-      }
-      // dues
-      try {
-        setDuesState((prev) => ({ ...prev, loading: true, error: null }));
-        const duesResp = await getDuesSummary(token);
-        if (!cancelled) {
-          const rows = (duesResp.items ?? []) as DashboardDuesRow[];
-          setDuesState({ loading: false, error: null, data: rows });
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          setDuesState((prev) => ({
-            ...prev,
-            loading: false,
-            error: err?.message || "Unable to load dues summary",
-          }));
-        }
       }
       // invoices
       try {
@@ -99,8 +73,25 @@ export const AdminFinanceDashboardPage: React.FC = () => {
           } catch (err) {
             if (!cancelled) setFinanceSummary(null);
           }
+          try {
+            setDuesInvoicesState((prev) => ({ ...prev, loading: true, error: null }));
+            const duesResp: any = await listTenantInvoices(token, { pageSize: 5, source: "DUES" });
+            if (!cancelled) {
+              const duesItems: DashboardInvoice[] = (duesResp?.invoices ?? duesResp?.items ?? []) as DashboardInvoice[];
+              setDuesInvoicesState({ loading: false, error: null, data: duesItems });
+            }
+          } catch (err: any) {
+            if (!cancelled) {
+              setDuesInvoicesState((prev) => ({
+                ...prev,
+                loading: false,
+                error: err?.message || "Unable to load dues invoices",
+              }));
+            }
+          }
         } else {
           setFinanceSummary(null);
+          setDuesInvoicesState({ loading: false, error: null, data: null });
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -138,7 +129,6 @@ export const AdminFinanceDashboardPage: React.FC = () => {
 
   const invoices = invoicesState.data ?? [];
   const events = eventsState.data ?? [];
-  const duesRows = duesState.data ?? [];
 
   const totalOutstanding = financeSummary?.outstanding || { count: 0, totalCents: 0 };
   const last30DaysPaid = financeSummary?.paidLast30Days || { count: 0, totalCents: 0 };
@@ -240,44 +230,82 @@ export const AdminFinanceDashboardPage: React.FC = () => {
         </div>
 
         <Card title="Dues summary">
-          {duesState.loading && <div>Loading dues summary…</div>}
-          {duesState.error && <div style={{ color: "var(--app-color-state-error)" }}>{duesState.error}</div>}
-          {!duesState.loading && !duesState.error && duesRows.length === 0 && (
-            <div style={{ color: "var(--app-color-text-muted)" }}>No dues runs yet.</div>
+          {financeSummary ? (
+            <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.95rem" }}>
+              <div>Total billed: {formatMoney(financeSummary.duesSummary?.billedTotalCents || 0, invoices[0]?.currency)}</div>
+              <div>Collected: {formatMoney(financeSummary.duesSummary?.paidTotalCents || 0, invoices[0]?.currency)}</div>
+              <div>
+                Outstanding:{" "}
+                {formatMoney(financeSummary.duesSummary?.outstandingCents || 0, invoices[0]?.currency)}
+              </div>
+            </div>
+          ) : (
+            <div style={{ color: "var(--app-color-state-error)" }}>Unable to load dues summary right now.</div>
           )}
-          {!duesState.loading && !duesState.error && duesRows.length > 0 && (
-            <TableCard>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHeadCell>Period</TableHeadCell>
-                    <TableHeadCell align="right">Members billed</TableHeadCell>
-                    <TableHeadCell align="right">Total amount</TableHeadCell>
-                    <TableHeadCell align="right">Paid</TableHeadCell>
-                    <TableHeadCell align="right">Outstanding</TableHeadCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {duesRows.slice(0, 5).map((row) => (
-                    <TableRow key={row.periodKey ?? row.label}>
-                      <TableCell>
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span>{row.label}</span>
-                          {row.dueDate && (
-                            <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>Due {row.dueDate}</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell align="right">{row.totalCount ?? "–"}</TableCell>
-                      <TableCell align="right">{formatMoney(row.amountCentsTotal, row.currency)}</TableCell>
-                      <TableCell align="right">{formatMoney(row.amountCentsPaid, row.currency)}</TableCell>
-                      <TableCell align="right">{formatMoney(row.amountCentsUnpaid, row.currency)}</TableCell>
+        </Card>
+
+        <Card title="Recent dues invoices">
+          {duesInvoicesState.loading && <div>Loading dues invoices…</div>}
+          {duesInvoicesState.error && (
+            <div style={{ color: "var(--app-color-state-error)" }}>{duesInvoicesState.error}</div>
+          )}
+          {!duesInvoicesState.loading &&
+            !duesInvoicesState.error &&
+            (duesInvoicesState.data ?? []).length === 0 && (
+              <div style={{ color: "var(--app-color-text-muted)" }}>No dues invoices yet.</div>
+            )}
+          {!duesInvoicesState.loading &&
+            !duesInvoicesState.error &&
+            (duesInvoicesState.data ?? []).length > 0 && (
+              <TableCard>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHeadCell>Invoice #</TableHeadCell>
+                      <TableHeadCell>Member</TableHeadCell>
+                      <TableHeadCell align="right">Amount</TableHeadCell>
+                      <TableHeadCell>Status</TableHeadCell>
+                      <TableHeadCell>Created</TableHeadCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableCard>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {(duesInvoicesState.data ?? []).map((inv) => (
+                      <TableRow key={inv.id}>
+                        <TableCell>{inv.invoiceNumber || inv.description || "Invoice"}</TableCell>
+                        <TableCell>
+                          {inv.member?.firstName || inv.member?.lastName
+                            ? `${inv.member?.firstName ?? ""} ${inv.member?.lastName ?? ""}`.trim()
+                            : inv.member?.email ?? "—"}
+                        </TableCell>
+                        <TableCell align="right">{formatMoney(inv.amountCents, inv.currency)}</TableCell>
+                        <TableCell>
+                          <Tag
+                            variant={
+                              inv.status === "PAID"
+                                ? "success"
+                                : inv.status === "OVERDUE"
+                                ? "danger"
+                                : inv.status === "CANCELLED" || inv.status === "VOID" || inv.status === "FAILED"
+                                ? "default"
+                                : "warning"
+                            }
+                          >
+                            {inv.status?.toLowerCase?.() ?? inv.status}
+                          </Tag>
+                        </TableCell>
+                        <TableCell>
+                          {inv.createdAt ? (
+                            <span>{new Date(inv.createdAt).toLocaleDateString()}</span>
+                          ) : (
+                            <span style={{ color: "var(--app-color-text-muted)" }}>–</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableCard>
+            )}
         </Card>
 
         <Card title="Recent invoices">
