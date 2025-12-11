@@ -3,7 +3,7 @@ routes:
     service: auth-service
     auth_required: false_for_login_and_reset
   - prefix: /api/membership
-    service: membership-service
+    service: auth-service
     auth_required: true
   - prefix: /api/payments
     service: payments-billing-service
