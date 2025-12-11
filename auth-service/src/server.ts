@@ -47,13 +47,7 @@ import {
   sendInvoiceHandler,
   listTenantInvoicesPaginatedHandler,
 } from "./billingHandlers";
-
-// Local reporting stub (501)
-const reportingRoutes = Router();
-reportingRoutes.use((_req, res) => {
-  console.warn("[reporting] Stub route hit; reporting-service not implemented yet.");
-  return res.status(501).json({ error: "Reporting not implemented yet" });
-});
+import { listMembersReport } from "./reportingHandlers";
 
 // Membership helpers
 const membershipStub = (label: string) => (_req: express.Request, res: express.Response) => {
@@ -121,6 +115,10 @@ const requireOfficerOrAdmin = requireAnyRole(["ADMIN", "OFFICER"]);
 const requireMemberOrHigher = requireAnyRole(["ADMIN", "OFFICER", "MEMBER"]);
 const requireEventManagerOrAdmin = requireAnyRole(["ADMIN", "EVENT_MANAGER", "OFFICER"]);
 const requireAdminOrFinance = requireAnyRole(["ADMIN", "OFFICER", "FINANCE_MANAGER"]);
+
+// Reporting routes (after guards are defined)
+const reportingRoutes = Router();
+reportingRoutes.get("/reports/members", requireAdmin, listMembersReport);
 
 // Mount auth routes
 app.use("/auth", routes);
