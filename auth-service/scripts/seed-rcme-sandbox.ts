@@ -35,6 +35,7 @@ const MEMBER_USER = {
   lastName: "Cruz",
 };
 
+// Seeded avatars so admin/member photos persist across resets
 const ADMIN_AVATAR = "https://robohash.org/rcme-admin.png?size=200x200&set=set4";
 const MEMBER_AVATAR = "https://robohash.org/rcme-member.png?size=200x200&set=set4";
 
@@ -398,6 +399,20 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
       location: "Starbucks BGC",
       registrations: 12,
       paidCount: 0,
+    },
+    {
+      title: "Global Insights",
+      slug: "global-insights-2025",
+      status: EventStatus.COMPLETED,
+      startsAt: new Date("2025-09-24T03:00:00+08:00"),
+      endsAt: new Date("2025-09-24T04:00:00+08:00"),
+      priceCents: 150000,
+      currency: "PHP",
+      capacity: 60,
+      description: "Presentation on security considerations for expats in the Philippines",
+      location: "Location TBA",
+      registrations: 40,
+      paidCount: 30,
     },
   ];
 
