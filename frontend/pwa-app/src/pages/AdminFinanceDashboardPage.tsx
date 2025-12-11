@@ -9,6 +9,7 @@ import {
   listMyInvoices,
   listEventAttendanceReport,
   listTenantInvoices,
+  getFinanceSummary,
   Invoice,
   DuesSummaryResponse,
   EventAttendanceReportItem,
@@ -53,6 +54,7 @@ export const AdminFinanceDashboardPage: React.FC = () => {
     error: null,
     data: null,
   });
+  const [financeSummary, setFinanceSummary] = React.useState<any>(null);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -89,6 +91,16 @@ export const AdminFinanceDashboardPage: React.FC = () => {
         if (!cancelled) {
           const items: DashboardInvoice[] = (invResp?.invoices ?? invResp?.items ?? []) as DashboardInvoice[];
           setInvoicesState({ loading: false, error: null, data: items });
+        }
+        if (useTenantScope) {
+          try {
+            const summary = await getFinanceSummary(token);
+            if (!cancelled) setFinanceSummary(summary);
+          } catch (err) {
+            if (!cancelled) setFinanceSummary(null);
+          }
+        } else {
+          setFinanceSummary(null);
         }
       } catch (err: any) {
         if (!cancelled) {
@@ -128,45 +140,14 @@ export const AdminFinanceDashboardPage: React.FC = () => {
   const events = eventsState.data ?? [];
   const duesRows = duesState.data ?? [];
 
-  const totalOutstanding = React.useMemo(() => {
-    return invoices
-      .filter((inv) => inv.status === "unpaid" || inv.status === "pending" || inv.status === "overdue")
-      .reduce(
-        (acc, inv) => {
-          acc.count += 1;
-          acc.amountCents += inv.amountCents ?? 0;
-          return acc;
-        },
-        { count: 0, amountCents: 0 }
-      );
-  }, [invoices]);
-
-  const last30DaysPaid = React.useMemo(() => {
-    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    return invoices
-      .filter((inv) => inv.status === "paid" && inv.paidAt && new Date(inv.paidAt).getTime() >= cutoff)
-      .reduce(
-        (acc, inv) => {
-          acc.count += 1;
-          acc.amountCents += inv.amountCents ?? 0;
-          return acc;
-        },
-        { count: 0, amountCents: 0 }
-      );
-  }, [invoices]);
-
-  const eventVsDues = React.useMemo(() => {
-    return invoices.reduce(
-      (acc, inv) => {
-        const source = inv.source ?? "manual";
-        if (source === "event") acc.eventCents += inv.amountCents ?? 0;
-        else if (source === "dues") acc.duesCents += inv.amountCents ?? 0;
-        else acc.otherCents += inv.amountCents ?? 0;
-        return acc;
-      },
-      { eventCents: 0, duesCents: 0, otherCents: 0 }
-    );
-  }, [invoices]);
+  const totalOutstanding = financeSummary?.outstanding || { count: 0, totalCents: 0 };
+  const last30DaysPaid = financeSummary?.paidLast30Days || { count: 0, totalCents: 0 };
+  const revenueMix = financeSummary?.revenueMix || {
+    DUES: { totalCents: 0, count: 0 },
+    EVT: { totalCents: 0, count: 0 },
+    DONATION: { totalCents: 0, count: 0 },
+    OTHER: { totalCents: 0, count: 0 },
+  };
 
   const recentInvoices = React.useMemo(() => {
     return [...invoices]
@@ -208,7 +189,7 @@ export const AdminFinanceDashboardPage: React.FC = () => {
             ) : (
               <div style={{ display: "grid", gap: "var(--space-xs)" }}>
                 <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>
-                  {formatMoney(totalOutstanding.amountCents, invoices[0]?.currency)}
+                  {formatMoney(totalOutstanding.totalCents, invoices[0]?.currency)}
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "var(--app-color-text-muted)" }}>
                   {totalOutstanding.count} open invoice{totalOutstanding.count === 1 ? "" : "s"}
@@ -223,7 +204,7 @@ export const AdminFinanceDashboardPage: React.FC = () => {
             ) : (
               <div style={{ display: "grid", gap: "var(--space-xs)" }}>
                 <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>
-                  {formatMoney(last30DaysPaid.amountCents, invoices[0]?.currency)}
+                  {formatMoney(last30DaysPaid.totalCents, invoices[0]?.currency)}
                 </div>
                 <div style={{ fontSize: "0.85rem", color: "var(--app-color-text-muted)" }}>
                   {last30DaysPaid.count} invoice{last30DaysPaid.count === 1 ? "" : "s"} paid in the last 30 days
@@ -232,22 +213,26 @@ export const AdminFinanceDashboardPage: React.FC = () => {
             )}
           </Card>
 
-          <Card title="Revenue mix">
+          <Card title="Revenue mix (paid)">
             {invoicesState.error ? (
               <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>
             ) : (
               <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.9rem" }}>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Dues</span>
-                  <span>{formatMoney(eventVsDues.duesCents, invoices[0]?.currency)}</span>
+                  <span>{formatMoney(revenueMix.DUES.totalCents, invoices[0]?.currency)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Events</span>
-                  <span>{formatMoney(eventVsDues.eventCents, invoices[0]?.currency)}</span>
+                  <span>{formatMoney(revenueMix.EVT.totalCents, invoices[0]?.currency)}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span>Donations</span>
+                  <span>{formatMoney(revenueMix.DONATION.totalCents, invoices[0]?.currency)}</span>
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
                   <span>Other</span>
-                  <span>{formatMoney(eventVsDues.otherCents, invoices[0]?.currency)}</span>
+                  <span>{formatMoney(revenueMix.OTHER.totalCents, invoices[0]?.currency)}</span>
                 </div>
               </div>
             )}

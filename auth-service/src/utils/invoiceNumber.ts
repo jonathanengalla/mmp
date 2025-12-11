@@ -1,12 +1,25 @@
 import { prisma } from "../db/prisma";
 
-export type InvoiceNumberType = "DUES" | "EVT";
+export type InvoiceNumberType = "DUES" | "EVT" | "DON" | "OTH";
 
-export async function generateInvoiceNumber(tenantId: string, type: InvoiceNumberType = "DUES") {
+const SOURCE_TO_TYPE: Record<string, InvoiceNumberType> = {
+  DUES: "DUES",
+  dues: "DUES",
+  EVT: "EVT",
+  event: "EVT",
+  EVENT: "EVT",
+  DONATION: "DON",
+  donation: "DON",
+  OTHER: "OTH",
+  other: "OTH",
+};
+
+export async function generateInvoiceNumber(tenantId: string, source?: string) {
   const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
   const slug = (tenant?.slug || "TENANT").toUpperCase();
   const year = new Date().getFullYear();
-  const typePrefix = type === "EVT" ? "EVT" : "DUES";
+  const type = SOURCE_TO_TYPE[source || ""] || "DUES";
+  const typePrefix = type;
 
   const last = await prisma.invoice.findFirst({
     where: {

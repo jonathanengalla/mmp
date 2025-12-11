@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { PrismaClient, MemberStatus, InvoiceStatus, PaymentStatus, EventStatus, EventRegistrationStatus, PaymentMethodStatus } from "@prisma/client";
+import { generateInvoiceNumber } from "../src/utils/invoiceNumber";
 import bcrypt from "bcryptjs";
 import { faker } from "@faker-js/faker";
 
@@ -276,6 +277,25 @@ async function seedPaymentMethodsForMember(tenantId: string, memberId: string) {
     ],
     skipDuplicates: true,
   });
+}
+
+async function ensureSupporterDonor(tenantId: string, email: string) {
+  const supporter = await prisma.member.upsert({
+    where: { tenantId_email: { tenantId, email } },
+    update: {
+      status: MemberStatus.ACTIVE,
+      tags: ["Supporter / Donor only"],
+    },
+    create: {
+      tenantId,
+      email,
+      firstName: email.split("@")[0],
+      lastName: "Supporter",
+      status: MemberStatus.ACTIVE,
+      tags: ["Supporter / Donor only"],
+    },
+  });
+  return supporter;
 }
 
 async function createInvoiceWithPayments(params: {
@@ -593,6 +613,130 @@ async function seedDuesInvoices(tenantId: string, activeMemberIds: string[]) {
   }
 }
 
+async function seedDonations(tenantId: string, memberIds: string[]) {
+  // Clean up existing donation invoices/payments for idempotency
+  const donationInvoices = await prisma.invoice.findMany({
+    where: { tenantId, source: "DONATION" },
+    select: { id: true },
+  });
+  if (donationInvoices.length > 0) {
+    await prisma.payment.deleteMany({ where: { invoiceId: { in: donationInvoices.map((i) => i.id) } } });
+    await prisma.invoice.deleteMany({ where: { id: { in: donationInvoices.map((i) => i.id) } } });
+  }
+
+  const now = new Date();
+  const daysAgo = (n: number) => new Date(now.getTime() - n * 24 * 60 * 60 * 1000);
+
+  // Build donor pool (rotate)
+  const donors = memberIds;
+
+  const paidRecentAmounts = [100_000, 250_000, 500_000, 1_000_000, 250_000, 500_000]; // ₱1k, 2.5k, 5k, 10k etc
+  const paidOlderAmounts = [150_000, 300_000]; // ₱1.5k, ₱3k
+
+  let refCounter = 1;
+  const makeRef = () => {
+    const refs = ["DON-BANK", "DON-GCASH", "DON-CASH"];
+    const ref = `${refs[refCounter % refs.length]}-${String(refCounter).padStart(3, "0")}`;
+    refCounter += 1;
+    return ref;
+  };
+
+  const createDonation = async (params: {
+    amountCents: number;
+    issuedAt: Date;
+    dueAt?: Date | null;
+    status: InvoiceStatus;
+    donorId: string;
+    description: string;
+    processedAt?: Date | null;
+  }) => {
+    const { amountCents, issuedAt, dueAt, status, donorId, description, processedAt } = params;
+    const invoiceNumber = await generateInvoiceNumber(tenantId, "DONATION");
+
+    const invoice = await prisma.invoice.create({
+      data: {
+        tenantId,
+        memberId: donorId,
+        amountCents,
+        currency: "PHP",
+        status,
+        issuedAt,
+        dueAt: dueAt ?? null,
+        description,
+        source: "DONATION",
+        invoiceNumber,
+        paidAt: status === InvoiceStatus.PAID ? processedAt ?? issuedAt : null,
+      },
+    });
+
+    if (status === InvoiceStatus.PAID) {
+      await prisma.payment.create({
+        data: {
+          tenantId,
+          invoiceId: invoice.id,
+          memberId: donorId,
+          amountCents,
+          currency: "PHP",
+          status: PaymentStatus.SUCCEEDED,
+          reference: makeRef(),
+          processedAt: processedAt ?? issuedAt,
+        },
+      });
+    }
+  };
+
+  // 6 recent PAID donations (within last 30 days)
+  for (let i = 0; i < paidRecentAmounts.length; i++) {
+    const amount = paidRecentAmounts[i];
+    const issuedAt = daysAgo(3 + i * 3); // spread over last ~3-18 days
+    const processedAt = daysAgo(2 + i * 3);
+    const donorId = donors[i % donors.length];
+    await createDonation({
+      amountCents: amount,
+      issuedAt,
+      dueAt: issuedAt,
+      status: InvoiceStatus.PAID,
+      donorId,
+      description: i % 2 === 0 ? "Donation to RCME General Fund" : "Donation to RCME Community Projects",
+      processedAt,
+    });
+  }
+
+  // 2 older PAID donations (3-6 months ago)
+  for (let i = 0; i < paidOlderAmounts.length; i++) {
+    const amount = paidOlderAmounts[i];
+    const monthsAgo = 3 + i * 2; // 3 and 5 months
+    const issuedAt = daysAgo(monthsAgo * 30);
+    const processedAt = daysAgo(monthsAgo * 30 - 2);
+    const donorId = donors[(i + 2) % donors.length];
+    await createDonation({
+      amountCents: amount,
+      issuedAt,
+      dueAt: issuedAt,
+      status: InvoiceStatus.PAID,
+      donorId,
+      description: "Donation to RCME Community Projects",
+      processedAt,
+    });
+  }
+
+  // 2 ISSUED pledges (no payment)
+  for (let i = 0; i < 2; i++) {
+    const amount = 200_000 + i * 50_000; // ₱2k, ₱2.5k
+    const issuedAt = daysAgo(5 + i);
+    const dueAt = daysAgo(-14 + i); // ~14 days in future from issuedAt
+    const donorId = donors[(i + 4) % donors.length];
+    await createDonation({
+      amountCents: amount,
+      issuedAt,
+      dueAt,
+      status: InvoiceStatus.ISSUED,
+      donorId,
+      description: "Donation pledge to RCME Community Projects",
+    });
+  }
+}
+
 async function main() {
   if (isProduction()) {
     throw new Error("Cannot seed sandbox data in production");
@@ -628,6 +772,10 @@ async function main() {
   const activeMembers = await seedDirectory(tenant.id);
   const activeMemberIds = activeMembers.map((m) => m.id);
 
+  // Supporter / donor-only members
+  const supporter1 = await ensureSupporterDonor(tenant.id, "supporter1@rcme-dev.com");
+  const supporter2 = await ensureSupporterDonor(tenant.id, "supporter2@rcme-dev.com");
+
   // Payment methods for test member
   await seedPaymentMethodsForMember(tenant.id, memberUser.member.id);
 
@@ -636,6 +784,16 @@ async function main() {
 
   // Dues invoices
   await seedDuesInvoices(tenant.id, activeMemberIds);
+
+  // Donation invoices (use mix of member + supporter donors)
+  const donorPool = [
+    memberUser.member.id,
+    admin.member.id,
+    ...activeMemberIds.slice(0, 3),
+    supporter1.id,
+    supporter2.id,
+  ];
+  await seedDonations(tenant.id, donorPool);
 
   console.log("RCME sandbox seed complete.");
   console.log(`Admin login: ${ADMIN_USER.email} / ${ADMIN_USER.password}`);

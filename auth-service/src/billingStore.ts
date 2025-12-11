@@ -53,7 +53,7 @@ export async function createManualInvoice(tenantId: string, input: CreateManualI
       dueAt: input.dueDate ? new Date(input.dueDate) : null,
       invoiceNumber,
       status: InvoiceStatus.ISSUED,
-      source: "manual",
+      source: "DUES",
     },
   });
 }
@@ -92,6 +92,13 @@ export async function recordInvoicePayment(tenantId: string, input: RecordInvoic
   });
   const totalPaid = aggregate._sum.amountCents || 0;
   const remaining = invoice.amountCents - totalPaid;
+
+  // Donations cannot be partially paid
+  if ((invoice.source || "").toUpperCase() === "DONATION") {
+    if (remaining > 0) {
+      throw new Error("Donations must be paid in full; partial payments are not allowed");
+    }
+  }
 
   let nextStatus: InvoiceStatus = InvoiceStatus.PARTIALLY_PAID;
   let paidAt: Date | null = invoice.paidAt ?? null;
