@@ -129,7 +129,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
         </Button>
       }
     >
-      <div className="p-6 max-w-[1440px] mx-auto">
+      <div className="px-6 py-6 max-w-screen-xl mx-auto">
         <Card>
           {error && <div className="text-red-600 mb-4">{error.message}</div>}
           {isLoading && <div>Loading events...</div>}
@@ -142,10 +142,10 @@ export const AdminEventsDashboardPage: React.FC = () => {
                   <tr>
                     <th className="px-4 py-3 text-left w-[30%]">Title</th>
                     <th className="px-4 py-3 text-left w-[20%]">When</th>
-                    <th className="px-4 py-3 text-left w-[12%]">Capacity</th>
-                    <th className="px-4 py-3 text-right w-[10%]">Price</th>
-                    <th className="px-4 py-3 text-right w-[10%]">Revenue</th>
-                    <th className="px-4 py-3 text-right w-[16%]">Actions</th>
+                  <th className="px-4 py-3 text-left w-[12%]">Capacity</th>
+                  <th className="px-4 py-3 text-right w-[10%]">Price</th>
+                  <th className="px-4 py-3 text-right w-[10%]">Revenue</th>
+                  <th className="px-4 py-3 text-right w-[16%] whitespace-nowrap min-w-[160px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,7 +211,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
                         <td className="px-4 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
 
-                        <td className="px-4 py-3 text-right align-top whitespace-nowrap">
+                        <td className="px-4 py-3 text-right align-top whitespace-nowrap min-w-[160px]">
                           <div className="flex gap-1 justify-end items-center">
                             <button
                               title="Edit"
