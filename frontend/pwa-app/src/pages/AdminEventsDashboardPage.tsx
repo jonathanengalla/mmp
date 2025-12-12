@@ -129,7 +129,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
         </Button>
       }
     >
-      <div className="px-6 py-6 max-w-screen-xl mx-auto">
+      <div className="px-6 py-6 max-w-screen-2xl w-full mx-auto">
         <Card>
           {error && <div className="text-red-600 mb-4">{error.message}</div>}
           {isLoading && <div>Loading events...</div>}
@@ -137,15 +137,15 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
           {!isLoading && events.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1400px]">
+              <table className="w-full min-w-[1500px]">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left w-[30%]">Title</th>
-                    <th className="px-4 py-3 text-left w-[20%]">When</th>
-                  <th className="px-4 py-3 text-left w-[12%]">Capacity</th>
-                  <th className="px-4 py-3 text-right w-[10%]">Price</th>
-                  <th className="px-4 py-3 text-right w-[10%]">Revenue</th>
-                  <th className="px-4 py-3 text-right whitespace-nowrap min-w-[240px]">Actions</th>
+                  <th className="px-3 py-3 text-left w-[28%]">Title</th>
+                  <th className="px-3 py-3 text-left w-[20%]">When</th>
+                  <th className="px-3 py-3 text-left w-[12%]">Capacity</th>
+                  <th className="px-3 py-3 text-right w-[10%]">Price</th>
+                  <th className="px-3 py-3 text-right w-[10%]">Revenue</th>
+                  <th className="px-3 py-3 text-right whitespace-nowrap min-w-[260px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -171,7 +171,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
                     return (
                       <tr key={ev.id} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-3 align-top">
+                        <td className="px-3 py-3 align-top">
                           <div className="font-medium truncate mb-1" title={ev.title}>
                             {ev.title}
                           </div>
@@ -195,9 +195,9 @@ export const AdminEventsDashboardPage: React.FC = () => {
                           </div>
                         </td>
 
-                        <td className="px-4 py-3 text-sm align-top">{formatEventDateRange(startsAt, endsAt)}</td>
+                        <td className="px-3 py-3 text-sm align-top">{formatEventDateRange(startsAt, endsAt)}</td>
 
-                        <td className="px-4 py-3 text-sm align-top">
+                        <td className="px-3 py-3 text-sm align-top">
                           <span
                             className={
                               labels.capacityLabel.startsWith("Over capacity") ? "text-red-600 font-medium" : undefined
@@ -207,12 +207,12 @@ export const AdminEventsDashboardPage: React.FC = () => {
                           </span>
                         </td>
 
-                        <td className="px-4 py-3 text-right text-sm align-top">{priceValue}</td>
+                        <td className="px-3 py-3 text-right text-sm align-top">{priceValue}</td>
 
-                        <td className="px-4 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
+                        <td className="px-3 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
 
-                        <td className="px-4 py-3 text-right align-top whitespace-nowrap min-w-[240px]">
-                          <div className="flex flex-nowrap gap-1 justify-end items-center">
+                        <td className="px-3 py-3 text-right align-top whitespace-nowrap min-w-[260px]">
+                          <div className="flex flex-nowrap gap-1.5 justify-end items-center">
                             <button
                               title="Edit"
                               aria-label="Edit"
