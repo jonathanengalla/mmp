@@ -8,7 +8,8 @@ import { Tag } from "../components/ui/Tag";
 import { useSession } from "../hooks/useSession";
 import { EventDetailDto } from "../../../../libs/shared/src/models";
 import { formatEventDateRange } from "../utils/eventDate";
-import { listEventsAdmin, publishEvent } from "../api/client";
+import { listEventsAdmin, publishEvent, API_BASE_URL } from "../api/client";
+import { authHeaders } from "../session";
 // @ts-ignore react-query types not in this project; using fetch fallbacks
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -45,7 +46,19 @@ export const AdminEventsDashboardPage: React.FC = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (eventId: string) => fetch("/admin/events/" + eventId, { method: "DELETE", headers: { Authorization: `Bearer ${tokens?.access_token || ""}` } }),
+    mutationFn: (eventId: string) =>
+      fetch(`${API_BASE_URL}/admin/events/${eventId}`, {
+        method: "DELETE",
+        headers: { ...authHeaders(), Authorization: `Bearer ${tokens?.access_token || ""}` },
+      }).then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          const err = new Error(body?.error?.message || "Delete failed");
+          (err as any).error = body?.error;
+          throw err;
+        }
+        return res;
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-events"] });
       setDeleteModalOpen(false);
@@ -55,7 +68,10 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
   const cancelMutation = useMutation({
     mutationFn: (eventId: string) =>
-      fetch("/admin/events/" + eventId + "/cancel", { method: "POST", headers: { Authorization: `Bearer ${tokens?.access_token || ""}` } }),
+      fetch(`${API_BASE_URL}/admin/events/${eventId}/cancel`, {
+        method: "POST",
+        headers: { ...authHeaders(), Authorization: `Bearer ${tokens?.access_token || ""}` },
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-events"] });
       setCancelModalOpen(false);
