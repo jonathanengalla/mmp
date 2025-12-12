@@ -714,13 +714,16 @@ export const updateEventBannerHandler = [
 export const uploadEventBannerHandler = [
   requireEventManagerOrAdmin,
   async (req: Request, res: Response) => {
-    const { imageData } = req.body || {};
+    const { imageData, imageUrl } = req.body || {};
+    if (imageUrl && typeof imageUrl === "string") {
+      return res.json({ url: imageUrl });
+    }
     if (!imageData || typeof imageData !== "string") {
       return res.status(400).json({ error: { message: "Image data is required" } });
     }
     const isDataUrl = imageData.startsWith("data:image/");
     const allowed = ["png", "jpg", "jpeg", "webp"];
-    const matches = imageData.match(/^data:image\\/(png|jpg|jpeg|webp);base64,/i);
+    const matches = imageData.match(/^data:image\/(png|jpg|jpeg|webp);base64,/i);
     if (!isDataUrl || !matches || !allowed.includes(matches[1].toLowerCase())) {
       return res.status(400).json({ error: { message: "Invalid image type. Use JPG, PNG, or WEBP." } });
     }

@@ -49,6 +49,15 @@ export const AdminEditEventPage: React.FC = () => {
   const canSave = useMemo(() => !!form.title && !!form.startDate, [form.title, form.startDate]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
+  const toInputValue = (value: string) => {
+    // datetime-local expects "YYYY-MM-DDTHH:mm"
+    try {
+      return new Date(value).toISOString().slice(0, 16);
+    } catch {
+      return value;
+    }
+  };
+
   const load = async () => {
     if (!tokens?.access_token || !id) {
       setLoading(false);
@@ -61,8 +70,8 @@ export const AdminEditEventPage: React.FC = () => {
       setForm({
         title: detail.title,
         description: detail.description || "",
-        startDate: detail.startDate,
-        endDate: detail.endDate || "",
+        startDate: toInputValue(detail.startDate),
+        endDate: detail.endDate ? toInputValue(detail.endDate) : "",
         location: detail.location || "",
         registrationMode: detail.registrationMode,
         capacity: detail.capacity == null ? "" : String(detail.capacity),
@@ -137,8 +146,12 @@ export const AdminEditEventPage: React.FC = () => {
       const basicPatch: Record<string, unknown> = {};
       if (form.title !== event.title) basicPatch.title = form.title;
       if ((form.description || "") !== (event.description || "")) basicPatch.description = form.description;
-      if (form.startDate !== event.startDate) basicPatch.startDate = form.startDate;
-      if ((form.endDate || "") !== (event.endDate || "")) basicPatch.endDate = form.endDate || null;
+      if (form.startDate !== event.startDate) {
+        basicPatch.startDate = new Date(form.startDate).toISOString();
+      }
+      if ((form.endDate || "") !== (event.endDate || "")) {
+        basicPatch.endDate = form.endDate ? new Date(form.endDate).toISOString() : null;
+      }
       if ((form.location || "") !== (event.location || "")) basicPatch.location = form.location || null;
       if (Object.keys(basicPatch).length > 0) {
         updates.push(updateEventBasics(tokens.access_token, id, basicPatch));
