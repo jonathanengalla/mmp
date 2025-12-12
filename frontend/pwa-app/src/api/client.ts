@@ -512,11 +512,11 @@ export const checkInByCode = async (token: string, code: string): Promise<EventC
 };
 
 export const listEventsAdmin = async (token: string): Promise<EventDetailDto[]> => {
-  const res = await fetch(`${API_BASE_URL}/events`, {
+  const res = await fetch(`${API_BASE_URL}/admin/events`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   const data = await json(res);
-  return data.items || [];
+  return data.events || data.items || [];
 };
 
 // Communications
