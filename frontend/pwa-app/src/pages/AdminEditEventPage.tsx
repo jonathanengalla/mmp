@@ -38,6 +38,7 @@ export const AdminEditEventPage: React.FC = () => {
     startDate: "",
     endDate: "",
     location: "",
+    eventType: "IN_PERSON",
     registrationMode: "rsvp",
     capacity: "",
     priceCents: "",
@@ -73,6 +74,7 @@ export const AdminEditEventPage: React.FC = () => {
         startDate: toInputValue(detail.startDate),
         endDate: detail.endDate ? toInputValue(detail.endDate) : "",
         location: detail.location || "",
+        eventType: (detail as any).eventType || "IN_PERSON",
         registrationMode: detail.registrationMode,
         capacity: detail.capacity == null ? "" : String(detail.capacity),
         priceCents: detail.priceCents == null ? "" : String(detail.priceCents),
@@ -153,6 +155,9 @@ export const AdminEditEventPage: React.FC = () => {
         basicPatch.endDate = form.endDate ? new Date(form.endDate).toISOString() : null;
       }
       if ((form.location || "") !== (event.location || "")) basicPatch.location = form.location || null;
+      if ((form.eventType || "IN_PERSON") !== ((event as any).eventType || "IN_PERSON")) {
+        basicPatch.eventType = form.eventType;
+      }
       if (Object.keys(basicPatch).length > 0) {
         updates.push(updateEventBasics(tokens.access_token, id, basicPatch));
       }
@@ -258,6 +263,12 @@ export const AdminEditEventPage: React.FC = () => {
             <div style={{ display: "grid", gap: "var(--space-md)" }}>
               <FormField label="Title">
                 <input name="title" className="pr-input" value={form.title} onChange={onChange} required />
+              </FormField>
+              <FormField label="Event Type">
+                <select name="eventType" className="pr-input" value={form.eventType} onChange={onChange}>
+                  <option value="IN_PERSON">In-Person</option>
+                  <option value="ONLINE">Online (Webinar/Zoom)</option>
+                </select>
               </FormField>
               <FormField label="Description">
                 <textarea name="description" className="pr-input" value={form.description} onChange={onChange} rows={4} />

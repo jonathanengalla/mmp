@@ -206,6 +206,14 @@ export const AppRouter: React.FC = () => (
           }
         />
         <Route
+          path="/admin/events/:eventId/attendance"
+          element={
+            <AdminRoute roles={["admin", "event_manager"]}>
+              <AdminEventAttendanceReportPage />
+            </AdminRoute>
+          }
+        />
+        <Route
           path="/admin/events/checkin"
           element={
             <AdminRoute roles={["admin", "event_manager"]}>

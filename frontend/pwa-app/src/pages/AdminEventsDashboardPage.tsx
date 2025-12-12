@@ -220,6 +220,12 @@ export const AdminEventsDashboardPage: React.FC = () => {
                               Edit
                             </button>
                             <button
+                              className="text-blue-600 hover:underline text-sm"
+                              onClick={() => navigate(`/admin/events/${ev.id}/attendance`)}
+                            >
+                              Attendance
+                            </button>
+                            <button
                               className="text-gray-600 hover:underline text-sm"
                               onClick={() => navigate(`/events/${ev.slug || ev.id}`)}
                             >
