@@ -235,6 +235,7 @@ eventsRouter.get("/events/admin/summary", requireEventsSummaryAdmin, getEventsAd
 eventsRouter.get("/events/me/summary", getEventsSelfSummary);
 eventsRouter.get("/events/upcoming", listUpcomingEventsHandler);
 eventsRouter.get("/events", listEventsHandler);
+eventsRouter.get("/admin/events", requireEventManagerOrAdmin, listAdminEventsHandler);
 eventsRouter.post("/events/:id/checkout", eventCheckoutHandler);
 eventsRouter.get("/events/slug/:slug", getEventDetailHandler);
 eventsRouter.get("/events/:id", getEventDetailHandler);
