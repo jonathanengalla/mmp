@@ -129,7 +129,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
         </Button>
       }
     >
-      <div className="px-6 py-6 max-w-screen-2xl w-full mx-auto">
+      <div className="px-6 py-6 max-w-screen-xl w-full mx-auto">
         <Card>
           {error && <div className="text-red-600 mb-4">{error.message}</div>}
           {isLoading && <div>Loading events...</div>}
@@ -137,7 +137,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
           {!isLoading && events.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1500px]">
+              <table className="w-full mx-auto" style={{ minWidth: 1300 }}>
                 <thead className="bg-gray-50">
                   <tr>
                   <th className="px-3 py-3 text-left w-[28%]">Title</th>
@@ -145,7 +145,12 @@ export const AdminEventsDashboardPage: React.FC = () => {
                   <th className="px-3 py-3 text-left w-[12%]">Capacity</th>
                   <th className="px-3 py-3 text-right w-[10%]">Price</th>
                   <th className="px-3 py-3 text-right w-[10%]">Revenue</th>
-                  <th className="px-3 py-3 text-right whitespace-nowrap min-w-[260px]">Actions</th>
+                    <th
+                      className="px-3 py-3 whitespace-nowrap"
+                      style={{ minWidth: 260, textAlign: "center", verticalAlign: "middle" }}
+                    >
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,8 +216,11 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
                         <td className="px-3 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
 
-                        <td className="px-3 py-3 text-right align-top whitespace-nowrap min-w-[260px]">
-                          <div className="flex flex-nowrap gap-1.5 justify-end items-center">
+                        <td
+                          className="px-3 py-3 align-top"
+                          style={{ minWidth: 260, whiteSpace: "nowrap", textAlign: "center", verticalAlign: "middle" }}
+                        >
+                          <div className="flex flex-nowrap gap-1 justify-center items-center" style={{ whiteSpace: "nowrap" }}>
                             <button
                               title="Edit"
                               aria-label="Edit"
