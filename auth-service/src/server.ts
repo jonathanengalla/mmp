@@ -93,6 +93,7 @@ import {
   getEventsAdminSummary,
   getEventsSelfSummary,
 } from "./eventsHandlers";
+import * as attendanceHandlers from "./attendanceHandlers";
 
 const app = express();
 
@@ -258,6 +259,10 @@ eventsRouter.post("/events/:id/register", registerEventHandler);
 eventsRouter.delete("/events/:id/register", cancelRegistrationHandler);
 eventsRouter.get("/reporting/reports/events/attendance", requireEventManagerOrAdmin, eventsAttendanceReportHandler);
 eventsRouter.post("/events/checkin", requireEventManagerOrAdmin, checkInByCodeHandler);
+eventsRouter.post("/admin/attendance/:registrationId/mark", requireEventManagerOrAdmin, attendanceHandlers.markAttendance);
+eventsRouter.post("/admin/attendance/:registrationId/undo", requireEventManagerOrAdmin, attendanceHandlers.undoAttendance);
+eventsRouter.post("/admin/attendance/bulk-mark", requireEventManagerOrAdmin, attendanceHandlers.bulkMarkAttendance);
+eventsRouter.get("/admin/events/:eventId/attendance", requireEventManagerOrAdmin, attendanceHandlers.getAttendanceReport);
 app.use("/", eventsRouter);
 app.use("/api", eventsRouter);
 

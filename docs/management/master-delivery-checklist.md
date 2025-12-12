@@ -50,7 +50,10 @@
 ## Events
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
-| EVT-01 | Events UX Redesign | 🟡 | Phase 1 in progress; see [events-ux-redesign.md](../specs/events-ux-redesign.md) |
+| EVT-01 | Schema and Clean Slate | 🟢 | Schema migrated (registrationMode, checkedInAt); rcme-dev events/registrations = 0 |
+| EVT-02 | Event Creation and Registration | 🟡 | In progress; see [EVT-02 spec](../specs/events/EVT-02-event-creation-and-registration.md) |
+| EVT-03 | Attendance and Reporting | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
+| EVT-04 | Event Invoicing and Post Event Features | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
 
 ## QA / Gates
 | Code | Status | Notes |

@@ -78,7 +78,7 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     const status = (req.query.status as string | undefined) || undefined;
     const source = (req.query.source as string | undefined)?.toUpperCase();
 
-    const where: any = { tenantId: req.user.tenantId };
+    const where: any = { tenantId: req.user.tenantId, amountCents: { gt: 0 } };
     if (status && status !== "all") {
       where.status = status as InvoiceStatus;
     }
@@ -172,7 +172,7 @@ export async function listMemberInvoicesHandler(req: AuthenticatedRequest, res: 
       return res.status(403).json({ error: "Forbidden" });
     }
 
-    const where: any = { tenantId };
+    const where: any = { tenantId, amountCents: { gt: 0 } };
     if (isAdmin && requestedMemberId) where.memberId = requestedMemberId;
     if (!isAdmin && requestedMemberId) where.memberId = requestedMemberId;
 
@@ -200,6 +200,7 @@ export async function listMemberInvoicesHandler(req: AuthenticatedRequest, res: 
         tenantId,
         ...(where.memberId ? { memberId: where.memberId } : {}),
         status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] as any },
+        amountCents: { gt: 0 },
       },
       _sum: { amountCents: true },
       _count: true,
@@ -391,6 +392,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
       prisma.invoice.aggregate({
         where: {
           tenantId,
+          amountCents: { gt: 0 },
           OR: [
             {
               source: { in: duesEventOtherSources },
@@ -408,6 +410,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
       prisma.invoice.aggregate({
         where: {
           tenantId,
+          amountCents: { gt: 0 },
           source: { in: duesEventOtherSources.concat(donationSources) },
           status: "OVERDUE" as any,
         },
@@ -418,6 +421,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         where: {
           tenantId,
           status: "PAID",
+          amountCents: { gt: 0 },
           updatedAt: { gte: thirtyDaysAgo },
         },
         _sum: { amountCents: true },
@@ -428,6 +432,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
           tenantId,
           source: { in: donationSources },
           status: "PAID",
+          amountCents: { gt: 0 },
         },
         _sum: { amountCents: true },
         _count: true,
@@ -437,6 +442,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
           tenantId,
           source: { in: donationSources },
           status: "PAID",
+          amountCents: { gt: 0 },
           updatedAt: { gte: thirtyDaysAgo },
         },
         _sum: { amountCents: true },
@@ -448,6 +454,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         where: {
           tenantId,
           status: "PAID",
+          amountCents: { gt: 0 },
         },
         _sum: { amountCents: true },
         _count: true,
@@ -458,6 +465,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
           tenantId,
           source: "DUES",
           status: { in: activeDuesStatuses as any },
+          amountCents: { gt: 0 },
         },
         _sum: { amountCents: true },
       }),

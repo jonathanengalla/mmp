@@ -109,6 +109,13 @@ const generateUniqueSlugForTenant = async (tenantId: string, title: string) => {
 
 const EVENT_RELATIONS = { registrations: { include: { member: true, invoice: true } } };
 
+const normalizeRegistrationMode = (priceCents?: number | null, requested?: string) => {
+  const amount = priceCents ?? 0;
+  if (amount <= 0 || amount === null) return "RSVP";
+  const mode = requested?.toString?.().toUpperCase?.();
+  return mode === "PAY_NOW" ? "PAY_NOW" : "RSVP";
+};
+
 const prismaRegistrationToRecord = (reg: any, event: any): EventRegistration => {
   const memberName = reg.member ? `${reg.member.firstName ?? ""} ${reg.member.lastName ?? ""}`.trim() : reg.memberId;
   const paymentStatus = reg.invoice ? PAYMENT_STATUS_MAP[reg.invoice.status] || "unpaid" : undefined;
@@ -126,12 +133,20 @@ const prismaRegistrationToRecord = (reg: any, event: any): EventRegistration => 
     invoiceId: reg.invoiceId ?? null,
     createdAt: reg.createdAt ? reg.createdAt.toISOString() : new Date().toISOString(),
     checkInStatus,
-    checkedInAt: reg.checkInAt ? reg.checkInAt.getTime() : null,
+    checkedInAt: reg.checkedInAt
+      ? reg.checkedInAt instanceof Date
+        ? reg.checkedInAt.getTime()
+        : reg.checkedInAt
+      : reg.checkInAt
+      ? reg.checkInAt.getTime()
+      : null,
   };
 };
 
 const prismaEventToRecord = (e: any): EventRecord => {
-  const regMode: "rsvp" | "pay_now" = e.priceCents && e.priceCents > 0 ? "pay_now" : "rsvp";
+  const regMode: "rsvp" | "pay_now" =
+    (e.registrationMode?.toString?.().toUpperCase?.() === "PAY_NOW" ? "pay_now" : null) ||
+    (e.priceCents && e.priceCents > 0 ? "pay_now" : "rsvp");
   const registrations = (e.registrations || []).map((reg: any) => prismaRegistrationToRecord(reg, e));
   const registrationCount = registrations.filter((r) => r.status === "registered" || r.registrationStatus === "registered").length;
   return {
@@ -353,7 +368,7 @@ export const createEventHandler = [
     const tenantId = (req as any).user?.tenantId;
     if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
 
-    const { title, description, startDate, endDate, capacity, priceCents, price, currency, tags, location } = req.body || {};
+    const { title, description, startDate, endDate, capacity, priceCents, price, currency, tags, location, registrationMode } = req.body || {};
     if (!title || !startDate) {
       return res.status(400).json({ error: { message: "title and startDate are required" } });
     }
@@ -373,6 +388,7 @@ export const createEventHandler = [
 
     try {
       const slug = await generateUniqueSlugForTenant(tenantId, title);
+      const regMode = normalizeRegistrationMode(priceCentsValue, registrationMode);
       const created = await prisma.event.create({
         data: {
           tenantId,
@@ -386,6 +402,7 @@ export const createEventHandler = [
           priceCents: Number.isNaN(priceCentsValue as number) ? null : priceCentsValue,
           currency: currency ?? null,
           tags: Array.isArray(tags) ? tags : [],
+          registrationMode: regMode,
           startsAt: start,
           endsAt: end,
         },
@@ -542,9 +559,12 @@ export const updatePricingHandler = [
     const priceCentsValue = priceValue === null || priceValue === undefined ? null : Number(priceValue);
     const nextPrice = Number.isNaN(priceCentsValue as number) ? null : priceCentsValue;
     try {
+      const current = await prisma.event.findFirst({ where: { id, tenantId } });
+      if (!current) return res.status(404).json({ error: { message: "Event not found" } });
+      const regMode = normalizeRegistrationMode(nextPrice, current.registrationMode);
       const updated = await prisma.event.update({
         where: { id_tenantId: { id, tenantId } },
-        data: { priceCents: nextPrice, currency: currency ?? null },
+        data: { priceCents: nextPrice, currency: currency ?? null, registrationMode: regMode },
         include: EVENT_RELATIONS,
       });
       const record = setEvent(prismaEventToRecord(updated));
@@ -604,7 +624,8 @@ export const registerEventHandler = async (req: Request, res: Response) => {
   if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
   const event = (await loadEventFromDbIntoStore(tenantId, id)) || getEventById(id);
   if (!event) return res.status(404).json({ error: { message: "Event not found" } });
-  if (event.status !== "published") return res.status(400).json({ error: { message: "Event not open for registration" } });
+  const statusUpper = (event.status || "").toString().toUpperCase();
+  if (statusUpper !== "PUBLISHED") return res.status(400).json({ error: { message: "Event not open for registration" } });
 
   const regMode: "rsvp" | "pay_now" = event.registrationMode === "pay_now" ? "pay_now" : "rsvp";
   const paymentStatus: "unpaid" | "pending" | "paid" = regMode === "pay_now" ? "pending" : "unpaid";
@@ -633,7 +654,8 @@ export const eventCheckoutHandler = async (req: Request, res: Response) => {
   if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
 
   const event = (await loadEventFromDbIntoStore(tenantId, id)) || (await loadEventFromDbIntoStore(tenantId, id, true)) || getEventById(id) || getEventBySlug(id);
-  if (!event || event.status !== "published") {
+  const statusUpper = (event?.status || "").toString().toUpperCase();
+  if (!event || statusUpper !== "PUBLISHED") {
     return res.status(404).json({ error: { message: "Event not found" } });
   }
 
@@ -645,7 +667,10 @@ export const eventCheckoutHandler = async (req: Request, res: Response) => {
   }
   const registration = ensured.registration;
 
-  if (event.registrationMode === "rsvp") {
+  const amount = event.priceCents ?? event.price ?? 0;
+
+  // RSVP or free/sponsored events: return without invoice
+  if (event.registrationMode === "rsvp" || amount <= 0) {
     const detailDto = toDetailDto(ensured.event, memberId);
     try {
       if (email && memberId) {
@@ -672,7 +697,7 @@ export const eventCheckoutHandler = async (req: Request, res: Response) => {
     invoice = createEventInvoice({
       tenantId,
       memberId,
-      amount: event.priceCents ?? event.price ?? 0,
+      amount,
       currency: event.currency || "PHP",
       description: `Event: ${event.title}`,
       eventId: event.id,
@@ -848,11 +873,21 @@ export const updateEventTagsHandler = [
 
 export const updateEventRegistrationModeHandler = [
   ensureAdmin,
-  (req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const { id } = req.params;
     const mode = req.body?.mode as "pay_now" | "rsvp" | undefined;
-    const updated = updateEvent(id, { registrationMode: mode === "pay_now" ? "pay_now" : "rsvp" });
-    if (!updated) return res.status(404).json({ error: { message: "Event not found" } });
+    const tenantId = (req as any).user?.tenantId;
+    if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+    const event = await prisma.event.findFirst({ where: { id, tenantId } });
+    if (!event) return res.status(404).json({ error: { message: "Event not found" } });
+
+    const regMode = normalizeRegistrationMode(event.priceCents ?? 0, mode);
+    const updatedDb = await prisma.event.update({
+      where: { id_tenantId: { id, tenantId } },
+      data: { registrationMode: regMode },
+      include: EVENT_RELATIONS,
+    });
+    const updated = setEvent(prismaEventToRecord(updatedDb));
     res.json(toDetailDto(updated));
   },
 ];

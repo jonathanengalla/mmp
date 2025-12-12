@@ -219,7 +219,16 @@ export const AdminEditEventPage: React.FC = () => {
   };
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // If price changes to free/blank, force registrationMode to RSVP
+    if (name === "priceCents") {
+      const nextPrice = value === "" ? "" : value;
+      const nextPriceNum = nextPrice === "" ? 0 : Number(nextPrice);
+      const nextMode = nextPriceNum <= 0 ? "rsvp" : form.registrationMode;
+      setForm({ ...form, priceCents: nextPrice, registrationMode: nextMode });
+      return;
+    }
+    setForm({ ...form, [name]: value });
   };
 
   return (
@@ -333,10 +342,16 @@ export const AdminEditEventPage: React.FC = () => {
                   className="pr-input"
                   value={form.registrationMode}
                   onChange={onChange}
+                  disabled={form.priceCents === "" || Number(form.priceCents) <= 0}
                 >
                   <option value="rsvp">RSVP (no invoice upfront)</option>
                   <option value="pay_now">Pay-now (invoice created)</option>
                 </select>
+                <div className="text-xs text-gray-600 mt-1">
+                  {form.priceCents === "" || Number(form.priceCents) <= 0
+                    ? "Free events are RSVP-only (no invoices)."
+                    : "Paid events can be RSVP or Pay-now."}
+                </div>
               </FormField>
               <div style={{ display: "grid", gap: "var(--space-md)", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
                 <FormField label="Capacity (optional)">

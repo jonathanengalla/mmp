@@ -66,6 +66,23 @@ Typography:
 - Cancel: sets status=CANCELLED; keeps invoices/registrations.
 - Delete: soft delete (deletedAt) only when no invoices/registrations; returns EVENT_HAS_ACTIVITY otherwise.
 
+## Invoice Creation Rules
+Business rule: invoices represent money owed or paid. Free/sponsored events do not generate invoices.
+
+When to create invoices:
+- Dues: always, amount > 0, source `DUES`
+- Donations: always, amount > 0, source `DONATION`, no partial payments
+- Paid events: only if price > 0, source `EVT`, one invoice per registration
+
+When not to create invoices:
+- Free events (price = 0): registration/attendance only
+- Sponsored events (price = 0): same as free; no invoice
+
+Finance impact:
+- All finance queries ignore zero-amount invoices (amountCents > 0 filters)
+- Member/admin invoice lists show only real financial transactions
+Attendance for free events is tracked via EventRegistration (and future attendance tables), not invoices.
+
 ## Capacity Management
 - Increase always allowed.
 - Decrease blocked below current registrations → CAPACITY_TOO_LOW.

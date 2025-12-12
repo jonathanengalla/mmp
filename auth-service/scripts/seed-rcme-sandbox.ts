@@ -1,5 +1,14 @@
 /* eslint-disable no-console */
-import { PrismaClient, MemberStatus, InvoiceStatus, PaymentStatus, EventStatus, EventRegistrationStatus, PaymentMethodStatus } from "@prisma/client";
+import {
+  PrismaClient,
+  MemberStatus,
+  InvoiceStatus,
+  PaymentStatus,
+  EventStatus,
+  EventRegistrationStatus,
+  PaymentMethodStatus,
+  RegistrationMode,
+} from "@prisma/client";
 import { generateInvoiceNumber } from "../src/utils/invoiceNumber";
 import bcrypt from "bcryptjs";
 import { faker } from "@faker-js/faker";
@@ -411,6 +420,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
         "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=1400&q=80",
       registrations: 120, // full
       paidCount: 120,
+      registrationMode: RegistrationMode.PAY_NOW,
+      eventType: "IN_PERSON",
     },
     {
       title: "Global Insights: Security Considerations for Expats in the Philippines",
@@ -427,6 +438,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
         "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80",
       registrations: 80, // partially filled
       paidCount: 40,
+      registrationMode: RegistrationMode.PAY_NOW,
+      eventType: "ONLINE",
     },
     {
       title: "RCME Coffee Meetup - Upcoming",
@@ -443,6 +456,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
         "https://images.unsplash.com/photo-1459257868276-5e65389e2722?auto=format&fit=crop&w=1400&q=80",
       registrations: 5, // open seats
       paidCount: 0,
+      registrationMode: RegistrationMode.RSVP,
+      eventType: "IN_PERSON",
     },
     {
       title: "RCME Fellowship Lunch - Past Event",
@@ -459,6 +474,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
         "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80",
       registrations: 50, // full, past
       paidCount: 40,
+      registrationMode: RegistrationMode.PAY_NOW,
+      eventType: "IN_PERSON",
     },
   ];
 
@@ -486,6 +503,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
         description: evt.description,
         location: evt.location,
         bannerUrl: evt.bannerUrl ?? null,
+        registrationMode: evt.registrationMode || "RSVP",
+        eventType: (evt.eventType as any) || "IN_PERSON",
       },
       create: {
         tenantId,
@@ -500,6 +519,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
         description: evt.description,
         location: evt.location,
         bannerUrl: evt.bannerUrl ?? null,
+        registrationMode: evt.registrationMode || "RSVP",
+        eventType: (evt.eventType as any) || "IN_PERSON",
       },
     });
     createdEvents.push({
@@ -810,10 +831,10 @@ async function main() {
 
   // Idempotency: skip invoice seeding if invoices already exist
   const existingInvoices = await prisma.invoice.count({ where: { tenantId: tenant.id } });
-  if (existingInvoices > 0) {
-    console.log(`⚠️  Found ${existingInvoices} existing invoices for rcme-dev. Skipping invoice seed.`);
-    console.log("   Run cleanup-rcme-invoices.ts first if you want to reseed.");
-    return;
+  const skipInvoices = existingInvoices > 0;
+  if (skipInvoices) {
+    console.log(`⚠️  Found ${existingInvoices} existing invoices for rcme-dev. Skipping dues/donation invoice seed.`);
+    console.log("   Run cleanup-rcme-invoices.ts first if you want to reseed invoices.");
   }
 
   // Admin and member accounts
@@ -851,17 +872,21 @@ async function main() {
   await seedEvents(tenant.id, activeMemberIds);
 
   // Dues invoices
-  await seedDuesInvoices(tenant.id, activeMemberIds);
+  if (!skipInvoices) {
+    await seedDuesInvoices(tenant.id, activeMemberIds);
+  }
 
   // Donation invoices (use mix of member + supporter donors)
-  const donorPool = [
-    memberUser.member.id,
-    admin.member.id,
-    ...activeMemberIds.slice(0, 3),
-    supporter1.id,
-    supporter2.id,
-  ];
-  await seedDonations(tenant.id, donorPool);
+  if (!skipInvoices) {
+    const donorPool = [
+      memberUser.member.id,
+      admin.member.id,
+      ...activeMemberIds.slice(0, 3),
+      supporter1.id,
+      supporter2.id,
+    ];
+    await seedDonations(tenant.id, donorPool);
+  }
 
   console.log("RCME sandbox seed complete.");
   console.log(`Admin login: ${ADMIN_USER.email} / ${ADMIN_USER.password}`);
