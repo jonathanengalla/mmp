@@ -529,8 +529,7 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
     });
   }
 
-  let invoiceCounter = 1;
-
+  let evtInvoiceSeq = 1;
   for (const evt of createdEvents) {
     const regs = evt.registrations;
     const paidTarget = evt.paidCount;
@@ -554,35 +553,47 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
     });
 
       if (evt.priceCents > 0) {
-        const invoiceNumber = `${TENANT_SLUG.toUpperCase()}-${String(invoiceCounter).padStart(5, "0")}`;
-        invoiceCounter += 1;
-        const invoice = await createInvoiceWithPayments({
-          tenantId,
-          memberId,
-          invoiceNumber,
-          amountCents: evt.priceCents,
-          currency: evt.currency,
-          description: `Event fee: ${evt.slug}`,
-          source: "event",
-          eventId: evt.id,
-          status: isPaid ? InvoiceStatus.PAID : InvoiceStatus.UNPAID,
-          issuedAt: evt.startsAt,
-          dueAt: evt.startsAt,
-        });
+        let created = false;
+        while (!created) {
+          const invoiceNumber = `RCME-2025-EVT-${String(evtInvoiceSeq).padStart(3, "0")}`;
+          try {
+            const invoice = await createInvoiceWithPayments({
+              tenantId,
+              memberId,
+              invoiceNumber,
+              amountCents: evt.priceCents,
+              currency: evt.currency,
+              description: `Event fee: ${evt.slug}`,
+              source: "EVT",
+              eventId: evt.id,
+              status: isPaid ? InvoiceStatus.PAID : InvoiceStatus.ISSUED,
+              issuedAt: evt.startsAt,
+              dueAt: evt.startsAt,
+            });
 
-        await prisma.eventRegistration.update({
-          where: { tenantId_eventId_memberId: { tenantId, eventId: evt.id, memberId } },
-          data: { invoiceId: invoice.id },
-        });
+            await prisma.eventRegistration.update({
+              where: { tenantId_eventId_memberId: { tenantId, eventId: evt.id, memberId } },
+              data: { invoiceId: invoice.id },
+            });
+            created = true;
+          } catch (err: any) {
+            if (err?.code === "P2002") {
+              evtInvoiceSeq += 1;
+              continue;
+            }
+            throw err;
+          }
+        }
+        evtInvoiceSeq += 1;
       }
     }
   }
 }
 
 async function seedDuesInvoices(tenantId: string, activeMemberIds: string[]) {
-  let invoiceCounter = 10_000;
   const duesAmount = 1_500_000; // ₱15,000
   const halfPayment = 0.5;
+  let duesSeq = 1;
 
   const shuffle = [...activeMemberIds].sort(() => Math.random() - 0.5);
   const paidMembers = shuffle.slice(0, 15);
@@ -590,52 +601,91 @@ async function seedDuesInvoices(tenantId: string, activeMemberIds: string[]) {
   const partialMembers = shuffle.slice(18, 20);
 
   for (const memberId of paidMembers) {
-    const invoiceNumber = `${TENANT_SLUG.toUpperCase()}-2025-DUES-${invoiceCounter++}`;
-    await createInvoiceWithPayments({
-      tenantId,
-      memberId,
-      invoiceNumber,
-      amountCents: duesAmount,
-      currency: "PHP",
-      description: "Annual Membership Dues 2024-2025",
-      source: "dues",
-      status: InvoiceStatus.PAID,
-      issuedAt: new Date("2024-07-01"),
-      dueAt: new Date("2024-08-31"),
-    });
+    let created = false;
+    while (!created) {
+      const invoiceNumber = `RCME-2025-DUES-${String(duesSeq).padStart(3, "0")}`;
+      try {
+        await createInvoiceWithPayments({
+          tenantId,
+          memberId,
+          invoiceNumber,
+          amountCents: duesAmount,
+          currency: "PHP",
+          description: "Annual Membership Dues 2024-2025",
+          source: "DUES",
+          status: InvoiceStatus.PAID,
+          issuedAt: new Date("2024-07-01"),
+          dueAt: new Date("2024-08-31"),
+        });
+        created = true;
+      } catch (err: any) {
+        if (err?.code === "P2002") {
+          duesSeq += 1;
+          continue;
+        }
+        throw err;
+      }
+    }
+    duesSeq += 1;
   }
 
   for (const memberId of unpaidMembers) {
-    const invoiceNumber = `${TENANT_SLUG.toUpperCase()}-2025-DUES-${invoiceCounter++}`;
-    await createInvoiceWithPayments({
-      tenantId,
-      memberId,
-      invoiceNumber,
-      amountCents: duesAmount,
-      currency: "PHP",
-      description: "Annual Membership Dues 2024-2025",
-      source: "dues",
-      status: InvoiceStatus.UNPAID,
-      issuedAt: new Date("2024-07-01"),
-      dueAt: new Date("2024-08-31"),
-    });
+    let created = false;
+    while (!created) {
+      const invoiceNumber = `RCME-2025-DUES-${String(duesSeq).padStart(3, "0")}`;
+      try {
+        await createInvoiceWithPayments({
+          tenantId,
+          memberId,
+          invoiceNumber,
+          amountCents: duesAmount,
+          currency: "PHP",
+          description: "Annual Membership Dues 2024-2025",
+          source: "DUES",
+          status: InvoiceStatus.ISSUED,
+          issuedAt: new Date("2024-07-01"),
+          dueAt: new Date("2024-08-31"),
+        });
+        created = true;
+      } catch (err: any) {
+        if (err?.code === "P2002") {
+          duesSeq += 1;
+          continue;
+        }
+        throw err;
+      }
+    }
+    duesSeq += 1;
   }
 
   for (const memberId of partialMembers) {
-    const invoiceNumber = `${TENANT_SLUG.toUpperCase()}-2025-DUES-${invoiceCounter++}`;
-    await createInvoiceWithPayments({
-      tenantId,
-      memberId,
-      invoiceNumber,
-      amountCents: duesAmount,
-      currency: "PHP",
-      description: "Annual Membership Dues 2024-2025",
-      source: "dues",
-      status: InvoiceStatus.UNPAID,
-      issuedAt: new Date("2024-07-01"),
-      dueAt: new Date("2024-08-31"),
-      paidFraction: halfPayment,
-    });
+    let created = false;
+    while (!created) {
+      const invoiceNumber = `RCME-2025-DUES-${String(duesSeq).padStart(3, "0")}`;
+      try {
+        await createInvoiceWithPayments({
+          tenantId,
+          memberId,
+          invoiceNumber,
+          amountCents: duesAmount,
+          currency: "PHP",
+          description: "Annual Membership Dues 2024-2025",
+          source: "DUES",
+          status: InvoiceStatus.ISSUED,
+          issuedAt: new Date("2024-07-01"),
+          dueAt: new Date("2024-08-31"),
+          paidFraction: halfPayment,
+        });
+        created = true;
+      } catch (err: any) {
+        if (err?.code === "P2002") {
+          duesSeq += 1;
+          continue;
+        }
+        throw err;
+      }
+    }
+    duesSeq += 1;
   }
 }
 
@@ -773,6 +823,14 @@ async function main() {
   console.log(`Seeding RCME sandbox (reset=${reset})...`);
 
   const tenant = await ensureTenant(options);
+
+  // Idempotency: skip invoice seeding if invoices already exist
+  const existingInvoices = await prisma.invoice.count({ where: { tenantId: tenant.id } });
+  if (existingInvoices > 0) {
+    console.log(`⚠️  Found ${existingInvoices} existing invoices for rcme-dev. Skipping invoice seed.`);
+    console.log("   Run cleanup-rcme-invoices.ts first if you want to reseed.");
+    return;
+  }
 
   // Admin and member accounts
   const admin = await ensureUserWithMember(
