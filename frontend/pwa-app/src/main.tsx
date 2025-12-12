@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { AppRouter } from "./router";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { SessionProvider } from "./session";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./theme/rcme-theme.css";
 import "./theme/app-theme-aliases.css";
 import "./theme/tenant-rcme.css";
@@ -23,6 +24,7 @@ try {
 }
 
 const rootEl = document.getElementById("root");
+const queryClient = new QueryClient();
 
 if (!rootEl) {
   console.error("Root element NOT FOUND in index.html");
@@ -33,9 +35,11 @@ if (!rootEl) {
     ReactDOM.createRoot(rootEl).render(
       <React.StrictMode>
         <SessionProvider>
-          <ThemeProvider>
-            <AppRouter />
-          </ThemeProvider>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+              <AppRouter />
+            </ThemeProvider>
+          </QueryClientProvider>
         </SessionProvider>
       </React.StrictMode>
     );

@@ -47,6 +47,11 @@
 | UIR-06 | Heading/contrast accessibility pass | ⚪ | Not started |
 | UIR-07 | Login form ↔ JWT + tenant contract alignment | 🟢 | Login calls /auth/login with email/password/tenantId; uses VITE_DEFAULT_TENANT_ID; basic 400/401 handling |
 
+## Events
+| Code | Name | Status | Notes |
+| --- | --- | --- | --- |
+| EVT-01 | Events UX Redesign | 🟡 | Phase 1 in progress; see [events-ux-redesign.md](../specs/events-ux-redesign.md) |
+
 ## QA / Gates
 | Code | Status | Notes |
 | --- | --- | --- |

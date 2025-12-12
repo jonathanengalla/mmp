@@ -1,60 +1,110 @@
-import React, { useEffect, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Page } from "../components/primitives/Page";
 import { Card } from "../components/primitives/Card";
 import { Button } from "../components/primitives/Button";
-import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell, TableCard } from "../components/ui/Table";
-import { Tag } from "../components/ui/Tag";
 import { useSession } from "../hooks/useSession";
-import { EventDetailDto } from "../../../../libs/shared/src/models";
-import { formatEventDateRange } from "../utils/eventDate";
-import { listEventsAdmin, publishEvent, API_BASE_URL } from "../api/client";
+import { API_BASE_URL } from "../api/client";
+import { formatCurrency, formatEventDateRange, getEventStateLabels } from "../utils/eventHelpers";
 
-const priceLabel = (ev: EventDetailDto) => {
-  if (ev.priceCents == null) return "Free";
-  return `${ev.currency || "PHP"} ${(ev.priceCents / 100).toLocaleString()}`;
+type AdminEvent = {
+  id: string;
+  slug?: string | null;
+  title: string;
+  description?: string | null;
+  status?: string | null;
+  startsAt?: string;
+  endsAt?: string;
+  startDate?: string;
+  endDate?: string | null;
+  capacity?: number | null;
+  priceCents?: number | null;
+  registrationsCount?: number;
+  invoicesCount?: number;
+  revenueCents?: number | null;
+  revenue?: number | null;
 };
 
-const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString("en-PH", {
-    timeZone: "Asia/Manila",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
+const fetchAdminEvents = async (token?: string, tenantId?: string): Promise<{ events: AdminEvent[] }> => {
+  if (!token) return { events: [] };
+  const res = await fetch(`${API_BASE_URL}/admin/events`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(tenantId ? { "X-Tenant-Id": tenantId } : {}),
+    },
   });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.error?.message || "Failed to load events");
+  }
+  return res.json();
+};
 
 export const AdminEventsDashboardPage: React.FC = () => {
   const { tokens } = useSession();
   const navigate = useNavigate();
-  const [error, setError] = useState<string | null>(null);
-  const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [eventToCancel, setEventToCancel] = useState<string | null>(null);
 
-  const loadEvents = async () => {
-    if (!tokens?.access_token) {
-      setItems([]);
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await listEventsAdmin(tokens.access_token);
-      setItems(data || []);
-    } catch (err: any) {
-      setError(err?.message || "Failed to load events");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const adminEventsQuery = useQuery({
+    queryKey: ["admin-events", tokens?.access_token],
+    enabled: !!tokens?.access_token,
+    queryFn: () => fetchAdminEvents(tokens?.access_token, tokens?.tenant_id),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (eventId: string) => {
+      const res = await fetch(`${API_BASE_URL}/admin/events/${eventId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokens?.access_token || ""}`,
+          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const message =
+          body?.error?.message ||
+          "This event already has registrations or invoices, so it can't be deleted. Please cancel it instead.";
+        throw new Error(message);
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+      setDeleteModalOpen(false);
+      setEventToDelete(null);
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async (eventId: string) => {
+      const res = await fetch(`${API_BASE_URL}/admin/events/${eventId}/cancel`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokens?.access_token || ""}`,
+          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error?.message || "Failed to cancel event");
+      }
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+      setCancelModalOpen(false);
+      setEventToCancel(null);
+    },
+  });
+
+  const events: AdminEvent[] = useMemo(() => adminEventsQuery.data?.events || [], [adminEventsQuery.data]);
 
   const handleDeleteClick = (eventId: string) => {
     setEventToDelete(eventId);
@@ -66,83 +116,8 @@ export const AdminEventsDashboardPage: React.FC = () => {
     setCancelModalOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (eventToDelete) {
-      setLoadingAction(eventToDelete);
-      fetch(`${API_BASE_URL}/admin/events/${eventToDelete}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${tokens?.access_token || ""}`,
-          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
-        },
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(body?.error?.message || "Delete failed");
-          }
-        })
-        .then(() => {
-          setDeleteModalOpen(false);
-          setEventToDelete(null);
-          loadEvents();
-        })
-        .catch((err: any) => {
-          setError(
-            err?.message ||
-              "This event already has registrations or invoices, so it can't be deleted. Please cancel it instead."
-          );
-          loadEvents();
-        })
-        .finally(() => setLoadingAction(null));
-    }
-  };
-
-  const handleCancelConfirm = () => {
-    if (eventToCancel) {
-      setLoadingAction(eventToCancel);
-      fetch(`${API_BASE_URL}/admin/events/${eventToCancel}/cancel`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${tokens?.access_token || ""}`,
-          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
-        },
-      })
-        .then(async (res) => {
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}));
-            throw new Error(body?.error?.message || "Cancel failed");
-          }
-        })
-        .then(() => {
-          setCancelModalOpen(false);
-          setEventToCancel(null);
-          loadEvents();
-        })
-        .catch((err: any) => {
-          setError(err?.message || "Unable to cancel event right now. Please try again.");
-        })
-        .finally(() => setLoadingAction(null));
-    }
-  };
-
-  const canDelete = (ev: any) => (ev.registrationsCount || 0) === 0 && (ev.invoicesCount || 0) === 0;
-
-  const onPublish = async (id: string) => {
-    if (!tokens?.access_token) return;
-    try {
-      await publishEvent(tokens.access_token, id);
-      loadEvents();
-    } catch (err) {
-      console.error(err);
-      setError("Publish failed");
-    }
-  };
-
-  useEffect(() => {
-    loadEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokens?.access_token]);
+  const isLoading = adminEventsQuery.isLoading;
+  const error = adminEventsQuery.error as Error | undefined;
 
   return (
     <Page
@@ -154,116 +129,146 @@ export const AdminEventsDashboardPage: React.FC = () => {
         </Button>
       }
     >
-      <Card>
-        {error && <div style={{ color: "var(--app-color-state-error)", marginBottom: "var(--space-sm)" }}>{error}</div>}
-        {loading && <div>Loading...</div>}
-        {!loading && (!items || items.length === 0) && <div>No events found.</div>}
-        {!loading && items && items.length > 0 && (
-          <TableCard>
-            <div style={{ overflowX: "auto", paddingRight: "16px" }}>
-              <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHeadCell>Title</TableHeadCell>
-                  <TableHeadCell>Status</TableHeadCell>
-                  <TableHeadCell>Mode</TableHeadCell>
-                  <TableHeadCell>Start</TableHeadCell>
-                  <TableHeadCell>Capacity</TableHeadCell>
-                  <TableHeadCell>Price</TableHeadCell>
-                  <TableHeadCell align="right">Actions</TableHeadCell>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((ev: any) => {
-                  const remaining =
-                    ev.capacity != null ? Math.max(ev.capacity - (ev.registrationsCount || 0), 0) : null;
-                  return (
-                    <TableRow key={ev.id}>
-                      <TableCell>
-                        <Button onClick={() => navigate(`/events/${ev.slug || ev.id}`)}>
-                          {ev.title}
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <Tag variant={ev.status === "published" ? "success" : ev.status === "draft" ? "warning" : "default"}>
-                          {ev.status}
-                        </Tag>
-                      </TableCell>
-                      <TableCell>
-                        <Tag variant={ev.registrationMode === "pay_now" ? "warning" : "info"} size="sm">
-                          {ev.registrationMode === "pay_now" ? "Pay-now" : "RSVP"}
-                        </Tag>
-                      </TableCell>
-                      <TableCell>
-                        {formatEventDateRange(ev.startDate, ev.endDate)}
-                      </TableCell>
-                      <TableCell>
-                        {ev.registrationsCount}/{ev.capacity ?? "—"}
-                        {remaining != null && <div style={{ color: "var(--app-color-text-muted)" }}>{remaining} remaining</div>}
-                      </TableCell>
-                      <TableCell>{priceLabel(ev)}</TableCell>
-                      <TableCell align="right">
-                        <div
-                          style={{
-                            display: "flex",
-                            gap: "var(--space-2xs)",
-                            justifyContent: "flex-end",
-                            paddingRight: "4px",
-                          }}
-                        >
-                          {ev.status === "draft" && (
-                            <Button size="sm" onClick={() => onPublish(ev.id)}>
-                              Publish
-                            </Button>
-                          )}
-                          <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/events/${ev.id}/edit`)}>
-                            Edit
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={() => navigate(`/events/${ev.slug || ev.id}`)}>
-                            View
-                          </Button>
-                          {canDelete(ev) ? (
-                            <Button size="sm" variant="ghost" onClick={() => handleDeleteClick(ev.id)}>
-                              Delete
-                            </Button>
-                          ) : ev.status !== "CANCELLED" ? (
-                            <Button size="sm" variant="ghost" onClick={() => handleCancelClick(ev.id)}>
-                              Cancel
-                            </Button>
-                          ) : (
-                            <Tag variant="default" size="sm">
-                              Cancelled
-                            </Tag>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-              </Table>
+      <div className="p-6 max-w-[1440px] mx-auto">
+        <Card>
+          {error && <div className="text-red-600 mb-4">{error.message}</div>}
+          {isLoading && <div>Loading events...</div>}
+          {!isLoading && events.length === 0 && <div>No events found.</div>}
+
+          {!isLoading && events.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1200px]">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left w-[30%]">Title</th>
+                    <th className="px-4 py-3 text-left w-[20%]">When</th>
+                    <th className="px-4 py-3 text-left w-[12%]">Capacity</th>
+                    <th className="px-4 py-3 text-right w-[10%]">Price</th>
+                    <th className="px-4 py-3 text-right w-[10%]">Revenue</th>
+                    <th className="px-4 py-3 text-right w-[18%]">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map((ev) => {
+                    const startsAt = ev.startsAt || ev.startDate || "";
+                    const endsAt = ev.endsAt || ev.endDate || startsAt;
+                    const labels = getEventStateLabels({
+                      status: ev.status || undefined,
+                      startsAt,
+                      endsAt,
+                      priceCents: ev.priceCents ?? 0,
+                      capacity: ev.capacity ?? null,
+                      registrations: ev.registrationsCount ?? 0,
+                    });
+                    const isDeletable = (ev.registrationsCount || 0) === 0 && (ev.invoicesCount || 0) === 0;
+                    const priceValue = ev.priceCents != null ? formatCurrency((ev.priceCents || 0) / 100) : "Free";
+                    const revenueValue =
+                      ev.revenueCents != null
+                        ? formatCurrency((ev.revenueCents || 0) / 100)
+                        : ev.revenue != null
+                        ? formatCurrency(ev.revenue || 0)
+                        : "—";
+
+                    return (
+                      <tr key={ev.id} className="border-t hover:bg-gray-50">
+                        <td className="px-4 py-3 align-top">
+                          <div className="font-medium truncate mb-1" title={ev.title}>
+                            {ev.title}
+                          </div>
+                          <div className="flex gap-2">
+                            <span
+                              className={`inline-block px-2 py-0.5 text-xs rounded ${
+                                labels.eventStatusLabel === "Upcoming"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : labels.eventStatusLabel === "Past event"
+                                  ? "bg-gray-100 text-gray-800"
+                                  : labels.eventStatusLabel === "Cancelled"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {labels.eventStatusLabel}
+                            </span>
+                            <span className="inline-block px-2 py-0.5 text-xs rounded bg-green-100 text-green-800">
+                              {labels.modeLabel}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3 text-sm align-top">{formatEventDateRange(startsAt, endsAt)}</td>
+
+                        <td className="px-4 py-3 text-sm align-top">
+                          <span
+                            className={
+                              labels.capacityLabel.startsWith("Over capacity") ? "text-red-600 font-medium" : undefined
+                            }
+                          >
+                            {labels.capacityLabel}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3 text-right text-sm align-top">{priceValue}</td>
+
+                        <td className="px-4 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
+
+                        <td className="px-4 py-3 text-right align-top">
+                          <div className="flex gap-2 justify-end flex-wrap">
+                            <button
+                              className="text-blue-600 hover:underline text-sm"
+                              onClick={() => navigate(`/admin/events/${ev.id}/edit`)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="text-gray-600 hover:underline text-sm"
+                              onClick={() => navigate(`/events/${ev.slug || ev.id}`)}
+                            >
+                              View
+                            </button>
+                            {isDeletable ? (
+                              <button
+                                onClick={() => handleDeleteClick(ev.id)}
+                                className="text-red-600 hover:underline text-sm"
+                              >
+                                Delete
+                              </button>
+                            ) : ev.status !== "CANCELLED" ? (
+                              <button
+                                onClick={() => handleCancelClick(ev.id)}
+                                className="text-orange-600 hover:underline text-sm"
+                              >
+                                Cancel
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 text-sm">Cancelled</span>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          </TableCard>
-        )}
-      </Card>
+          )}
+        </Card>
+      </div>
 
       {deleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 50 }}>
-          <div className="bg-white rounded-lg p-6 max-w-md" style={{ width: "90%", maxWidth: 420 }}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-[90%]">
             <h3 className="text-lg font-semibold mb-4">Delete Event</h3>
             <p className="text-gray-600 mb-6">Are you sure you want to delete this event? This action cannot be undone.</p>
             {deleteMutation.isError && (
-              <div className="mb-4 p-3" style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8 }}>
-                <p style={{ color: "#b91c1c", fontSize: 14 }}>
-                  {(deleteMutation.error as any)?.response?.data?.error?.message || "Failed to delete event"}
-                </p>
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+                <p className="text-red-600 text-sm font-medium">{deleteMutation.error?.message || "Failed to delete event"}</p>
               </div>
             )}
             <div className="flex gap-3 justify-end">
               <Button variant="secondary" onClick={() => setDeleteModalOpen(false)} disabled={deleteMutation.isPending}>
                 Cancel
               </Button>
-              <Button variant="danger" onClick={handleDeleteConfirm} disabled={deleteMutation.isPending}>
+              <Button variant="danger" onClick={() => eventToDelete && deleteMutation.mutate(eventToDelete)} disabled={deleteMutation.isPending}>
                 {deleteMutation.isPending ? "Deleting..." : "Delete Event"}
               </Button>
             </div>
@@ -272,25 +277,27 @@ export const AdminEventsDashboardPage: React.FC = () => {
       )}
 
       {cancelModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center" style={{ zIndex: 50 }}>
-          <div className="bg-white rounded-lg p-6 max-w-md" style={{ width: "90%", maxWidth: 420 }}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-[90%]">
             <h3 className="text-lg font-semibold mb-4">Cancel Event</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to cancel this event? Existing registrations and invoices will remain intact, but no new
               registrations will be accepted.
             </p>
             {cancelMutation.isError && (
-              <div className="mb-4 p-3" style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8 }}>
-                <p style={{ color: "#b91c1c", fontSize: 14 }}>
-                  {(cancelMutation.error as any)?.response?.data?.error?.message || "Failed to cancel event"}
-                </p>
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded">
+                <p className="text-red-600 text-sm font-medium">{cancelMutation.error?.message || "Failed to cancel event"}</p>
               </div>
             )}
             <div className="flex gap-3 justify-end">
               <Button variant="secondary" onClick={() => setCancelModalOpen(false)} disabled={cancelMutation.isPending}>
                 No, Keep Event
               </Button>
-              <Button onClick={handleCancelConfirm} disabled={cancelMutation.isPending} variant="secondary">
+              <Button
+                onClick={() => eventToCancel && cancelMutation.mutate(eventToCancel)}
+                disabled={cancelMutation.isPending}
+                variant="secondary"
+              >
                 {cancelMutation.isPending ? "Cancelling..." : "Yes, Cancel Event"}
               </Button>
             </div>
