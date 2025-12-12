@@ -49,7 +49,7 @@ const json = async (res: Response) => {
   return res.json();
 };
 
-const authHeaders = (): Record<string, string> => {
+export const authHeaders = (): Record<string, string> => {
   const tokens = getSessionTokens();
   const headers: Record<string, string> = {};
   if (tokens?.access_token) headers.Authorization = `Bearer ${tokens.access_token}`;

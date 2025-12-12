@@ -9,7 +9,6 @@ import { useSession } from "../hooks/useSession";
 import { EventDetailDto } from "../../../../libs/shared/src/models";
 import { formatEventDateRange } from "../utils/eventDate";
 import { listEventsAdmin, publishEvent, API_BASE_URL } from "../api/client";
-import { authHeaders } from "../session";
 // @ts-ignore react-query types not in this project; using fetch fallbacks
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
@@ -49,7 +48,10 @@ export const AdminEventsDashboardPage: React.FC = () => {
     mutationFn: (eventId: string) =>
       fetch(`${API_BASE_URL}/admin/events/${eventId}`, {
         method: "DELETE",
-        headers: { ...authHeaders(), Authorization: `Bearer ${tokens?.access_token || ""}` },
+        headers: {
+          Authorization: `Bearer ${tokens?.access_token || ""}`,
+          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
+        },
       }).then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -70,7 +72,10 @@ export const AdminEventsDashboardPage: React.FC = () => {
     mutationFn: (eventId: string) =>
       fetch(`${API_BASE_URL}/admin/events/${eventId}/cancel`, {
         method: "POST",
-        headers: { ...authHeaders(), Authorization: `Bearer ${tokens?.access_token || ""}` },
+        headers: {
+          Authorization: `Bearer ${tokens?.access_token || ""}`,
+          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
+        },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-events"] });
@@ -127,8 +132,8 @@ export const AdminEventsDashboardPage: React.FC = () => {
       <Card>
         {error && <div style={{ color: "var(--app-color-state-error)", marginBottom: "var(--space-sm)" }}>{error}</div>}
         {isLoading && <div>Loading...</div>}
-        {!isLoading && (!data?.events || data.events.length === 0) && <div>No events found.</div>}
-        {!isLoading && data?.events && data.events.length > 0 && (
+        {!isLoading && (!data || data.length === 0) && <div>No events found.</div>}
+        {!isLoading && data && data.length > 0 && (
           <TableCard>
             <div style={{ overflowX: "auto", paddingRight: "16px" }}>
               <Table>
@@ -144,7 +149,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.events.map((ev: any) => {
+                {data.map((ev: any) => {
                   const remaining =
                     ev.capacity != null ? Math.max(ev.capacity - (ev.registrationsCount || 0), 0) : null;
                   return (
