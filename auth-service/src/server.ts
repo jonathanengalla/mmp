@@ -73,6 +73,7 @@ import {
   eventCheckoutHandler,
   getEventDetailHandler,
   eventsAttendanceReportHandler,
+  listAdminEventsHandler,
   listUpcomingEventsHandler,
   publishEventHandler,
   registerEventHandler,
