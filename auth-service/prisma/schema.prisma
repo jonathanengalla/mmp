@@ -146,6 +146,7 @@ model Event {
   endsAt      DateTime
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
 
   invoices      Invoice[]
   registrations EventRegistration[]
@@ -154,6 +155,7 @@ model Event {
   @@unique([tenantId, slug], map: "Event_slug_tenantId_key")
   @@unique([id, tenantId], map: "Event_id_tenantId_key")
   @@index([tenantId, status], map: "Event_tenant_status_idx")
+  @@index([tenantId, deletedAt], map: "Event_tenant_deleted_idx")
 }
 
 model Invoice {

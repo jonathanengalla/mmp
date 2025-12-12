@@ -327,12 +327,12 @@ export const listEventsHandler = async (req: Request, res: Response) => {
     : {
         OR: [
           // Show all published events (past and future) to non-privileged users; still include recent completed.
-          { status: "PUBLISHED" },
-          { status: "COMPLETED", startsAt: { gte: recentCompletedCutoff } },
+          { status: "PUBLISHED", deletedAt: null },
+          { status: "COMPLETED", startsAt: { gte: recentCompletedCutoff }, deletedAt: null },
         ],
       };
 
-  const where = applyTenantScope({ where: baseWhere }, tenantId).where;
+  const where = applyTenantScope({ where: baseWhere as any }, tenantId).where;
   const [total, events] = await Promise.all([
     prisma.event.count({ where }),
     prisma.event.findMany({
@@ -401,6 +401,90 @@ export const createEventHandler = [
     }
   },
 ];
+
+export const listAdminEventsHandler = async (req: Request, res: Response) => {
+  const tenantId = (req as any).user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+  const events = await prisma.event.findMany({
+    where: { tenantId, deletedAt: null } as any,
+    include: {
+      _count: { select: { registrations: true, invoices: true } },
+    },
+    orderBy: { startsAt: "desc" },
+  });
+  const mapped = events.map((e) => ({
+    ...prismaEventToRecord(e),
+    registrationsCount: (e as any)._count?.registrations ?? 0,
+    invoicesCount: (e as any)._count?.invoices ?? 0,
+  }));
+  res.json({ events: mapped });
+};
+
+export const deleteEventHandler = async (req: Request, res: Response) => {
+  const { eventId } = req.params as any;
+  const tenantId = (req as any).user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+  const event = await prisma.event.findFirst({ where: { id: eventId, tenantId } });
+  if (!event) return res.status(404).json({ error: { code: "EVENT_NOT_FOUND", message: "Event not found" } });
+
+  const [invoiceCount, registrationCount] = await Promise.all([
+    prisma.invoice.count({ where: { tenantId, eventId } }),
+    prisma.eventRegistration.count({ where: { tenantId, eventId } }),
+  ]);
+
+  if (invoiceCount > 0 || registrationCount > 0) {
+    return res.status(400).json({
+      error: {
+        code: "EVENT_HAS_ACTIVITY",
+        message: "This event already has registrations or invoices. You can cancel it but not delete it.",
+      },
+    });
+  }
+
+  await prisma.event.update({ where: { id: eventId }, data: { deletedAt: new Date() } as any });
+  res.json({ success: true });
+};
+
+export const cancelEventHandler = async (req: Request, res: Response) => {
+  const { eventId } = req.params as any;
+  const tenantId = (req as any).user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+  const event = await prisma.event.findFirst({ where: { id: eventId, tenantId } });
+  if (!event) return res.status(404).json({ error: { code: "EVENT_NOT_FOUND", message: "Event not found" } });
+
+  await prisma.event.update({ where: { id: eventId }, data: { status: "CANCELLED" } });
+  res.json({ success: true });
+};
+
+export const updateEventWithCapacityHandler = async (req: Request, res: Response) => {
+  const { eventId } = req.params as any;
+  const tenantId = (req as any).user?.tenantId;
+  if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
+  const { capacity, ...rest } = req.body || {};
+  const event = await prisma.event.findFirst({
+    where: { id: eventId, tenantId },
+    include: { _count: { select: { registrations: true } } },
+  });
+  if (!event) return res.status(404).json({ error: { code: "EVENT_NOT_FOUND", message: "Event not found" } });
+
+  if (capacity !== undefined && capacity !== null) {
+    const current = (event as any)._count?.registrations ?? 0;
+    if (capacity < current) {
+      return res.status(400).json({
+        error: { code: "CAPACITY_TOO_LOW", message: `Capacity cannot be less than current registrations (${current}).` },
+      });
+    }
+  }
+
+  const updated = await prisma.event.update({
+    where: { id: eventId },
+    data: { ...(capacity !== undefined ? { capacity } : {}), ...rest } as any,
+    include: EVENT_RELATIONS,
+  });
+  const record = prismaEventToRecord(updated);
+  setEvent(record);
+  res.json(toDetailDto(record));
+};
 
 export const publishEventHandler = [
   ensureAdmin,
