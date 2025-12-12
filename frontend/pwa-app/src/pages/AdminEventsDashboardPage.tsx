@@ -9,8 +9,6 @@ import { useSession } from "../hooks/useSession";
 import { EventDetailDto } from "../../../../libs/shared/src/models";
 import { formatEventDateRange } from "../utils/eventDate";
 import { listEventsAdmin, publishEvent, API_BASE_URL } from "../api/client";
-// @ts-ignore react-query types not in this project; using fetch fallbacks
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const priceLabel = (ev: EventDetailDto) => {
   if (ev.priceCents == null) return "Free";
@@ -31,58 +29,32 @@ const formatDateTime = (value: string) =>
 export const AdminEventsDashboardPage: React.FC = () => {
   const { tokens } = useSession();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
   const [eventToCancel, setEventToCancel] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-events"],
-    queryFn: () => listEventsAdmin(tokens?.access_token || ""),
-    enabled: !!tokens?.access_token,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (eventId: string) =>
-      fetch(`${API_BASE_URL}/admin/events/${eventId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${tokens?.access_token || ""}`,
-          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
-        },
-      }).then(async (res) => {
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          const err = new Error(body?.error?.message || "Delete failed");
-          (err as any).error = body?.error;
-          throw err;
-        }
-        return res;
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
-      setDeleteModalOpen(false);
-      setEventToDelete(null);
-    },
-  });
-
-  const cancelMutation = useMutation({
-    mutationFn: (eventId: string) =>
-      fetch(`${API_BASE_URL}/admin/events/${eventId}/cancel`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${tokens?.access_token || ""}`,
-          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
-        },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
-      setCancelModalOpen(false);
-      setEventToCancel(null);
-    },
-  });
+  const loadEvents = async () => {
+    if (!tokens?.access_token) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await listEventsAdmin(tokens.access_token);
+      setItems(data || []);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load events");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDeleteClick = (eventId: string) => {
     setEventToDelete(eventId);
@@ -96,13 +68,61 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
   const handleDeleteConfirm = () => {
     if (eventToDelete) {
-      deleteMutation.mutate(eventToDelete);
+      setLoadingAction(eventToDelete);
+      fetch(`${API_BASE_URL}/admin/events/${eventToDelete}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokens?.access_token || ""}`,
+          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
+        },
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body?.error?.message || "Delete failed");
+          }
+        })
+        .then(() => {
+          setDeleteModalOpen(false);
+          setEventToDelete(null);
+          loadEvents();
+        })
+        .catch((err: any) => {
+          setError(
+            err?.message ||
+              "This event already has registrations or invoices, so it can't be deleted. Please cancel it instead."
+          );
+          loadEvents();
+        })
+        .finally(() => setLoadingAction(null));
     }
   };
 
   const handleCancelConfirm = () => {
     if (eventToCancel) {
-      cancelMutation.mutate(eventToCancel);
+      setLoadingAction(eventToCancel);
+      fetch(`${API_BASE_URL}/admin/events/${eventToCancel}/cancel`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${tokens?.access_token || ""}`,
+          ...(tokens?.tenant_id ? { "X-Tenant-Id": tokens.tenant_id } : {}),
+        },
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const body = await res.json().catch(() => ({}));
+            throw new Error(body?.error?.message || "Cancel failed");
+          }
+        })
+        .then(() => {
+          setCancelModalOpen(false);
+          setEventToCancel(null);
+          loadEvents();
+        })
+        .catch((err: any) => {
+          setError(err?.message || "Unable to cancel event right now. Please try again.");
+        })
+        .finally(() => setLoadingAction(null));
     }
   };
 
@@ -112,12 +132,17 @@ export const AdminEventsDashboardPage: React.FC = () => {
     if (!tokens?.access_token) return;
     try {
       await publishEvent(tokens.access_token, id);
-      queryClient.invalidateQueries({ queryKey: ["admin-events"] });
+      loadEvents();
     } catch (err) {
       console.error(err);
       setError("Publish failed");
     }
   };
+
+  useEffect(() => {
+    loadEvents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tokens?.access_token]);
 
   return (
     <Page
@@ -131,9 +156,9 @@ export const AdminEventsDashboardPage: React.FC = () => {
     >
       <Card>
         {error && <div style={{ color: "var(--app-color-state-error)", marginBottom: "var(--space-sm)" }}>{error}</div>}
-        {isLoading && <div>Loading...</div>}
-        {!isLoading && (!data || data.length === 0) && <div>No events found.</div>}
-        {!isLoading && data && data.length > 0 && (
+        {loading && <div>Loading...</div>}
+        {!loading && (!items || items.length === 0) && <div>No events found.</div>}
+        {!loading && items && items.length > 0 && (
           <TableCard>
             <div style={{ overflowX: "auto", paddingRight: "16px" }}>
               <Table>
@@ -149,7 +174,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((ev: any) => {
+                {items.map((ev: any) => {
                   const remaining =
                     ev.capacity != null ? Math.max(ev.capacity - (ev.registrationsCount || 0), 0) : null;
                   return (
