@@ -11,6 +11,7 @@
     "build": "prisma generate && tsc -b",
     "start": "node dist/auth-service/src/server.js",
     "test": "echo \"No tests configured for auth-service\"",
+    "test:attendance": "node -r ts-node/register --test tests/attendanceHandlers.test.ts",
     "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma --skip-seed",
     "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "prisma:generate": "prisma generate",

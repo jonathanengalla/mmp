@@ -688,6 +688,15 @@ We do not delete them, we just mark them clearly as archived so nobody uses them
 
 ---
 
+### EVT-03 Backend Notes (Jan 2025)
+
+- Attendance report API returns member id/name/email, registration timestamp, `checkedInAt`, and invoice id/number/status/amount for paid events.
+- Filtering/search is currently client-side; acceptable for expected admin row counts (< a few hundred). If volume grows, add server-side filters for status and search (name/email/invoice).
+- Attendance endpoints are gated to ADMIN/EVENT_MANAGER/OFFICER and never touch invoices.
+- Tests (node:test via ts-node) cover: mark/undo happy path and 404, bulk mark validation, and paid vs unpaid summary in reports for paid events.
+
+---
+
 ## 11. Working Agreements
 
 To keep this consistent:
