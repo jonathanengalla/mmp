@@ -79,6 +79,7 @@ import {
   updateCapacityHandler,
   updatePricingHandler,
   updateEventBannerHandler,
+  uploadEventBannerHandler,
   updateEventTagsHandler,
   updateEventRegistrationModeHandler,
   updateEventBasicsHandler,
@@ -242,6 +243,7 @@ eventsRouter.patch("/events/:id", requireEventManagerOrAdmin, updateEventBasicsH
 eventsRouter.patch("/events/:id/capacity", requireEventManagerOrAdmin, updateCapacityHandler);
 eventsRouter.patch("/events/:id/pricing", requireEventManagerOrAdmin, updatePricingHandler);
 eventsRouter.patch("/events/:id/banner", requireEventManagerOrAdmin, updateEventBannerHandler);
+eventsRouter.post("/events/:id/banner/upload", requireEventManagerOrAdmin, uploadEventBannerHandler);
 eventsRouter.patch("/events/:id/tags", requireEventManagerOrAdmin, updateEventTagsHandler);
 eventsRouter.patch("/events/:id/registration-mode", requireEventManagerOrAdmin, updateEventRegistrationModeHandler);
 eventsRouter.post("/events/:id/register", registerEventHandler);

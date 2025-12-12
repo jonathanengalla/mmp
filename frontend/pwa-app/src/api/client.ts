@@ -467,6 +467,19 @@ export const updateEventBanner = async (
   return json(res);
 };
 
+export const uploadEventBanner = async (
+  token: string,
+  eventId: string,
+  imageData: string
+): Promise<{ url: string }> => {
+  const res = await fetch(`${API_BASE_URL}/events/${eventId}/banner/upload`, {
+    method: "POST",
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ imageData }),
+  });
+  return json(res);
+};
+
 export const updateEventTags = async (token: string, eventId: string, tags: string[]): Promise<EventDetailDto> => {
   const res = await fetch(`${API_BASE_URL}/events/${eventId}/tags`, {
     method: "PATCH",

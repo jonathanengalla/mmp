@@ -15,6 +15,7 @@ import {
   updateEventPricing,
   updateEventRegistrationMode,
   updateEventTags,
+  uploadEventBanner,
 } from "../api/client";
 import { EventDetailDto } from "../../../../libs/shared/src/models";
 
@@ -28,6 +29,8 @@ export const AdminEditEventPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [bannerError, setBannerError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -44,6 +47,7 @@ export const AdminEditEventPage: React.FC = () => {
   });
 
   const canSave = useMemo(() => !!form.title && !!form.startDate, [form.title, form.startDate]);
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   const load = async () => {
     if (!tokens?.access_token || !id) {
@@ -71,6 +75,42 @@ export const AdminEditEventPage: React.FC = () => {
       setError(err?.message || err?.error?.message || "Failed to load event");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const onSelectBannerFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !tokens?.access_token || !id) return;
+    const file = e.target.files[0];
+    setBannerError(null);
+    const validTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      setBannerError("Please upload JPG, PNG, or WEBP.");
+      return;
+    }
+    const maxBytes = 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      setBannerError("Please upload an image under 5 MB.");
+      return;
+    }
+    try {
+      setUploadingBanner(true);
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("Failed to read file"));
+        reader.readAsDataURL(file);
+      });
+      const resp = await uploadEventBanner(tokens.access_token, id, dataUrl);
+      setForm((prev) => ({ ...prev, bannerImageUrl: resp.url }));
+      setToast({ msg: "Banner uploaded", type: "success" });
+    } catch (err: any) {
+      setBannerError(err?.message || "Upload failed");
+      setToast({ msg: err?.message || "Upload failed", type: "error" });
+    } finally {
+      setUploadingBanner(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -211,8 +251,63 @@ export const AdminEditEventPage: React.FC = () => {
                   <input name="location" className="pr-input" value={form.location} onChange={onChange} placeholder="Venue or link" />
                 </FormField>
               </div>
-              <FormField label="Banner image URL">
-                <input name="bannerImageUrl" className="pr-input" value={form.bannerImageUrl} onChange={onChange} placeholder="https://..." />
+              <FormField label="Banner image">
+                <div style={{ display: "grid", gap: "var(--space-sm)" }}>
+                  {form.bannerImageUrl ? (
+                    <img
+                      src={form.bannerImageUrl}
+                      alt="Banner preview"
+                      style={{ width: "100%", maxWidth: 360, borderRadius: "8px", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        maxWidth: 360,
+                        height: 160,
+                        borderRadius: "8px",
+                        background: "var(--app-color-surface-2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "var(--app-color-text-muted)",
+                      }}
+                    >
+                      No banner uploaded yet
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center" }}>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={uploadingBanner}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {uploadingBanner ? "Uploading..." : "Change banner"}
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      style={{ display: "none" }}
+                      onChange={onSelectBannerFile}
+                    />
+                    <div style={{ color: "var(--app-color-text-muted)", fontSize: 12 }}>
+                      JPG, PNG, or WEBP. Max 5 MB.
+                    </div>
+                  </div>
+                  <div>
+                    <input
+                      name="bannerImageUrl"
+                      className="pr-input"
+                      value={form.bannerImageUrl}
+                      onChange={onChange}
+                      placeholder="Or paste an image URL..."
+                    />
+                  </div>
+                  {bannerError && <div style={{ color: "var(--app-color-state-error)" }}>{bannerError}</div>}
+                </div>
               </FormField>
             </div>
           </Card>

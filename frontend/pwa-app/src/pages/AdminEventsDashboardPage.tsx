@@ -7,6 +7,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHeadCell, TableCell, Tabl
 import { Tag } from "../components/ui/Tag";
 import { useSession } from "../hooks/useSession";
 import { EventDetailDto } from "../../../../libs/shared/src/models";
+import { formatEventDateRange } from "../utils/eventDate";
 import { listEventsAdmin, publishEvent } from "../api/client";
 
 const priceLabel = (ev: EventDetailDto) => {
@@ -118,8 +119,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                         </Tag>
                       </TableCell>
                       <TableCell style={{ minWidth: 180 }}>
-                        {formatDateTime(ev.startDate)}
-                        {ev.endDate ? ` - ${formatDateTime(ev.endDate)}` : ""}
+                        {formatEventDateRange(ev.startDate, ev.endDate)}
                       </TableCell>
                       <TableCell style={{ minWidth: 130 }}>
                         {ev.registrationsCount}/{ev.capacity ?? "—"}

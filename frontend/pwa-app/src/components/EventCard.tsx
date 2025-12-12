@@ -2,6 +2,7 @@ import React from "react";
 import { Card } from "./primitives/Card";
 import { Tag } from "./primitives/Tag";
 import { Button } from "./primitives/Button";
+import { formatEventDateRange, isPastEvent as computePast } from "../utils/eventDate";
 
 export interface EventCardProps {
   id: string;
@@ -28,23 +29,6 @@ export interface EventCardProps {
   secondaryLabel?: string;
   disabled?: boolean;
 }
-
-const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString("en-PH", {
-    timeZone: "Asia/Manila",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-
-const formatDateRange = (start: string, end?: string | null) => {
-  const startStr = formatDateTime(start);
-  if (!end) return startStr;
-  return `${startStr} - ${formatDateTime(end)}`;
-};
 
 const formatPrice = (priceCents?: number | null, currency?: string | null) => {
   if (priceCents == null) return "Free";
@@ -75,12 +59,17 @@ export const EventCard: React.FC<EventCardProps> = ({
   secondaryLabel,
   disabled,
 }) => {
-  const isPastEvent = new Date(startDate).getTime() < Date.now();
   const isCompleted = (status || "").toLowerCase() === "completed";
+  const isPastEvent = computePast(endDate, startDate) || isCompleted;
   const isFree = priceCents === 0 || priceCents === null || priceCents === undefined;
-  const showInvoicePill = !isCompleted && !isFree && (invoiceRequired ?? registrationMode === "pay_now");
-  const showFreeTag = !isCompleted && isFree;
-  const modeLabel = registrationMode === "pay_now" ? "Invoice required" : "RSVP";
+  const showInvoicePill =
+    (status || "").toLowerCase() === "published" &&
+    !isPastEvent &&
+    !isFree &&
+    (priceCents || 0) > 0 &&
+    (invoiceRequired ?? registrationMode === "pay_now");
+  const showFreeTag = !isPastEvent && isFree;
+  const modeLabel = registrationMode === "pay_now" ? "Pay now" : "RSVP";
   const paymentLabel =
     paymentStatus === "paid"
       ? "Paid"
@@ -146,19 +135,25 @@ export const EventCard: React.FC<EventCardProps> = ({
               )}
             </div>
             <div style={{ display: "flex", gap: "var(--space-xxs)", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {!isCompleted && showInvoicePill && <Tag variant="warning">{modeLabel}</Tag>}
-              {!isCompleted && showFreeTag && <Tag variant="info">Free event</Tag>}
+              {showInvoicePill && (
+                <Tag variant="warning" size="sm">
+                  {modeLabel}
+                </Tag>
+              )}
+              {showFreeTag && (
+                <Tag variant="info" size="sm">
+                  Free event
+                </Tag>
+              )}
               {isRegistered && <Tag variant="success">{registrationLabel}</Tag>}
               {paymentLabel && <Tag variant={paymentStatus === "paid" ? "success" : "warning"}>{paymentLabel}</Tag>}
               {isCompleted && <Tag variant="default">Completed</Tag>}
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "var(--space-md)", flexWrap: "wrap", color: "var(--app-color-text-muted)" }}>
-            <span>{formatDateRange(startDate, endDate)}</span>
-            <span>•</span>
+          <div style={{ display: "grid", gap: "4px", color: "var(--app-color-text-muted)" }}>
+            <span>{formatEventDateRange(startDate, endDate)}</span>
             <span>{location || "Location TBA"}</span>
-            <span>•</span>
             <span>{formatPrice(priceCents, currency)}</span>
           </div>
 

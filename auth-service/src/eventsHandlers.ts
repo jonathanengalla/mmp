@@ -76,6 +76,11 @@ const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
   }
   return next();
 };
+const requireEventManagerOrAdmin = (req: Request, res: Response, next: NextFunction) => {
+  const roles = getMemberContext(req).roles;
+  if (hasAnyRole(roles, ["ADMIN", "EVENT_MANAGER"])) return next();
+  return res.status(403).json({ error: { message: "Forbidden" } });
+};
 
 const slugifyTitle = (title: string, fallback: string) => {
   const base = title
@@ -683,16 +688,17 @@ export const getEventDetailHandler = async (req: Request, res: Response) => {
 };
 
 export const updateEventBannerHandler = [
-  ensureAdmin,
+  requireEventManagerOrAdmin,
   async (req: Request, res: Response) => {
     const { id } = req.params;
     const tenantId = (req as any).user?.tenantId;
     if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
-    const { bannerImageUrl } = req.body || {};
+    const { bannerImageUrl, bannerUrl } = req.body || {};
+    const nextUrl = bannerUrl ?? bannerImageUrl ?? null;
     try {
       const updated = await prisma.event.update({
         where: { id_tenantId: { id, tenantId } },
-        data: { bannerUrl: bannerImageUrl ?? null },
+        data: { bannerUrl: nextUrl },
         include: EVENT_RELATIONS,
       });
       const record = setEvent(prismaEventToRecord(updated));
@@ -702,6 +708,33 @@ export const updateEventBannerHandler = [
       console.error("[events] updateEventBannerHandler error", err);
       return res.status(500).json({ error: { message: "Unable to update banner" } });
     }
+  },
+];
+
+export const uploadEventBannerHandler = [
+  requireEventManagerOrAdmin,
+  async (req: Request, res: Response) => {
+    const { imageData } = req.body || {};
+    if (!imageData || typeof imageData !== "string") {
+      return res.status(400).json({ error: { message: "Image data is required" } });
+    }
+    const isDataUrl = imageData.startsWith("data:image/");
+    const allowed = ["png", "jpg", "jpeg", "webp"];
+    const matches = imageData.match(/^data:image\\/(png|jpg|jpeg|webp);base64,/i);
+    if (!isDataUrl || !matches || !allowed.includes(matches[1].toLowerCase())) {
+      return res.status(400).json({ error: { message: "Invalid image type. Use JPG, PNG, or WEBP." } });
+    }
+    // Rough size check: base64 overhead ~1.37x
+    const sizeBytes = (imageData.length * 3) / 4;
+    const maxBytes = 5 * 1024 * 1024; // 5MB
+    if (sizeBytes > maxBytes) {
+      return res
+        .status(400)
+        .json({ error: { message: "Image too large. Please upload under 5 MB." } });
+    }
+    // In this implementation we simply echo back the data URL.
+    // If backed by blob storage, integrate upload here and return the stored URL.
+    return res.json({ url: imageData });
   },
 ];
 
