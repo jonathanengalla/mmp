@@ -145,7 +145,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                   <th className="px-4 py-3 text-left w-[12%]">Capacity</th>
                   <th className="px-4 py-3 text-right w-[10%]">Price</th>
                   <th className="px-4 py-3 text-right w-[10%]">Revenue</th>
-                  <th className="px-4 py-3 text-right w-[16%] whitespace-nowrap min-w-[160px]">Actions</th>
+                  <th className="px-4 py-3 text-right w-[16%] whitespace-nowrap min-w-[220px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,12 +211,12 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
                         <td className="px-4 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
 
-                        <td className="px-4 py-3 text-right align-top whitespace-nowrap min-w-[160px]">
-                          <div className="flex gap-1 justify-end items-center">
+                        <td className="px-4 py-3 text-right align-top whitespace-nowrap min-w-[220px]">
+                          <div className="flex flex-nowrap gap-1 justify-end items-center">
                             <button
                               title="Edit"
                               aria-label="Edit"
-                              className="h-9 w-9 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 flex items-center justify-center"
+                              className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 inline-flex items-center justify-center"
                               onClick={() => navigate(`/admin/events/${ev.id}/edit`)}
                             >
                               <span aria-hidden>✏️</span>
@@ -224,7 +224,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                             <button
                               title="Attendance"
                               aria-label="Attendance"
-                              className="h-9 w-9 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 flex items-center justify-center"
+                              className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 inline-flex items-center justify-center"
                               onClick={() => navigate(`/admin/events/${ev.id}/attendance`)}
                             >
                               <span aria-hidden>📋</span>
@@ -232,7 +232,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                             <button
                               title="View"
                               aria-label="View"
-                              className="h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 flex items-center justify-center"
+                              className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center"
                               onClick={() => navigate(`/events/${ev.slug || ev.id}`)}
                             >
                               <span aria-hidden>👁️</span>
@@ -249,7 +249,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                                 title="Cancel event"
                                 aria-label="Cancel event"
                                 onClick={() => handleCancelClick(ev.id)}
-                                className="h-9 w-9 rounded-full border border-gray-200 bg-white text-orange-600 hover:bg-orange-50 flex items-center justify-center"
+                                className="h-8 w-8 rounded-full border border-gray-200 bg-white text-orange-600 hover:bg-orange-50 flex items-center justify-center"
                               >
                                 <span aria-hidden>⛔</span>
                               </button>
