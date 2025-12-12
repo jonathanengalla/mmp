@@ -389,9 +389,9 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
     `${daysFromNow(30).toISOString().split("T")[0]}T11:00:00+08:00`
   );
 
-  const galaStart = new Date("2025-06-15T18:00:00+08:00");
-  const galaEnd = new Date("2025-06-16T00:00:00+08:00"); // midnight next day
-  const insightsDate = "2025-10-03";
+  const galaStart = new Date("2025-12-20T18:00:00+08:00");
+  const galaEnd = new Date("2025-12-21T00:00:00+08:00"); // midnight next day
+  const insightsDate = "2026-10-03";
   const insightsStart = new Date(`${insightsDate}T19:00:00+08:00`);
   const insightsEnd = new Date(`${insightsDate}T20:00:00+08:00`);
 
@@ -399,41 +399,41 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
     {
       title: "RCME Annual Gala Dinner 2025",
       slug: "gala-dinner-2025",
-      status: EventStatus.COMPLETED,
+      status: EventStatus.PUBLISHED,
       startsAt: galaStart,
       endsAt: galaEnd,
       priceCents: 250000,
       currency: "PHP",
-      capacity: 100,
+      capacity: 120,
       description: "Annual fundraising gala with dinner and awards",
       location: "Makati Shangri-La Hotel",
       bannerUrl:
         "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=1400&q=80",
-      registrations: 40,
-      paidCount: 35,
+      registrations: 120, // full
+      paidCount: 120,
     },
     {
-      title: "RCME Fellowship Lunch - November 2025",
-      slug: "fellowship-lunch-nov-2025",
-      status: EventStatus.COMPLETED,
-      startsAt: new Date("2025-11-15T12:00:00+08:00"),
-      endsAt: new Date("2025-11-15T14:00:00+08:00"),
+      title: "Global Insights: Security Considerations for Expats in the Philippines",
+      slug: "global-insights-security-expats",
+      status: EventStatus.PUBLISHED,
+      startsAt: insightsStart,
+      endsAt: insightsEnd,
       priceCents: 150000,
       currency: "PHP",
-      capacity: 50,
-      description: "Monthly fellowship lunch with guest speaker",
-      location: "Diamond Hotel Manila",
+      capacity: 120,
+      description: "Global Insights with Kirk Monroe on security considerations for expats in the Philippines",
+      location: "Location TBA",
       bannerUrl:
-        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80",
-      registrations: 30,
-      paidCount: 20,
+        "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80",
+      registrations: 80, // partially filled
+      paidCount: 40,
     },
     {
       title: "RCME Coffee Meetup - Upcoming",
       slug: "coffee-meetup-upcoming",
       status: EventStatus.PUBLISHED,
-      startsAt: upcomingStart,
-      endsAt: upcomingEnd,
+      startsAt: new Date("2026-02-15T10:00:00+08:00"),
+      endsAt: new Date("2026-02-15T12:00:00+08:00"),
       priceCents: 0,
       currency: "PHP",
       capacity: 30,
@@ -441,40 +441,24 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
       location: "Starbucks BGC",
       bannerUrl:
         "https://images.unsplash.com/photo-1459257868276-5e65389e2722?auto=format&fit=crop&w=1400&q=80",
-      registrations: 12,
+      registrations: 5, // open seats
       paidCount: 0,
     },
     {
-      title: "Global Insights: Genetic Insights for a World Without Cancer",
-      slug: "global-insights-genetic-cancer",
+      title: "RCME Fellowship Lunch - Past Event",
+      slug: "fellowship-lunch-past-2024",
       status: EventStatus.COMPLETED,
-      startsAt: new Date("2025-09-16T19:00:00+08:00"),
-      endsAt: new Date("2025-09-16T20:00:00+08:00"),
+      startsAt: new Date("2024-11-15T18:00:00+08:00"),
+      endsAt: new Date("2024-11-15T21:00:00+08:00"),
       priceCents: 150000,
       currency: "PHP",
-      capacity: 60,
-      description: "Genetic Insights for a World Without Cancer with Dr Que and the Genetic Cancer Research team",
-      location: "Location TBA",
+      capacity: 50,
+      description: "Past fellowship event for historical reference",
+      location: "Diamond Hotel Manila",
       bannerUrl:
-        "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80",
-      registrations: 40,
-      paidCount: 30,
-    },
-    {
-      title: "Global Insights: Security Considerations for Expats in the Philippines",
-      slug: "global-insights-security-expats",
-      status: EventStatus.COMPLETED,
-      startsAt: insightsStart,
-      endsAt: insightsEnd,
-      priceCents: 150000,
-      currency: "PHP",
-      capacity: 60,
-      description: "Global Insights with Kirk Monroe on security considerations for expats in the Philippines",
-      location: "Location TBA",
-      bannerUrl:
-        "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80",
-      registrations: 30,
-      paidCount: 22,
+        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80",
+      registrations: 50, // full, past
+      paidCount: 40,
     },
   ];
 

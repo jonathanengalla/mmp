@@ -13,6 +13,46 @@ Member-facing event cards and admin event management flows with clear delete/can
 - Capacity states include over-capacity warning in red.
 - Registration button disabled when closed/full/cancelled.
 
+### Member Events Grid v2 - Compact Card Layout
+**Last Updated:** January 12, 2025
+
+#### Responsive Grid Rules
+- Desktop (≥1280px): 3 cards per row
+- Laptop (≥1024px, <1280px): 2 cards per row
+- Tablet (≥640px, <1024px): 2 cards per row
+- Mobile (<640px): 1 card per row
+- Implementation: `grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6`
+
+#### Card Sizing & Layout
+- Banner: Fixed `h-40` with `object-cover`
+- Title: 2-line clamp (`line-clamp-2`)
+- Description: 2-line clamp
+- Details block: Tight spacing (`space-y-1.5`)
+- Button: Always at bottom (`mt-auto`)
+
+#### Capacity Display Rules
+- Normal (available seats): "{filled} of {total} seats filled ({available} left)"
+- Full/over: "Full ({filled} of {total} seats filled)" (never negative)
+- No limit: "No limit" when capacity is null
+- If registrations > capacity: still show "Full"
+- Registration label: "Registration full" when filled >= capacity
+
+#### Registration Button Logic
+- Enabled when: status=PUBLISHED, now < startsAt, and (capacity is null OR registrations < capacity)
+- Disabled when: now >= startsAt → "Registration closed"; registrations >= capacity → "Registration full"; status=CANCELLED → "Event cancelled"
+
+#### Seed Data Requirements (RCME)
+To exercise all states:
+1) Gala Dinner – Full (120/120)
+2) Global Insights – Partially filled (80/120, future date)
+3) Coffee Meetup – Registration open (5/30, future date)
+4) Past Event – Past reference (e.g., 50/50)
+
+Typography:
+- Title `text-lg font-semibold`; description `text-sm text-gray-600`
+- Labels: keys `text-xs font-semibold text-gray-500`; values `text-sm text-gray-700`
+- Chips: `text-xs` with appropriate color classes
+
 ## Admin Events Dashboard
 - Container: max-w-[1440px] with horizontal scroll fallback.
 - Columns: Title (chips), When, Capacity, Price, Revenue, Actions.

@@ -284,32 +284,34 @@ const EventsPage: React.FC = () => {
       )}
       {!loading && !error && filteredItems.length === 0 && <Card>No events found.</Card>}
       {!loading && !error && filteredItems.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map((ev) => {
-            const slugOrId = ev.slug || ev.event_id || ev.id;
-            const detailPath = `/events/${slugOrId}`;
-            const checkoutPath = `/events/${slugOrId}/checkout`;
-            const regMode = ev.registrationMode === "pay_now" ? "pay_now" : "rsvp";
-            const eventForCard = {
-              id: ev.id || ev.event_id,
-              title: ev.title,
-              description: ev.description || undefined,
-              bannerUrl: ev.bannerImageUrl || undefined,
-              startsAt: ev.startDate,
-              endsAt: ev.endDate || ev.startDate,
-              location: ev.location || undefined,
-              priceCents: ev.priceCents ?? 0,
-              capacity: ev.capacity ?? null,
-              status: ev.status?.toUpperCase?.(),
-              registrations: ev.registrationsCount ?? 0,
-            };
+        <div className="max-w-6xl mx-auto px-4 pb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+            {filteredItems.map((ev) => {
+              const slugOrId = ev.slug || ev.event_id || ev.id;
+              const detailPath = `/events/${slugOrId}`;
+              const checkoutPath = `/events/${slugOrId}/checkout`;
+              const regMode = ev.registrationMode === "pay_now" ? "pay_now" : "rsvp";
+              const eventForCard = {
+                id: ev.id || ev.event_id,
+                title: ev.title,
+                description: ev.description || undefined,
+                bannerUrl: ev.bannerImageUrl || undefined,
+                startsAt: ev.startDate,
+                endsAt: ev.endDate || ev.startDate,
+                location: ev.location || undefined,
+                priceCents: ev.priceCents ?? 0,
+                capacity: ev.capacity ?? null,
+                status: ev.status?.toUpperCase?.(),
+                registrations: ev.registrationsCount ?? 0,
+              };
 
-            const handleRegister = () => {
-              navigate(regMode === "pay_now" && !ev.isRegistered ? checkoutPath : detailPath);
-            };
+              const handleRegister = () => {
+                navigate(regMode === "pay_now" && !ev.isRegistered ? checkoutPath : detailPath);
+              };
 
-            return <EventCard key={eventForCard.id} event={eventForCard} onRegister={handleRegister} />;
-          })}
+              return <EventCard key={eventForCard.id} event={eventForCard} onRegister={handleRegister} />;
+            })}
+          </div>
         </div>
       )}
       {toast && <Toast message={toast.msg} type={toast.type} onClose={() => setToast(null)} />}

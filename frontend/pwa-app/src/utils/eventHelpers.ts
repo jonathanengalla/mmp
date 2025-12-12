@@ -63,21 +63,16 @@ export function getEventStateLabels(
   // Mode label
   const modeLabel = event.priceCents > 0 ? "Paid event" : "Free event";
 
-  // Capacity label
+  // Capacity label (no negative seats)
   let capacityLabel = "No limit";
   if (event.capacity !== null) {
-    const filled = registrations;
     const total = event.capacity;
-    const available = total - filled;
+    const filled = registrations;
 
-    if (filled > total) {
-      // Over capacity
-      capacityLabel = `Over capacity: ${filled} of ${total} seats filled`;
-    } else if (filled === total) {
-      // Full
+    if (filled >= total) {
       capacityLabel = `Full (${filled} of ${total} seats filled)`;
     } else {
-      // Available
+      const available = Math.max(0, total - filled);
       capacityLabel = `${filled} of ${total} seats filled (${available} left)`;
     }
   }
