@@ -222,10 +222,12 @@ export const AdminEventsDashboardPage: React.FC = () => {
                               <span aria-hidden>✏️</span>
                             </button>
                             <button
-                              className="text-blue-600 hover:underline text-sm"
+                              title="Attendance"
+                              aria-label="Attendance"
+                              className="h-9 w-9 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 flex items-center justify-center"
                               onClick={() => navigate(`/admin/events/${ev.id}/attendance`)}
                             >
-                              Attendance
+                              <span aria-hidden>📋</span>
                             </button>
                             <button
                               title="View"
