@@ -73,6 +73,9 @@ import {
   eventCheckoutHandler,
   getEventDetailHandler,
   eventsAttendanceReportHandler,
+  deleteEventHandler,
+  cancelEventHandler,
+  updateEventWithCapacityHandler,
   listAdminEventsHandler,
   listUpcomingEventsHandler,
   publishEventHandler,
@@ -236,6 +239,9 @@ eventsRouter.get("/events/me/summary", getEventsSelfSummary);
 eventsRouter.get("/events/upcoming", listUpcomingEventsHandler);
 eventsRouter.get("/events", listEventsHandler);
 eventsRouter.get("/admin/events", requireEventManagerOrAdmin, listAdminEventsHandler);
+eventsRouter.delete("/admin/events/:eventId", requireEventManagerOrAdmin, deleteEventHandler);
+eventsRouter.post("/admin/events/:eventId/cancel", requireEventManagerOrAdmin, cancelEventHandler);
+eventsRouter.put("/admin/events/:eventId", requireEventManagerOrAdmin, updateEventWithCapacityHandler);
 eventsRouter.post("/events/:id/checkout", eventCheckoutHandler);
 eventsRouter.get("/events/slug/:slug", getEventDetailHandler);
 eventsRouter.get("/events/:id", getEventDetailHandler);

@@ -325,11 +325,9 @@ export const listEventsHandler = async (req: Request, res: Response) => {
   const baseWhere: any = isPrivileged
     ? {}
     : {
-        OR: [
-          // Show all published events (past and future) to non-privileged users; still include recent completed.
-          { status: "PUBLISHED", deletedAt: null },
-          { status: "COMPLETED", startsAt: { gte: recentCompletedCutoff }, deletedAt: null },
-        ],
+        // Member-facing: only published and not soft-deleted
+        status: "PUBLISHED",
+        deletedAt: null,
       };
 
   const where = applyTenantScope({ where: baseWhere as any }, tenantId).where;

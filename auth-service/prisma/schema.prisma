@@ -51,6 +51,7 @@ enum EventStatus {
   DRAFT
   PUBLISHED
   CANCELLED
+  ARCHIVED
   COMPLETED
 }
 
@@ -136,7 +137,7 @@ model Event {
   slug        String
   description String?
   location    String?
-  status      EventStatus  @default(DRAFT)
+  status      EventStatus  @default(PUBLISHED)
   bannerUrl   String?
   capacity    Int?
   priceCents  Int?
