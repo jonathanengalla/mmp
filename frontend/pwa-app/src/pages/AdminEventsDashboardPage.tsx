@@ -137,7 +137,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
           {!isLoading && events.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[1200px]">
+              <table className="w-full min-w-[1400px]">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-3 text-left w-[30%]">Title</th>
@@ -145,7 +145,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                   <th className="px-4 py-3 text-left w-[12%]">Capacity</th>
                   <th className="px-4 py-3 text-right w-[10%]">Price</th>
                   <th className="px-4 py-3 text-right w-[10%]">Revenue</th>
-                  <th className="px-4 py-3 text-right w-[16%] whitespace-nowrap min-w-[220px]">Actions</th>
+                  <th className="px-4 py-3 text-right whitespace-nowrap min-w-[240px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,7 +211,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
                         <td className="px-4 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
 
-                        <td className="px-4 py-3 text-right align-top whitespace-nowrap min-w-[220px]">
+                        <td className="px-4 py-3 text-right align-top whitespace-nowrap min-w-[240px]">
                           <div className="flex flex-nowrap gap-1 justify-end items-center">
                             <button
                               title="Edit"
