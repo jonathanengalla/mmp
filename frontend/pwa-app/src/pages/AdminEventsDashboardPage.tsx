@@ -81,16 +81,19 @@ export const AdminEventsDashboardPage: React.FC = () => {
         {!loading && items.length === 0 && <div>No events found.</div>}
         {!loading && items.length > 0 && (
           <TableCard>
-            <Table>
+            <div style={{ overflowX: "auto", paddingRight: "16px" }}>
+              <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHeadCell>Title</TableHeadCell>
-                  <TableHeadCell>Status</TableHeadCell>
-                  <TableHeadCell>Mode</TableHeadCell>
-                  <TableHeadCell>Start</TableHeadCell>
-                  <TableHeadCell>Capacity</TableHeadCell>
-                  <TableHeadCell>Price</TableHeadCell>
-                  <TableHeadCell align="right">Actions</TableHeadCell>
+                  <TableHeadCell style={{ minWidth: 240 }}>Title</TableHeadCell>
+                  <TableHeadCell style={{ minWidth: 110 }}>Status</TableHeadCell>
+                  <TableHeadCell style={{ minWidth: 110 }}>Mode</TableHeadCell>
+                  <TableHeadCell style={{ minWidth: 180 }}>Start</TableHeadCell>
+                  <TableHeadCell style={{ minWidth: 130 }}>Capacity</TableHeadCell>
+                  <TableHeadCell style={{ minWidth: 110 }}>Price</TableHeadCell>
+                  <TableHeadCell align="right" style={{ minWidth: 110, width: 120 }}>
+                    Actions
+                  </TableHeadCell>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -99,32 +102,39 @@ export const AdminEventsDashboardPage: React.FC = () => {
                     ev.capacity != null ? Math.max(ev.capacity - (ev.registrationsCount || 0), 0) : null;
                   return (
                     <TableRow key={ev.id}>
-                      <TableCell>
+                      <TableCell style={{ minWidth: 240 }}>
                         <Button variant="link" onClick={() => navigate(`/events/${ev.slug || ev.id}`)}>
                           {ev.title}
                         </Button>
                       </TableCell>
-                      <TableCell>
+                      <TableCell style={{ minWidth: 110 }}>
                         <Tag variant={ev.status === "published" ? "success" : ev.status === "draft" ? "warning" : "default"}>
                           {ev.status}
                         </Tag>
                       </TableCell>
-                      <TableCell>
+                      <TableCell style={{ minWidth: 110 }}>
                         <Tag variant={ev.registrationMode === "pay_now" ? "warning" : "info"} size="sm">
                           {ev.registrationMode === "pay_now" ? "Pay-now" : "RSVP"}
                         </Tag>
                       </TableCell>
-                      <TableCell>
+                      <TableCell style={{ minWidth: 180 }}>
                         {formatDateTime(ev.startDate)}
                         {ev.endDate ? ` - ${formatDateTime(ev.endDate)}` : ""}
                       </TableCell>
-                      <TableCell>
+                      <TableCell style={{ minWidth: 130 }}>
                         {ev.registrationsCount}/{ev.capacity ?? "—"}
                         {remaining != null && <div style={{ color: "var(--app-color-text-muted)" }}>{remaining} remaining</div>}
                       </TableCell>
-                      <TableCell>{priceLabel(ev)}</TableCell>
-                      <TableCell align="right">
-                        <div style={{ display: "flex", gap: "var(--space-xs)", justifyContent: "flex-end" }}>
+                      <TableCell style={{ minWidth: 110 }}>{priceLabel(ev)}</TableCell>
+                      <TableCell align="right" style={{ minWidth: 110, width: 120 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "var(--space-2xs)",
+                            justifyContent: "flex-end",
+                            paddingRight: "4px",
+                          }}
+                        >
                           {ev.status === "draft" && (
                             <Button size="sm" onClick={() => onPublish(ev.id)}>
                               Publish
@@ -142,7 +152,8 @@ export const AdminEventsDashboardPage: React.FC = () => {
                   );
                 })}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
           </TableCard>
         )}
       </Card>

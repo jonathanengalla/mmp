@@ -407,6 +407,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
       capacity: 100,
       description: "Annual fundraising gala with dinner and awards",
       location: "Makati Shangri-La Hotel",
+      bannerUrl:
+        "https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=1400&q=80",
       registrations: 40,
       paidCount: 35,
     },
@@ -421,6 +423,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
       capacity: 50,
       description: "Monthly fellowship lunch with guest speaker",
       location: "Diamond Hotel Manila",
+      bannerUrl:
+        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80",
       registrations: 30,
       paidCount: 20,
     },
@@ -435,6 +439,8 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
       capacity: 30,
       description: "Casual coffee networking for members",
       location: "Starbucks BGC",
+      bannerUrl:
+        "https://images.unsplash.com/photo-1459257868276-5e65389e2722?auto=format&fit=crop&w=1400&q=80",
       registrations: 12,
       paidCount: 0,
     },
@@ -442,15 +448,33 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
       title: "Global Insights: Genetic Insights for a World Without Cancer",
       slug: "global-insights-genetic-cancer",
       status: EventStatus.COMPLETED,
+      startsAt: new Date("2025-09-16T19:00:00+08:00"),
+      endsAt: new Date("2025-09-16T20:00:00+08:00"),
+      priceCents: 150000,
+      currency: "PHP",
+      capacity: 60,
+      description: "Genetic Insights for a World Without Cancer with Dr Que and the Genetic Cancer Research team",
+      location: "Location TBA",
+      bannerUrl:
+        "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80",
+      registrations: 40,
+      paidCount: 30,
+    },
+    {
+      title: "Global Insights: Security Considerations for Expats in the Philippines",
+      slug: "global-insights-security-expats",
+      status: EventStatus.COMPLETED,
       startsAt: insightsStart,
       endsAt: insightsEnd,
       priceCents: 150000,
       currency: "PHP",
       capacity: 60,
-      description: "Presentation on security considerations for expats in the Philippines",
+      description: "Global Insights with Kirk Monroe on security considerations for expats in the Philippines",
       location: "Location TBA",
-      registrations: 40,
-      paidCount: 30,
+      bannerUrl:
+        "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1400&q=80",
+      registrations: 30,
+      paidCount: 22,
     },
   ];
 
@@ -477,6 +501,7 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
         capacity: evt.capacity,
         description: evt.description,
         location: evt.location,
+        bannerUrl: evt.bannerUrl ?? null,
       },
       create: {
         tenantId,
@@ -490,6 +515,7 @@ async function seedEvents(tenantId: string, memberIds: string[]) {
         capacity: evt.capacity,
         description: evt.description,
         location: evt.location,
+        bannerUrl: evt.bannerUrl ?? null,
       },
     });
     createdEvents.push({

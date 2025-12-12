@@ -154,8 +154,7 @@ const prismaEventToRecord = (e: any): EventRecord => {
 };
 
 const loadEventFromDbIntoStore = async (tenantId: string, idOrSlug: string, bySlug = false): Promise<EventRecord | null> => {
-  const existing = bySlug ? getEventBySlug(idOrSlug) : getEventById(idOrSlug);
-  if (existing) return existing;
+  // Always attempt to refresh from DB so capacity/registrations stay current
   const where = bySlug ? { slug: idOrSlug } : { id: idOrSlug };
   const event = await prisma.event.findFirst(
     applyTenantScope(
@@ -166,9 +165,12 @@ const loadEventFromDbIntoStore = async (tenantId: string, idOrSlug: string, bySl
       tenantId
     )
   );
-  if (!event) return null;
-  const record = prismaEventToRecord(event);
-  return setEvent(record);
+  if (event) {
+    const record = prismaEventToRecord(event);
+    return setEvent(record);
+  }
+  // Fallback to any cached copy if DB lookup fails
+  return bySlug ? getEventBySlug(idOrSlug) ?? null : getEventById(idOrSlug) ?? null;
 };
 
 const toUpcomingDto = (e: EventRecord, currentMemberId?: string | null): UpcomingEventDto => {
