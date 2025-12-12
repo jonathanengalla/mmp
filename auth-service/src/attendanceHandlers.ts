@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaEventStatus, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "./db/prisma";
 import type { AuthenticatedRequest } from "./authMiddleware";
 
@@ -142,7 +142,7 @@ export const getAttendanceReport = async (req: AuthenticatedRequest, res: Respon
         priceCents: event.priceCents,
         capacity: event.capacity,
         eventType: (event as any).eventType || "IN_PERSON",
-        status: event.status || PrismaEventStatus.PUBLISHED,
+        status: event.status || "PUBLISHED",
       },
       summary: {
         capacity: event.capacity,
