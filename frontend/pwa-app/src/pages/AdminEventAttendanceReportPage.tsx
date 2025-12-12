@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_BASE_URL } from "../api/client";
@@ -38,6 +38,8 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "attended" | "not">("all");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["attendance", eventId],
@@ -88,14 +90,56 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
     },
   });
 
+  const filteredAttendees = useMemo(() => {
+    if (!data?.attendees) return [];
+    const term = search.trim().toLowerCase();
+    return data.attendees.filter((a) => {
+      const matchesSearch =
+        !term ||
+        a.member.firstName.toLowerCase().includes(term) ||
+        a.member.lastName.toLowerCase().includes(term) ||
+        a.member.email.toLowerCase().includes(term) ||
+        (a.invoice?.invoiceNumber || "").toLowerCase().includes(term);
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "attended" && !!a.checkedInAt) ||
+        (statusFilter === "not" && !a.checkedInAt);
+      return matchesSearch && matchesStatus;
+    });
+  }, [data?.attendees, search, statusFilter]);
+
   const handleToggleSelect = (id: string) => {
     const next = new Set(selectedIds);
     next.has(id) ? next.delete(id) : next.add(id);
     setSelectedIds(next);
   };
-  const handleSelectAll = () => data && setSelectedIds(new Set(data.attendees.map((a) => a.registrationId)));
+  const handleSelectAll = () => setSelectedIds(new Set(filteredAttendees.map((a) => a.registrationId)));
   const handleDeselectAll = () => setSelectedIds(new Set());
   const handleBulkMark = () => selectedIds.size > 0 && bulkMarkMutation.mutate(Array.from(selectedIds));
+
+  const handleExportCsv = () => {
+    if (!data) return;
+    const rows = [
+      ["Member", "Email", "Registered At", "Checked In At", "Invoice #", "Invoice Status", "Amount"],
+      ...filteredAttendees.map((a) => [
+        `${a.member.firstName} ${a.member.lastName}`,
+        a.member.email,
+        new Date(a.registeredAt).toISOString(),
+        a.checkedInAt ? new Date(a.checkedInAt).toISOString() : "",
+        a.invoice?.invoiceNumber || "",
+        a.invoice?.status || "",
+        a.invoice ? formatCurrency(a.invoice.amountCents) : "",
+      ]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${(c || "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${data.event.title.replace(/\s+/g, "-").toLowerCase()}-attendance.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   if (isLoading) {
     return (
@@ -185,22 +229,47 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <div className="flex items-center gap-4">
-            <button onClick={handleSelectAll} className="text-sm text-blue-600 hover:text-blue-800">
-              Select All
-            </button>
-            <button onClick={handleDeselectAll} className="text-sm text-gray-600 hover:text-gray-800">
-              Deselect All
-            </button>
-            {selectedIds.size > 0 && (
-              <button
-                onClick={handleBulkMark}
-                disabled={bulkMarkMutation.isPending}
-                className="ml-auto px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+            <div className="flex gap-2 flex-1">
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search name, email, invoice #"
+                className="w-full md:max-w-sm rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as any)}
+                className="rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {bulkMarkMutation.isPending ? "Marking..." : `Mark ${selectedIds.size} as Attended`}
+                <option value="all">All</option>
+                <option value="attended">Attended</option>
+                <option value="not">Not attended</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-3">
+              <button onClick={handleSelectAll} className="text-sm text-blue-600 hover:text-blue-800">
+                Select All
               </button>
-            )}
+              <button onClick={handleDeselectAll} className="text-sm text-gray-600 hover:text-gray-800">
+                Deselect All
+              </button>
+              <button
+                onClick={handleExportCsv}
+                className="text-sm text-gray-700 border border-gray-300 rounded px-3 py-2 hover:bg-gray-50"
+              >
+                Export CSV
+              </button>
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={handleBulkMark}
+                  disabled={bulkMarkMutation.isPending}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
+                >
+                  {bulkMarkMutation.isPending ? "Marking..." : `Mark ${selectedIds.size} as Attended`}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -218,7 +287,7 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {attendees.map((attendee) => (
+                {filteredAttendees.map((attendee) => (
                   <tr key={attendee.registrationId} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <input
@@ -304,7 +373,9 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
               </tbody>
             </table>
           </div>
-          {attendees.length === 0 && <div className="text-center py-12 text-gray-500">No registrations for this event yet.</div>}
+          {filteredAttendees.length === 0 && (
+            <div className="text-center py-12 text-gray-500">No registrations match your filters.</div>
+          )}
         </div>
       </div>
     </div>

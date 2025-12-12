@@ -214,10 +214,12 @@ export const AdminEventsDashboardPage: React.FC = () => {
                         <td className="px-4 py-3 text-right align-top">
                           <div className="flex gap-2 justify-end flex-wrap">
                             <button
-                              className="text-blue-600 hover:underline text-sm"
+                              title="Edit"
+                              aria-label="Edit"
+                              className="h-9 w-9 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 flex items-center justify-center"
                               onClick={() => navigate(`/admin/events/${ev.id}/edit`)}
                             >
-                              Edit
+                              <span aria-hidden>✏️</span>
                             </button>
                             <button
                               className="text-blue-600 hover:underline text-sm"
@@ -226,10 +228,12 @@ export const AdminEventsDashboardPage: React.FC = () => {
                               Attendance
                             </button>
                             <button
-                              className="text-gray-600 hover:underline text-sm"
+                              title="View"
+                              aria-label="View"
+                              className="h-9 w-9 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 flex items-center justify-center"
                               onClick={() => navigate(`/events/${ev.slug || ev.id}`)}
                             >
-                              View
+                              <span aria-hidden>👁️</span>
                             </button>
                             {isDeletable ? (
                               <button
@@ -240,10 +244,12 @@ export const AdminEventsDashboardPage: React.FC = () => {
                               </button>
                             ) : ev.status !== "CANCELLED" ? (
                               <button
+                                title="Cancel event"
+                                aria-label="Cancel event"
                                 onClick={() => handleCancelClick(ev.id)}
-                                className="text-orange-600 hover:underline text-sm"
+                                className="h-9 w-9 rounded-full border border-gray-200 bg-white text-orange-600 hover:bg-orange-50 flex items-center justify-center"
                               >
-                                Cancel
+                                <span aria-hidden>⛔</span>
                               </button>
                             ) : (
                               <span className="text-gray-400 text-sm">Cancelled</span>
