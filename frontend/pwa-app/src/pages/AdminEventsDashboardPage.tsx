@@ -145,7 +145,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                     <th className="px-4 py-3 text-left w-[12%]">Capacity</th>
                     <th className="px-4 py-3 text-right w-[10%]">Price</th>
                     <th className="px-4 py-3 text-right w-[10%]">Revenue</th>
-                    <th className="px-4 py-3 text-right w-[18%]">Actions</th>
+                    <th className="px-4 py-3 text-right w-[16%]">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -211,8 +211,8 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
                         <td className="px-4 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
 
-                        <td className="px-4 py-3 text-right align-top">
-                          <div className="flex gap-2 justify-end flex-wrap">
+                        <td className="px-4 py-3 text-right align-top whitespace-nowrap">
+                          <div className="flex gap-1 justify-end items-center">
                             <button
                               title="Edit"
                               aria-label="Edit"
