@@ -5,7 +5,7 @@ import { listEvents, getEventsAdminSummary, getMyEventsSummary } from "../api/cl
 import { useSession } from "../hooks/useSession";
 import { Toast } from "../components/Toast";
 import EventCard from "../components/EventCard";
-import { PageShell, Card, Button, Input, Badge } from "../ui";
+import { PageShell, Card, Button, Input } from "../ui";
 
 const EventsPage: React.FC = () => {
   const { tokens, hasRole } = useSession();
@@ -284,86 +284,31 @@ const EventsPage: React.FC = () => {
       )}
       {!loading && !error && filteredItems.length === 0 && <Card>No events found.</Card>}
       {!loading && !error && filteredItems.length > 0 && (
-        <div
-          style={{
-            display: "grid",
-            gap: "var(--app-space-md)",
-            gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredItems.map((ev) => {
             const slugOrId = ev.slug || ev.event_id || ev.id;
             const detailPath = `/events/${slugOrId}`;
             const checkoutPath = `/events/${slugOrId}/checkout`;
             const regMode = ev.registrationMode === "pay_now" ? "pay_now" : "rsvp";
-            const status = ev.status || (new Date(ev.startDate).getTime() < Date.now() ? "completed" : undefined);
-            const isPayNow = regMode === "pay_now";
-            const remainingCapacity = ev.capacity != null ? Math.max(ev.capacity - (ev.registrationsCount || 0), 0) : null;
-            const primaryLabel =
-              regMode === "pay_now"
-                ? ev.isRegistered
-                  ? "View details"
-                  : "Register (invoice required)"
-                : ev.isRegistered
-                ? "Manage"
-                : "RSVP";
-            const secondaryLabel =
-              regMode === "pay_now"
-                ? ev.isRegistered
-                  ? "View invoice"
-                  : undefined
-                : ev.isRegistered
-                ? "Cancel RSVP"
-                : undefined;
+            const eventForCard = {
+              id: ev.id || ev.event_id,
+              title: ev.title,
+              description: ev.description || undefined,
+              bannerUrl: ev.bannerImageUrl || undefined,
+              startsAt: ev.startDate,
+              endsAt: ev.endDate || ev.startDate,
+              location: ev.location || undefined,
+              priceCents: ev.priceCents ?? 0,
+              capacity: ev.capacity ?? null,
+              status: ev.status?.toUpperCase?.(),
+              registrations: ev.registrationsCount ?? 0,
+            };
 
-            return (
-              <EventCard
-                key={ev.id || ev.event_id}
-                id={ev.id || ev.event_id}
-                slug={ev.slug}
-                title={ev.title}
-                status={status}
-                description={ev.description}
-                startDate={ev.startDate}
-                endDate={ev.endDate}
-                location={ev.location}
-                bannerImageUrl={ev.bannerImageUrl}
-                tags={ev.tags}
-                registrationMode={regMode}
-                isRegistered={ev.isRegistered}
-                registrationStatus={ev.registrationStatus || undefined}
-                paymentStatus={ev.paymentStatus || undefined}
-                remainingCapacity={remainingCapacity}
-                priceCents={ev.priceCents}
-                currency={ev.currency}
-                invoiceRequired={regMode === "pay_now"}
-                primaryLabel={primaryLabel}
-                secondaryLabel={secondaryLabel}
-                onPrimaryClick={() => navigate(isPayNow && !ev.isRegistered ? checkoutPath : detailPath)}
-                onSecondaryClick={
-                  secondaryLabel
-                    ? () => {
-                        if (regMode === "pay_now") {
-                          navigate("/invoices");
-                        } else {
-                          navigate(detailPath);
-                        }
-                      }
-                    : undefined
-                }
-                footer={
-                  <div style={{ display: "flex", gap: "var(--app-space-xs)", flexWrap: "wrap", alignItems: "center" }}>
-                    {ev.tags &&
-                      ev.tags.map((t) => (
-                        <Badge key={t} variant="info">
-                          {t}
-                        </Badge>
-                      ))}
-                    <Badge variant={ev.status === "completed" ? "secondary" : "success"}>{ev.status}</Badge>
-                  </div>
-                }
-              />
-            );
+            const handleRegister = () => {
+              navigate(regMode === "pay_now" && !ev.isRegistered ? checkoutPath : detailPath);
+            };
+
+            return <EventCard key={eventForCard.id} event={eventForCard} onRegister={handleRegister} />;
           })}
         </div>
       )}

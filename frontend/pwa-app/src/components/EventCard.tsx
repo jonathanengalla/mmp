@@ -1,211 +1,108 @@
 import React from "react";
-import { Card } from "./primitives/Card";
-import { Tag } from "./primitives/Tag";
-import { Button } from "./primitives/Button";
-import { formatEventDateRange, isPastEvent as computePast } from "../utils/eventDate";
+import { formatCurrency, formatEventDateRange, getEventStateLabels } from "../utils/eventHelpers";
 
-export interface EventCardProps {
+interface Event {
   id: string;
-  slug?: string | null;
   title: string;
-  status?: string | null;
-  description?: string | null;
-  startDate: string;
-  endDate?: string | null;
-  location?: string | null;
-  bannerImageUrl?: string | null;
-  tags?: string[] | null;
-  registrationMode: "rsvp" | "pay_now";
-  isRegistered?: boolean;
-  registrationStatus?: string | null;
-  paymentStatus?: string | null;
-  remainingCapacity?: number | null;
-  priceCents?: number | null;
-  currency?: string | null;
-  invoiceRequired?: boolean | null;
-  onPrimaryClick: () => void;
-  onSecondaryClick?: () => void;
-  primaryLabel: string;
-  secondaryLabel?: string;
-  disabled?: boolean;
+  description?: string;
+  bannerUrl?: string;
+  startsAt: string;
+  endsAt: string;
+  location?: string;
+  priceCents: number;
+  capacity: number | null;
+  status?: string;
+  registrations?: number;
 }
 
-const formatPrice = (priceCents?: number | null, currency?: string | null) => {
-  if (priceCents == null) return "Free";
-  const unit = currency || "PHP";
-  return `${unit} ${(priceCents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-};
+interface EventCardProps {
+  event: Event;
+  onRegister?: () => void;
+}
 
-export const EventCard: React.FC<EventCardProps> = ({
-  title,
-  status,
-  description,
-  startDate,
-  endDate,
-  location,
-  bannerImageUrl,
-  tags,
-  registrationMode,
-  isRegistered,
-  registrationStatus,
-  paymentStatus,
-  remainingCapacity,
-  priceCents,
-  currency,
-  invoiceRequired,
-  onPrimaryClick,
-  onSecondaryClick,
-  primaryLabel,
-  secondaryLabel,
-  disabled,
-}) => {
-  const isCompleted = (status || "").toLowerCase() === "completed";
-  const isPastEvent = computePast(endDate, startDate) || isCompleted;
-  const isFree = priceCents === 0 || priceCents === null || priceCents === undefined;
-  const showInvoicePill =
-    (status || "").toLowerCase() === "published" &&
-    !isPastEvent &&
-    !isFree &&
-    (priceCents || 0) > 0 &&
-    (invoiceRequired ?? registrationMode === "pay_now");
-  const showFreeTag = !isPastEvent && isFree;
-  const modeLabel = registrationMode === "pay_now" ? "Pay now" : "RSVP";
-  const paymentLabel =
-    paymentStatus === "paid"
-      ? "Paid"
-      : paymentStatus === "pending"
-      ? "Payment pending"
-      : paymentStatus === "unpaid"
-      ? "Payment outstanding"
-      : null;
-
-  const registrationLabel = isRegistered ? registrationStatus || "Registered" : "Not registered";
+export function EventCard({ event, onRegister }: EventCardProps) {
+  const labels = getEventStateLabels(event);
+  const isRegistrationOpen = labels.registrationLabel === "Registration open";
 
   return (
-    <Card>
-      <div style={{ display: "grid", gap: "var(--space-md)" }}>
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            paddingTop: "32%",
-            background: "var(--app-color-surface-1)",
-            borderRadius: "var(--radius-large)",
-            overflow: "hidden",
-            border: "1px solid var(--app-color-border-subtle)",
-          }}
-        >
-          {bannerImageUrl ? (
-            <img
-              src={bannerImageUrl}
-              alt={title}
-              style={{
-                position: "absolute",
-                inset: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "cover",
-              }}
-            />
-          ) : (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background:
-                  "linear-gradient(135deg, var(--app-color-surface-2) 0%, var(--app-color-surface-3, var(--app-color-surface-2)) 100%)",
-                color: "var(--app-color-text-muted)",
-                fontWeight: 600,
-              }}
-            >
-              Upcoming Event
-            </div>
-          )}
+    <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Banner */}
+      {event.bannerUrl && (
+        <img src={event.bannerUrl} alt={event.title} className="w-full h-48 object-cover" />
+      )}
+
+      <div className="p-4">
+        {/* Title */}
+        <h3 className="text-lg font-semibold line-clamp-2 mb-2">{event.title}</h3>
+
+        {/* Description */}
+        {event.description && <p className="text-sm text-gray-600 line-clamp-2 mb-3">{event.description}</p>}
+
+        {/* Inline chips */}
+        <div className="flex gap-2 mb-4">
+          <span
+            className={`inline-block px-2 py-1 text-xs rounded ${
+              labels.eventStatusLabel === "Upcoming"
+                ? "bg-blue-100 text-blue-800"
+                : labels.eventStatusLabel === "Past event"
+                ? "bg-gray-100 text-gray-800"
+                : "bg-red-100 text-red-800"
+            }`}
+          >
+            {labels.eventStatusLabel}
+          </span>
+          <span className="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-800">{labels.modeLabel}</span>
         </div>
 
-        <div style={{ display: "grid", gap: "var(--space-sm)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "var(--space-sm)" }}>
-            <div style={{ display: "grid", gap: "var(--space-xxs)" }}>
-              <div style={{ fontSize: "var(--font-body-lg)", fontWeight: 700 }}>{title}</div>
-              {description && (
-                <div style={{ color: "var(--app-color-text-muted)", lineHeight: 1.4 }}>{description}</div>
-              )}
-            </div>
-            <div style={{ display: "flex", gap: "var(--space-xxs)", flexWrap: "wrap", justifyContent: "flex-end" }}>
-              {showInvoicePill && (
-                <Tag variant="warning" size="sm">
-                  {modeLabel}
-                </Tag>
-              )}
-              {showFreeTag && (
-                <Tag variant="info" size="sm">
-                  Free event
-                </Tag>
-              )}
-              {isRegistered && <Tag variant="success">{registrationLabel}</Tag>}
-              {paymentLabel && <Tag variant={paymentStatus === "paid" ? "success" : "warning"}>{paymentLabel}</Tag>}
-              {isCompleted && <Tag variant="default">Completed</Tag>}
-            </div>
+        {/* Labeled details */}
+        <div className="space-y-2 text-sm">
+          <div>
+            <span className="font-semibold">When:</span> {formatEventDateRange(event.startsAt, event.endsAt)}
           </div>
 
-          <div style={{ display: "grid", gap: "4px", color: "var(--app-color-text-muted)" }}>
-            <span>{formatEventDateRange(startDate, endDate)}</span>
-            <span>{location || "Location TBA"}</span>
-            <span>{formatPrice(priceCents, currency)}</span>
+          <div>
+            <span className="font-semibold">Location:</span> {event.location || "Location TBA"}
           </div>
 
-          {tags && tags.length > 0 && (
-            <div style={{ display: "flex", gap: "var(--space-xxs)", flexWrap: "wrap" }}>
-              {tags.map((tag) => (
-                <Tag key={tag} variant="info" size="sm">
-                  {tag}
-                </Tag>
-              ))}
-            </div>
-          )}
-
-          <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap", alignItems: "center" }}>
-            {remainingCapacity != null && (
-              <Tag variant={remainingCapacity > 0 ? "default" : "danger"} size="sm">
-                {remainingCapacity > 0 ? `${remainingCapacity} seats left` : "Full"}
-              </Tag>
-            )}
-            {isRegistered && registrationStatus === "cancelled" && (
-              <Tag variant="warning" size="sm">
-                Registration cancelled
-              </Tag>
-            )}
-            {(isPastEvent || isCompleted) && (
-              <Tag variant="default" size="sm">
-                Event ended
-              </Tag>
-            )}
+          <div>
+            <span className="font-semibold">Cost:</span> {event.priceCents > 0 ? formatCurrency(event.priceCents / 100) : "Free"}
           </div>
 
-          {!isPastEvent && !isCompleted && (
-            <div style={{ display: "flex", gap: "var(--space-sm)", flexWrap: "wrap" }}>
-              <Button onClick={onPrimaryClick} disabled={disabled}>
-                {primaryLabel}
-              </Button>
-              {secondaryLabel && onSecondaryClick && (
-                <Button variant="secondary" onClick={onSecondaryClick} disabled={disabled}>
-                  {secondaryLabel}
-                </Button>
-              )}
-            </div>
-          )}
-          {(isPastEvent || isCompleted) && (
-            <div style={{ color: "var(--app-color-text-muted)" }}>
-              Registration closed
-            </div>
+          <div>
+            <span className="font-semibold">Capacity:</span>{" "}
+            <span className={labels.capacityLabel.startsWith("Over capacity") ? "text-red-600" : ""}>
+              {labels.capacityLabel}
+            </span>
+          </div>
+
+          <div>
+            <span className="font-semibold">Registration:</span> {labels.registrationLabel}
+          </div>
+        </div>
+
+        {/* Action button */}
+        <div className="mt-4">
+          {isRegistrationOpen ? (
+            <button
+              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+              onClick={onRegister}
+              type="button"
+            >
+              Register
+            </button>
+          ) : (
+            <button
+              className="w-full bg-gray-300 text-gray-600 py-2 rounded cursor-not-allowed"
+              disabled
+              type="button"
+            >
+              {labels.registrationLabel}
+            </button>
           )}
         </div>
       </div>
-    </Card>
+    </div>
   );
-};
+}
 
 export default EventCard;
