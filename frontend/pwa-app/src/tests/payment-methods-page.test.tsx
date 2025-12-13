@@ -126,6 +126,9 @@ describe("PaymentMethodsPage", () => {
       expect(screen.getAllByText(/MasterCard/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/5555/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/Personal/i).length).toBeGreaterThan(0);
+      
+      // Verify Mastercard badge shows "MC" (not "MAST")
+      expect(screen.getAllByText("MC").length).toBeGreaterThan(0);
     });
 
     it("shows Default tag next to the default method", async () => {

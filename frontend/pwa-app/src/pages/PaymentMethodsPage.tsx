@@ -13,6 +13,7 @@ import { Card } from "../components/primitives/Card";
 import { FormField } from "../components/primitives/FormField";
 import { Button } from "../components/primitives/Button";
 import { Tag } from "../components/primitives/Tag";
+import { getCardBrandLabel } from "../utils/cardBrand";
 
 interface FormState {
   brand: string;
@@ -299,7 +300,7 @@ export const PaymentMethodsPage: React.FC = () => {
                     fontWeight: "var(--font-weight-bold)",
                     color: "var(--app-color-text-secondary)",
                   }}>
-                    {method.brand.slice(0, 4).toUpperCase()}
+                    {getCardBrandLabel(method.brand)}
                   </div>
                   <div>
                     <div style={{ 
