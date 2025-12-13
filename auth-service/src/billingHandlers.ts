@@ -857,6 +857,9 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
     const allInvoices = await prisma.invoice.findMany({
       where: baseWhere,
     });
+    
+    // Debug: Log total invoices found
+    console.log(`[FIN-01 Debug] Total invoices in period: ${allInvoices.length}, period: ${period.type} (${period.from.toISOString()} to ${period.to.toISOString()})`);
 
     // PAY-10: Batch load allocations for all invoices
     const invoiceIds = allInvoices.map((inv) => inv.id);
