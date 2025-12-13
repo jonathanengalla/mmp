@@ -54,6 +54,7 @@ const snapshotPrisma = () => ({
   eventRegistrationFindMany: prisma.eventRegistration.findMany,
   eventRegistrationFindFirst: prisma.eventRegistration.findFirst,
   eventRegistrationUpdate: prisma.eventRegistration.update,
+  eventRegistrationCount: prisma.eventRegistration.count,
 });
 
 const restore = (originals: Record<string, any>) => {
@@ -61,6 +62,7 @@ const restore = (originals: Record<string, any>) => {
   (prisma.eventRegistration as any).findMany = originals.eventRegistrationFindMany;
   (prisma.eventRegistration as any).findFirst = originals.eventRegistrationFindFirst;
   (prisma.eventRegistration as any).update = originals.eventRegistrationUpdate;
+  (prisma.eventRegistration as any).count = originals.eventRegistrationCount;
 };
 
 
@@ -121,7 +123,8 @@ test("bulkGenerateEventInvoices creates invoices for registrations without invoi
   let updateCalls: any[] = [];
   (prisma.eventRegistration as any).findFirst = async (args: any) => {
     // Simulate double-check that registration doesn't have invoice
-    if (args.where.invoiceId?.not !== null) {
+    // When checking for existingReg with invoiceId: { not: null }, return null (no existing invoice)
+    if (args.where.invoiceId && args.where.invoiceId.not !== null && args.where.invoiceId.not !== undefined) {
       return null; // Registration doesn't have invoice
     }
     return null;
@@ -130,6 +133,7 @@ test("bulkGenerateEventInvoices creates invoices for registrations without invoi
     updateCalls.push(args);
     return { id: args.where.id, invoiceId: `inv-${args.where.id}` };
   };
+  (prisma.eventRegistration as any).count = async () => 2; // Total registrations
 
   const req = createReq({ params: { eventId: "ev1" } });
   const res = createRes();
@@ -154,16 +158,8 @@ test("bulkGenerateEventInvoices skips registrations that already have invoices",
     startsAt: new Date("2025-02-01"),
   });
 
-  (prisma.eventRegistration as any).findMany = async () => [
-    {
-      id: "reg1",
-      tenantId: "t1",
-      eventId: "ev1",
-      memberId: "m1",
-      invoiceId: "inv1", // Already has invoice
-      member: { id: "m1", firstName: "John", lastName: "Doe", email: "john@example.com" },
-    },
-  ];
+  // findMany with invoiceId: null returns empty (all already have invoices)
+  (prisma.eventRegistration as any).findMany = async () => [];
 
   const req = createReq({ params: { eventId: "ev1" } });
   const res = createRes();

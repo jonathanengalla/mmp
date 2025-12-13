@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
 import type { AuthenticatedRequest } from "./authMiddleware";
 import { createEventInvoice } from "./billingStore";
-
-const prisma = new PrismaClient();
+import { prisma } from "./db/prisma";
 
 /**
  * Bulk invoice generation for a paid RSVP event
