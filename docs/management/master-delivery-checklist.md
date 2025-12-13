@@ -54,6 +54,7 @@
 | EVT-02 | Event Creation and Registration | 🟡 | In progress; see [EVT-02 spec](../specs/events/EVT-02-event-creation-and-registration.md) |
 | EVT-03 | Attendance and Reporting | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
 | EVT-04 | Event Invoicing and Post Event Features | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
+| EVT-05A | Admin Events Dashboard Micro UI Polish | 🟢 | Title/sublabel layout, capacity two-line display with color semantics, action icon alignment & tooltips. No backend changes. See [EVT-05A spec](../specs/events/EVT-05-admin-events-dashboard-micro-ui-polish.md) |
 
 ## QA / Gates
 | Code | Status | Notes |

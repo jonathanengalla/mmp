@@ -137,17 +137,17 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
           {!isLoading && events.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full mx-auto" style={{ minWidth: 1300 }}>
+              <table className="w-full mx-auto min-w-[900px] md:min-w-[1200px] lg:min-w-[1300px]">
                 <thead className="bg-gray-50">
                   <tr>
-                  <th className="px-4 py-3.5 text-left w-[28%]">Title</th>
-                  <th className="px-4 py-3.5 text-left w-[20%]">When</th>
-                  <th className="px-4 py-3.5 text-left w-[12%]">Capacity</th>
-                  <th className="px-4 py-3.5 text-right w-[10%]">Price</th>
-                  <th className="px-4 py-3.5 text-right w-[10%]">Revenue</th>
+                  <th className="px-3 py-3 text-left w-[28%] md:px-4 md:py-3.5 font-semibold text-sm leading-tight">Title</th>
+                  <th className="px-3 py-3 text-left w-[20%] md:px-4 md:py-3.5 font-semibold text-sm leading-tight">When</th>
+                  <th className="px-3 py-3 text-left w-[12%] md:px-4 md:py-3.5 font-semibold text-sm leading-tight">Capacity</th>
+                  <th className="px-3 py-3 text-right w-[10%] md:px-4 md:py-3.5 font-semibold text-sm leading-tight">Price</th>
+                  <th className="px-3 py-3 text-right w-[10%] md:px-4 md:py-3.5 font-semibold text-sm leading-tight">Revenue</th>
                     <th
-                      className="px-4 py-3.5 whitespace-nowrap"
-                      style={{ minWidth: 260, textAlign: "center", verticalAlign: "middle" }}
+                      className="px-3 py-3 md:px-4 md:py-3.5 whitespace-nowrap font-semibold text-sm leading-tight"
+                      style={{ minWidth: 220, textAlign: "center", verticalAlign: "middle" }}
                     >
                       Actions
                     </th>
@@ -186,62 +186,49 @@ export const AdminEventsDashboardPage: React.FC = () => {
                         ? formatCurrency(ev.revenue || 0)
                         : "—";
 
+                    const statusText = labels.eventStatusLabel;
+                    const modeText = (ev.priceCents || 0) > 0 ? "Paid event" : "Free event";
+                    const sublabelText = `${statusText} · ${modeText}`;
+
                     return (
                       <tr key={ev.id} className="border-t hover:bg-gray-50">
-                        <td className="px-4 py-3.5 align-top">
+                        <td className="px-3 py-4 align-top md:px-4 md:py-5">
                           <div className="text-sm font-semibold text-slate-900 truncate" title={ev.title}>
                             {ev.title}
                           </div>
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                                labels.eventStatusLabel === "Upcoming"
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : labels.eventStatusLabel === "Past event"
-                                  ? "bg-slate-50 text-slate-600"
-                                  : labels.eventStatusLabel === "Cancelled"
-                                  ? "bg-rose-50 text-rose-700"
-                                  : "bg-amber-50 text-amber-700"
-                              }`}
-                            >
-                              {labels.eventStatusLabel}
-                            </span>
-                            <span
-                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
-                                (ev.priceCents || 0) > 0 ? "bg-indigo-50 text-indigo-700" : "bg-sky-50 text-sky-700"
-                              }`}
-                            >
-                              {(ev.priceCents || 0) > 0 ? "Paid event" : "Free event"}
-                            </span>
+                          <div className="mt-1 text-xs text-slate-500">
+                            {sublabelText}
                           </div>
                         </td>
 
-                        <td className="px-4 py-3.5 align-top text-xs text-slate-600 leading-5">
+                        <td className="px-3 py-4 align-top text-xs text-slate-600 leading-5 md:px-4 md:py-5">
                           <div>{datePart || formatEventDateRange(startsAt, endsAt)}</div>
                           {timePart && <div>{timePart}</div>}
                         </td>
 
-                        <td className="px-4 py-3.5 align-top">
+                        <td className="px-3 py-4 align-top md:px-4 md:py-5">
                           {ev.capacity != null ? (
                             <>
                               <div className="text-sm font-medium text-slate-900">
-                                {ev.registrationsCount ?? 0} / {ev.capacity}
+                                {ev.registrationsCount ?? 0} / {ev.capacity} seats
                               </div>
-                              <div className="mt-0.5 flex items-center gap-1">
-                                {ev.registrationsCount && ev.registrationsCount >= ev.capacity ? (
-                                  <span className="text-xs font-medium text-rose-700">Full</span>
-                                ) : (
-                                  <>
-                                    <span className="text-xs text-slate-500">
-                                      {(ev.capacity - (ev.registrationsCount || 0)).toString()} seats left
-                                    </span>
-                                    {ev.capacity - (ev.registrationsCount || 0) <= 10 && (
-                                      <span className="inline-flex rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
-                                        Limited
-                                      </span>
-                                    )}
-                                  </>
-                                )}
+                              <div className="mt-0.5">
+                                {(() => {
+                                  const filled = ev.registrationsCount ?? 0;
+                                  const capacity = ev.capacity;
+                                  const remaining = capacity - filled;
+                                  const remainingPercent = capacity > 0 ? (remaining / capacity) * 100 : 0;
+                                  
+                                  if (remaining <= 0) {
+                                    return <span className="text-xs font-medium text-red-600">0 left</span>;
+                                  } else if (remainingPercent >= 10 && remainingPercent <= 30) {
+                                    return <span className="text-xs font-medium text-amber-600">{remaining} left</span>;
+                                  } else if (remainingPercent < 10) {
+                                    return <span className="text-xs font-medium text-red-600">{remaining} left</span>;
+                                  } else {
+                                    return <span className="text-xs text-slate-600">{remaining} left</span>;
+                                  }
+                                })()}
                               </div>
                             </>
                           ) : (
@@ -249,7 +236,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                           )}
                         </td>
 
-                        <td className="px-4 py-3.5 text-right align-top">
+                        <td className="px-3 py-4 text-right align-top md:px-4 md:py-5">
                           {(ev.priceCents || 0) > 0 ? (
                             <span className="text-sm font-medium text-slate-900">{priceValue}</span>
                           ) : (
@@ -257,7 +244,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                           )}
                         </td>
 
-                        <td className="px-4 py-3.5 text-right align-top">
+                        <td className="px-3 py-4 text-right align-top md:px-4 md:py-5">
                           {ev.revenueCents && ev.revenueCents > 0 ? (
                             <span className="text-sm font-medium text-slate-900">{revenueValue}</span>
                           ) : (
@@ -266,47 +253,41 @@ export const AdminEventsDashboardPage: React.FC = () => {
                         </td>
 
                         <td
-                          className="px-4 py-3.5 align-top"
-                          style={{ minWidth: 260, whiteSpace: "nowrap", textAlign: "center", verticalAlign: "middle" }}
+                          className="px-3 py-4 align-top md:px-4 md:py-5"
+                          style={{ minWidth: 220, whiteSpace: "nowrap", textAlign: "center", verticalAlign: "middle" }}
                         >
                           <div className="flex flex-nowrap gap-2 justify-end items-center" style={{ whiteSpace: "nowrap" }}>
                             <button
                               title="Edit"
                               aria-label="Edit"
-                              className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 inline-flex items-center justify-center"
+                              className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 inline-flex items-center justify-center transition-colors"
                               onClick={() => navigate(`/admin/events/${ev.id}/edit`)}
                             >
                               <span aria-hidden>✏️</span>
                             </button>
                             <button
-                              title="Attendance"
-                              aria-label="Attendance"
-                              className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-blue-600 hover:bg-blue-50 inline-flex items-center justify-center"
-                              onClick={() => navigate(`/admin/events/${ev.id}/attendance`)}
-                            >
-                              <span aria-hidden>📋</span>
-                            </button>
-                            <button
                               title="View"
                               aria-label="View"
-                              className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center"
+                              className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center transition-colors"
                               onClick={() => navigate(`/events/${ev.slug || ev.id}`)}
                             >
                               <span aria-hidden>👁️</span>
                             </button>
                             {isDeletable ? (
                               <button
+                                title="Delete"
+                                aria-label="Delete"
                                 onClick={() => handleDeleteClick(ev.id)}
-                                className="text-red-600 hover:underline text-sm"
+                                className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-red-600 hover:bg-red-50 inline-flex items-center justify-center transition-colors"
                               >
-                                Delete
+                                <span aria-hidden>🗑️</span>
                               </button>
                             ) : ev.status !== "CANCELLED" ? (
                               <button
-                                title="Cancel event"
-                                aria-label="Cancel event"
+                                title="Cancel"
+                                aria-label="Cancel"
                                 onClick={() => handleCancelClick(ev.id)}
-                                className="h-8 w-8 rounded-full border border-gray-200 bg-white text-orange-600 hover:bg-orange-50 flex items-center justify-center"
+                                className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-orange-600 hover:bg-orange-50 inline-flex items-center justify-center transition-colors"
                               >
                                 <span aria-hidden>⛔</span>
                               </button>

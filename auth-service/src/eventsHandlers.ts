@@ -29,17 +29,7 @@ import {
   updateEvent,
   setEvent,
 } from "./eventsStore";
-const billingHandlers = {
-  createEventInvoice: (..._args: any[]) => {
-    console.warn("[payments-billing] createEventInvoice stub hit; payments-billing-service not implemented yet.");
-    throw new Error("Billing not implemented");
-  },
-  getInvoiceById: (..._args: any[]) => {
-    console.warn("[payments-billing] getInvoiceById stub hit; payments-billing-service not implemented yet.");
-    return null;
-  },
-};
-const { createEventInvoice, getInvoiceById } = billingHandlers;
+import { createEventInvoice as createEventInvoiceFromStore, getInvoiceById } from "./billingStore";
 import { sendEmail } from "./notifications/emailSender";
 import { buildEventInvoiceEmail, buildEventRsvpEmail } from "./notifications/emailTemplates";
 
@@ -622,19 +612,90 @@ export const registerEventHandler = async (req: Request, res: Response) => {
   const tenantId = (req as any).user?.tenantId;
   if (!memberId) return res.status(401).json({ error: { message: "Unauthorized" } });
   if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
-  const event = (await loadEventFromDbIntoStore(tenantId, id)) || getEventById(id);
-  if (!event) return res.status(404).json({ error: { message: "Event not found" } });
-  const statusUpper = (event.status || "").toString().toUpperCase();
+
+  // Load event from database
+  const eventData = await prisma.event.findFirst({
+    where: { id, tenantId },
+    include: { registrations: { include: { member: true, invoice: true } } },
+  });
+  if (!eventData) return res.status(404).json({ error: { message: "Event not found" } });
+
+  const statusUpper = (eventData.status || "").toString().toUpperCase();
   if (statusUpper !== "PUBLISHED") return res.status(400).json({ error: { message: "Event not open for registration" } });
 
-  const regMode: "rsvp" | "pay_now" = event.registrationMode === "pay_now" ? "pay_now" : "rsvp";
-  const paymentStatus: "unpaid" | "pending" | "paid" = regMode === "pay_now" ? "pending" : "unpaid";
-
-  const updated = addRegistration(id, memberId, name, email, regMode, paymentStatus);
-  if (!updated) {
-    return res.status(400).json({ error: { message: "Event not found or capacity reached" } });
+  // Check capacity
+  if (eventData.capacity != null && eventData.registrations.length >= eventData.capacity) {
+    return res.status(400).json({ error: { message: "Event capacity reached" } });
   }
-  res.json(toDetailDto(updated, memberId));
+
+  // Check if already registered (not cancelled)
+  const existingRegistration = eventData.registrations.find((r) => r.memberId === memberId);
+  if (existingRegistration && existingRegistration.status !== "CANCELLED") {
+    return res.status(400).json({ error: { message: "Already registered for this event" } });
+  }
+
+  const regMode: "rsvp" | "pay_now" = eventData.registrationMode === "PAY_NOW" ? "pay_now" : "rsvp";
+  const amount = eventData.priceCents ?? 0;
+
+  // For PAY_NOW mode with price > 0, create invoice
+  let invoiceId: string | null = null;
+  if (regMode === "pay_now" && amount > 0) {
+    try {
+      const invoice = await createEventInvoiceFromStore(tenantId, {
+        memberId,
+        amountCents: amount,
+        currency: eventData.currency || "PHP",
+        description: `Event: ${eventData.title}`,
+        dueDate: eventData.startsAt,
+        eventId: eventData.id,
+      });
+      invoiceId = invoice.id;
+    } catch (err) {
+      console.error("[events] registerEventHandler invoice creation error", err);
+      return res.status(500).json({ error: { message: "Failed to create invoice" } });
+    }
+  }
+
+  // Create or update registration in database
+  const dbRegistration = await prisma.eventRegistration.findFirst({
+    where: {
+      tenantId,
+      eventId: eventData.id,
+      memberId,
+    },
+  });
+
+  const registration = dbRegistration
+    ? await prisma.eventRegistration.update({
+        where: { id: dbRegistration.id },
+        data: {
+          invoiceId,
+          status: "PENDING",
+          checkedInAt: null,
+          updatedAt: new Date(),
+        },
+      })
+    : await prisma.eventRegistration.create({
+        data: {
+          tenantId,
+          eventId: eventData.id,
+          memberId,
+          invoiceId,
+          status: "PENDING",
+        },
+      });
+
+  // Reload event with updated registration
+  const updatedEvent = await prisma.event.findFirst({
+    where: { id, tenantId },
+    include: { registrations: { include: { member: true, invoice: true } } },
+  });
+
+  if (!updatedEvent) return res.status(500).json({ error: { message: "Failed to reload event" } });
+
+  const record = prismaEventToRecord(updatedEvent);
+  setEvent(record);
+  res.json(toDetailDto(record, memberId));
 };
 
 export const cancelRegistrationHandler = (req: Request, res: Response) => {
@@ -692,18 +753,15 @@ export const eventCheckoutHandler = async (req: Request, res: Response) => {
     return res.json(payload);
   }
 
-  let invoice = registration.invoiceId ? getInvoiceById(tenantId, registration.invoiceId) : undefined;
+  let invoice = registration.invoiceId ? await getInvoiceById(tenantId, registration.invoiceId) : undefined;
   if (!invoice) {
-    invoice = createEventInvoice({
-      tenantId,
+    invoice = await createEventInvoiceFromStore(tenantId, {
       memberId,
-      amount,
+      amountCents: amount,
       currency: event.currency || "PHP",
       description: `Event: ${event.title}`,
-      eventId: event.id,
-      eventTitle: event.title,
       dueDate: event.startDate || null,
-      status: "unpaid",
+      eventId: event.id,
     });
   }
 

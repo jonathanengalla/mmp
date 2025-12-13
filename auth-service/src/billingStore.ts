@@ -58,6 +58,33 @@ export async function createManualInvoice(tenantId: string, input: CreateManualI
   });
 }
 
+type CreateEventInvoiceInput = {
+  memberId: string;
+  amountCents: number;
+  currency: string;
+  description?: string;
+  dueDate?: Date | string | null;
+  eventId: string;
+};
+
+export async function createEventInvoice(tenantId: string, input: CreateEventInvoiceInput) {
+  const invoiceNumber = await generateInvoiceNumber(tenantId, "EVT");
+  return prisma.invoice.create({
+    data: {
+      tenantId,
+      memberId: input.memberId,
+      amountCents: input.amountCents,
+      currency: input.currency,
+      description: input.description ?? null,
+      dueAt: input.dueDate ? new Date(input.dueDate) : null,
+      invoiceNumber,
+      status: InvoiceStatus.ISSUED,
+      source: "EVT",
+      eventId: input.eventId,
+    },
+  });
+}
+
 type RecordInvoicePaymentInput = {
   invoiceId: string;
   amountCents: number;
