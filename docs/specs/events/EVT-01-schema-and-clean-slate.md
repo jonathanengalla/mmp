@@ -29,6 +29,27 @@
 - Ensure migrations are tenant-safe and additive.
 - Cleanup confined to rcme-dev only.
 
+## Schema Guard Tests ✅
+
+**Location:** `auth-service/tests/evt01-schema-guard.test.ts`
+
+**Purpose:** Structural regression tests to catch accidental schema changes that would break events, registrations, or attendance features.
+
+**Coverage:**
+- ✅ Verifies `Event.registrationMode` enum exists with `RSVP` and `PAY_NOW` values
+- ✅ Verifies `EventRegistration.checkedInAt` exists as nullable DateTime
+- ✅ Verifies `Event.eventType` enum exists with `IN_PERSON` and `ONLINE` values
+
+**Run tests:**
+```bash
+cd auth-service
+npm run test:evt01-schema
+```
+
+**Test count:** 3 tests - all passing ✅
+
+**Note:** These are compile-time type checks using Prisma's TypeScript types. They don't require a database connection and will fail if critical schema fields are removed or renamed.
+
 ## QA Checklist
 - [ ] Migration applies cleanly to Render.
 - [ ] rcme-dev events/registrations count = 0 post-cleanup.
