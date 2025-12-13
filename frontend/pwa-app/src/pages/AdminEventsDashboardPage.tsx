@@ -222,7 +222,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                         </td>
 
                         <td className="px-4 py-3.5 align-top">
-                          {ev.capacity ? (
+                          {ev.capacity != null ? (
                             <>
                               <div className="text-sm font-medium text-slate-900">
                                 {ev.registrationsCount ?? 0} / {ev.capacity}
@@ -269,7 +269,7 @@ export const AdminEventsDashboardPage: React.FC = () => {
                           className="px-4 py-3.5 align-top"
                           style={{ minWidth: 260, whiteSpace: "nowrap", textAlign: "center", verticalAlign: "middle" }}
                         >
-                          <div className="flex flex-nowrap gap-2 justify-center items-center" style={{ whiteSpace: "nowrap" }}>
+                          <div className="flex flex-nowrap gap-2 justify-end items-center" style={{ whiteSpace: "nowrap" }}>
                             <button
                               title="Edit"
                               aria-label="Edit"
