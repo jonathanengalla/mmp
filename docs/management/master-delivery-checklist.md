@@ -60,7 +60,8 @@
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
 | FIN-01 | Finance Dashboard Contract & Metrics Alignment | 🟢 | **Complete end-to-end:** Finance summary endpoint (`/api/billing/admin/finance/summary`) with time window support, source breakdown (DUES/DONATION/EVENT/OTHER), status mapping (OUTSTANDING/PAID/CANCELLED), zero-amount exclusion, tenant scoping. Response includes self-describing range labels. Backend tests (`npm run test:fin-01`). Frontend aligned via UIR-03 with regression tests (`npm test finance-helpers`, `npm test admin-finance-dashboard`). Spec: `docs/specs/finance/FIN-01-event-finance-integration.md`. |
-| FIN-02 | Member Invoice & Receipts Experience | ⚪ | Polish the member-facing invoice list: clearer labels (Dues / Donations / Events), better grouping, and basic receipt visibility so members understand what they owe and what they have already paid. |
+| FIN-02 | Invoice List & Detail Experience | 🟡 | **In Progress:** Spec complete with admin/member list and detail contracts. Backend audit complete - gaps identified: period filtering, status mapping to FIN-01 groups, balance calculation, invoice detail endpoints. Frontend needs refactor for new filters, Outstanding/History tabs for members, detail pages. See [FIN-02 spec](../specs/finance/FIN-02-invoice-list-and-detail.md). |
+| FIN-02 | Invoice List & Detail Experience | 🟡 | **In Progress:** Spec complete with admin/member list and detail contracts. Backend audit complete - gaps identified: period filtering, status mapping to FIN-01 groups, balance calculation, invoice detail endpoints. Frontend needs refactor for new filters, Outstanding/History tabs for members, detail pages. See [FIN-02 spec](../specs/finance/FIN-02-invoice-list-and-detail.md). |
 | FIN-03 | Treasurer Finance Dashboard & KPIs | ⚪ | Define and surface core finance KPIs for the treasurer: totals and breakdowns for Dues / Donations / Events, paid vs outstanding, and simple trend or time filters. No deep analytics yet. |
 | FIN-04 | Treasurer Exports & Audit Trail | ⚪ | Provide CSV/Excel exports and a basic audit trail that finance can use for reconciliation and annual reporting. Focus is on reliable data, not complex visualization. |
 | FIN-05 | Donations & Fundraising Reporting | ⚪ | Give a clear view of donations and fundraising: who gave, to what campaign, and how it ties into overall revenue. Simpler slice than full analytics, but enough for board reporting. |
@@ -78,5 +79,5 @@
 | EVT-04 | PARTIAL | Event invoicing tools (EVT-04) implemented and functionally complete. **Manual QA gate:** 6 QA scenarios documented in `EVT-04-event-invoicing-and-post-event-tools.md` for rcme-dev verification (treat as primary gate until automation stabilized). **Automation status:** Test file `eventInvoiceHandlers.test.ts` in place with 7 guardrail tests (`npm run test:event-invoices`), but module mocking not fully stabilized and **not wired to CI**. Manual QA scenarios are the current regression guard - automation needs refinement before CI enforcement. |
 
 ---
-Last updated: 2025-01-14 18:30 (local)
+Last updated: 2025-01-14 19:00 (local)
 
