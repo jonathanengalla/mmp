@@ -159,7 +159,7 @@ export const generateRegistrationInvoice = async (req: AuthenticatedRequest, res
       },
     });
 
-    if (!registration) {
+    if (!registration || !registration.event) {
       return res.status(404).json({
         error: { code: "REGISTRATION_NOT_FOUND", message: "Registration not found" },
       });
