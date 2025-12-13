@@ -51,9 +51,9 @@
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
 | EVT-01 | Schema and Clean Slate | 🟢 | Schema migrated (registrationMode, checkedInAt); rcme-dev events/registrations = 0 |
-| EVT-02 | Event Creation and Registration | 🟡 | In progress; Admin Event Creation form refactor (Free vs Paid toggle, RSVP vs Pay now, PHP-only currency, dev tools section) plus Event Type (IN_PERSON vs ONLINE) capture driving labels ("Check in" vs "Mark attended") and location display. Backend PAY_NOW invoice wiring in place; see [EVT-02 spec](../specs/events/EVT-02-event-creation-and-registration.md). |
-| EVT-03 | Attendance and Reporting | 🟢 | Complete: Attendance tracking (mark/undo/bulk) with event type-aware labels (Check in vs Mark attended), server-side filtering/search/export, payment status filter for paid events, invoice context display. **Regression test suite:** 16 backend tests (`npm run test:attendance`) + 10+ frontend tests covering attendance independence, free/paid behavior, filters, CSV export. See [EVT-03 spec](../specs/events/EVT-03-attendance-and-reporting.md) |
-| EVT-04 | Event Invoicing and Post Event Features | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
+| EVT-02 | Event Creation and Registration | 🟢 | Admin Event Creation form fully refactored: Free vs Paid toggle, PHP-only pricing, RSVP vs Pay-now registration modes enforced by business rules, and Event Type (IN_PERSON vs ONLINE) captured to drive labels and location display. Backend PAY_NOW invoice creation wired via `createEventInvoice`, and `eventType` field now persisted end-to-end. See [EVT-02 spec](../specs/events/EVT-02-event-creation-and-registration.md). |
+| EVT-03 | Attendance and Reporting | 🟢 | Complete: Attendance tracking (mark/undo/bulk) with event type-aware labels (Check in vs Mark attended), server-side filtering/search/export, payment status filter for paid events, invoice context display. **Regression test suite:** backend attendance tests (`npm run test:attendance`) + frontend attendance report tests (`npm test admin-event-attendance-report`). **Guarded by CI:** `.github/workflows/evt-03-regression-tests.yml` runs these suites on PRs that touch attendance handlers, event handlers, or the Admin Event Attendance Report page. See `docs/operations/ci-cd-and-environments.md` (EVT-03 Regression Test Suite) for details. |
+| EVT-04 | Event Invoicing and Post Event Features | 🟢 | **Invoicing tools complete:** Bulk and individual invoice generation for paid RSVP events. Free events blocked; duplicate prevention; uses existing invoice numbering (`EVT` source). UI actions in attendance report with conditional visibility (free/paid, RSVP/PAY_NOW). Backend tests: 7 tests covering guardrails and duplicate prevention. See [EVT-04 spec](../specs/events/EVT-04-event-invoicing-and-post-event-tools.md). **Post-event comms (thank-you emails) deferred to future ticket.** |
 | EVT-05A | Admin Events Dashboard Micro UI Polish | 🟢 | Title/sublabel layout, capacity two-line display with color semantics, action icon alignment & tooltips. No backend changes. See [EVT-05A spec](../specs/events/EVT-05-admin-events-dashboard-micro-ui-polish.md) |
 
 ## QA / Gates
@@ -65,7 +65,8 @@
 | BKS-03 | PASS | Membership persistence + verification gate passed; core flows smoke-tested with tenant + RBAC; advanced flows documented as stubs |
 | BKS-04 | PASS | Billing/payments persistence + PAN/CVC removal gate passed; core invoice/payment/payment-method flows smoke-tested with tenant + RBAC; advanced flows remain stubbed |
 | UIR-07 | PASS | Login UX aligned with backend: /auth/login requires email/password/tenantId; smoke-tested happy path and basic error handling |
+| EVT-03 | PASS | Attendance & reporting regression suite in place: backend (`npm run test:attendance`) + frontend (`npm test admin-event-attendance-report`) enforced via `.github/workflows/evt-03-regression-tests.yml` on relevant PRs. |
 
 ---
-Last updated: 2025-12-12 17:00 (local)
+Last updated: 2025-12-12 19:00 (local)
 

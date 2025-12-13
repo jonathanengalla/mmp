@@ -233,6 +233,7 @@ export const getAttendanceReport = async (req: AuthenticatedRequest, res: Respon
         priceCents: event.priceCents,
         capacity: event.capacity,
         eventType: (event as any).eventType || "IN_PERSON",
+        registrationMode: (event as any).registrationMode || "RSVP",
         status: event.status || "PUBLISHED",
       },
       summary: {

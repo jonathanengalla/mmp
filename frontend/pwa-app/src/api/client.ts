@@ -520,6 +520,26 @@ export const listEventsAdmin = async (token: string): Promise<EventDetailDto[]> 
   return data.events || data.items || [];
 };
 
+export const bulkGenerateEventInvoices = async (token: string, eventId: string): Promise<{ created: number; skipped: number; errors?: Array<{ registrationId: string; error: string }>; message: string }> => {
+  const res = await fetch(`${API_BASE_URL}/admin/events/${eventId}/invoices/generate`, {
+    method: "POST",
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+    credentials: "include",
+  });
+  const data = await json(res);
+  return data.data || data;
+};
+
+export const generateRegistrationInvoice = async (token: string, registrationId: string): Promise<{ invoice: { id: string; invoiceNumber: string; amountCents: number; status: string }; message: string }> => {
+  const res = await fetch(`${API_BASE_URL}/admin/registrations/${registrationId}/invoice`, {
+    method: "POST",
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+    credentials: "include",
+  });
+  const data = await json(res);
+  return data.data || data;
+};
+
 // Communications
 export const createBroadcastDraft = async (token: string, payload: { subject: string; body: string; audience_segment_id?: string; tags?: string[] }) => {
   const res = await fetch(`${API_BASE_URL}/communications/broadcasts`, {

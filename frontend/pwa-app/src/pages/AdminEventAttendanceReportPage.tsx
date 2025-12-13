@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { API_BASE_URL } from "../api/client";
+import { API_BASE_URL, bulkGenerateEventInvoices, generateRegistrationInvoice } from "../api/client";
 import { formatCurrency } from "../utils/formatters";
+import { useSession } from "../hooks/useSession";
 
 interface AttendanceReport {
   event: {
@@ -14,6 +15,7 @@ interface AttendanceReport {
     priceCents: number | null;
     capacity: number | null;
     eventType: "IN_PERSON" | "ONLINE";
+    registrationMode?: "RSVP" | "PAY_NOW";
     status: string;
   };
   summary: {
@@ -114,6 +116,40 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
     },
   });
 
+  const { tokens } = useSession();
+  const bulkGenerateInvoicesMutation = useMutation({
+    mutationFn: async () => {
+      if (!eventId || !tokens?.access_token) throw new Error("Missing event ID or token");
+      return bulkGenerateEventInvoices(tokens.access_token, eventId);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", eventId] });
+      alert(`Created ${result.created} invoice(s), skipped ${result.skipped} registration(s).${result.errors && result.errors.length > 0 ? `\nErrors: ${result.errors.map((e: any) => e.error).join(", ")}` : ""}`);
+    },
+    onError: (error: any) => {
+      alert(`Failed to generate invoices: ${error.message || error.error?.message || "Unknown error"}`);
+    },
+  });
+
+  const generateInvoiceMutation = useMutation({
+    mutationFn: async (registrationId: string) => {
+      if (!tokens?.access_token) throw new Error("Missing token");
+      return generateRegistrationInvoice(tokens.access_token, registrationId);
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["attendance", eventId] });
+      alert(`Invoice created: ${result.invoice.invoiceNumber}`);
+    },
+    onError: (error: any) => {
+      const errorMsg = error.error?.message || error.message || "Unknown error";
+      if (error.status === 409) {
+        alert(`Invoice already exists: ${error.error?.invoiceNumber || "N/A"}`);
+      } else {
+        alert(`Failed to generate invoice: ${errorMsg}`);
+      }
+    },
+  });
+
   const handleToggleSelect = (id: string) => {
     const next = new Set(selectedIds);
     next.has(id) ? next.delete(id) : next.add(id);
@@ -157,10 +193,15 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
 
   const { event, summary } = data;
   const paidEvent = isPaidEvent(event.priceCents);
+  const isRsvpEvent = event.registrationMode === "RSVP" || !event.registrationMode; // Default to RSVP if not specified
+  const canGenerateInvoices = paidEvent && isRsvpEvent; // Only show invoice generation for paid RSVP events
   const isOnlineEvent = event.eventType === "ONLINE";
   const actionLabel = isOnlineEvent ? "Mark attended" : "Check in";
   const bulkActionLabel = isOnlineEvent ? "Mark as attended" : "Check in";
   const undoLabel = isOnlineEvent ? "Undo attendance" : "Undo check-in";
+
+  // Count registrations without invoices (for bulk generation)
+  const registrationsWithoutInvoices = data.attendees.filter((a) => !a.invoice).length;
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("en-US", {
@@ -289,6 +330,19 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
               >
                 Export CSV
               </button>
+              {canGenerateInvoices && registrationsWithoutInvoices > 0 && (
+                <button
+                  onClick={() => {
+                    if (confirm(`Generate invoices for ${registrationsWithoutInvoices} registration(s) without invoices?`)) {
+                      bulkGenerateInvoicesMutation.mutate();
+                    }
+                  }}
+                  disabled={bulkGenerateInvoicesMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 font-medium text-sm"
+                >
+                  {bulkGenerateInvoicesMutation.isPending ? "Generating..." : `Generate Invoices (${registrationsWithoutInvoices})`}
+                </button>
+              )}
               {selectedIds.size > 0 && (
                 <button
                   onClick={handleBulkMark}
@@ -367,23 +421,38 @@ export const AdminEventAttendanceReportPage: React.FC = () => {
                         </td>
                       )}
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {attendee.checkedInAt ? (
-                          <button
-                            onClick={() => undoAttendanceMutation.mutate(attendee.registrationId)}
-                            disabled={undoAttendanceMutation.isPending}
-                            className="text-sm text-red-600 hover:text-red-800 disabled:text-gray-400 font-medium"
-                          >
-                            {undoLabel}
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => markAttendanceMutation.mutate(attendee.registrationId)}
-                            disabled={markAttendanceMutation.isPending}
-                            className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 font-medium"
-                          >
-                            {actionLabel}
-                          </button>
-                        )}
+                        <div className="flex flex-col gap-2">
+                          {attendee.checkedInAt ? (
+                            <button
+                              onClick={() => undoAttendanceMutation.mutate(attendee.registrationId)}
+                              disabled={undoAttendanceMutation.isPending}
+                              className="text-sm text-red-600 hover:text-red-800 disabled:text-gray-400 font-medium text-left"
+                            >
+                              {undoLabel}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => markAttendanceMutation.mutate(attendee.registrationId)}
+                              disabled={markAttendanceMutation.isPending}
+                              className="text-sm text-blue-600 hover:text-blue-800 disabled:text-gray-400 font-medium text-left"
+                            >
+                              {actionLabel}
+                            </button>
+                          )}
+                          {canGenerateInvoices && !attendee.invoice && (
+                            <button
+                              onClick={() => {
+                                if (confirm(`Generate invoice for ${attendee.member.firstName} ${attendee.member.lastName}?`)) {
+                                  generateInvoiceMutation.mutate(attendee.registrationId);
+                                }
+                              }}
+                              disabled={generateInvoiceMutation.isPending}
+                              className="text-sm text-indigo-600 hover:text-indigo-800 disabled:text-gray-400 font-medium text-left"
+                            >
+                              {generateInvoiceMutation.isPending ? "Generating..." : "Generate Invoice"}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))

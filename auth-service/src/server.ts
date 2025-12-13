@@ -94,6 +94,7 @@ import {
   getEventsSelfSummary,
 } from "./eventsHandlers";
 import * as attendanceHandlers from "./attendanceHandlers";
+import * as eventInvoiceHandlers from "./eventInvoiceHandlers";
 
 const app = express();
 
@@ -263,6 +264,8 @@ eventsRouter.post("/admin/attendance/:registrationId/mark", requireEventManagerO
 eventsRouter.post("/admin/attendance/:registrationId/undo", requireEventManagerOrAdmin, attendanceHandlers.undoAttendance);
 eventsRouter.post("/admin/attendance/bulk-mark", requireEventManagerOrAdmin, attendanceHandlers.bulkMarkAttendance);
 eventsRouter.get("/admin/events/:eventId/attendance", requireEventManagerOrAdmin, attendanceHandlers.getAttendanceReport);
+eventsRouter.post("/admin/events/:eventId/invoices/generate", requireEventManagerOrAdmin, eventInvoiceHandlers.bulkGenerateEventInvoices);
+eventsRouter.post("/admin/registrations/:registrationId/invoice", requireEventManagerOrAdmin, eventInvoiceHandlers.generateRegistrationInvoice);
 app.use("/", eventsRouter);
 app.use("/api", eventsRouter);
 
