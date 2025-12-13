@@ -23,6 +23,7 @@
 | BKS-02 | JWT + tenant-scoped RBAC enforcement | 🟢 | JWT + tenant RBAC implemented; requires `JWT_SECRET` in local `.env` and Render env; QA Gate PASS with auth/JWT smoke tests |
 | BKS-03 | Membership + verification persistence | 🟢 | Membership register/list/approve/search/me now persisted via Prisma with tenant + RBAC; non-scope routes remain stubbed |
 | BKS-04 | Billing/payments persistence and PAN/CVC removal | 🟢 | Billing/payments via Prisma; tenant-scoped invoices/payments/payment methods with RBAC; PAN/CVC not stored; advanced flows remain stubbed |
+| BKS-05 | Events persistence with billing linkage | 🟢 | **Complete:** Events ↔ registrations ↔ invoices linkage audited and documented. Invariants enforced via regression tests (`npm run test:bks05-events-billing`). Free events blocked from invoicing; event invoices use `source=EVT` with tenant-safe paths only. Delete/cancel behavior protected. All creation paths verified (PAY_NOW registration, EVT-04 bulk/individual). See [BKS-05 spec](../specs/backend/BKS-05-events-persistence-billing-linkage.md). |
 | BKS-05 | Events persistence with billing linkage | ⚪ | Not started |
 | BKS-06 | Audit & reporting data store | ⚪ | Not started |
 | BKS-07 | Config Center baseline (org profile, feature flags) | ⚪ | Not started |
@@ -77,7 +78,8 @@
 | EVT-03 | PASS | Attendance & reporting regression suite in place: backend (`npm run test:attendance`) + frontend (`npm test admin-event-attendance-report`) enforced via `.github/workflows/evt-03-regression-tests.yml` on relevant PRs. |
 | EVT-04 | PARTIAL | Event invoicing tools (EVT-04) implemented and functionally complete. **Manual QA gate:** 6 QA scenarios documented in `EVT-04-event-invoicing-and-post-event-tools.md` for rcme-dev verification (treat as primary gate until automation stabilized). **Automation status:** Test file `eventInvoiceHandlers.test.ts` in place with 7 guardrail tests (`npm run test:event-invoices`), but module mocking not fully stabilized and **not wired to CI**. Manual QA scenarios are the current regression guard - automation needs refinement before CI enforcement. |
 | FIN-02 | PASS | Invoice list & detail experience verified in rcme-dev. **Verified behaviors:** Zero-amount exclusion, status grouping alignment with FIN-01, period filters, member isolation (404 on unauthorized access), balance calculations, cross-view status consistency, FIN-01/FIN-02 totals alignment. **Automation:** Unit tests for status mapping, balance calculation, period resolution (`npm run test:fin02` - all 11 tests passing). **Known limitation:** Pay Now button disabled with "Coming Soon" message (payment flow integration deferred). Full QA report: `docs/qa/FIN-02-qa-verification.md`. |
+| BKS-05 | PASS | Events persistence with billing linkage verified. **Invariants protected:** Free event protection (all paths), RSVP/PAY_NOW registration behavior, duplicate prevention, invoice linkage integrity (source=EVT, eventId, registration link), delete/cancel behavior, tenant isolation. **Automation:** Regression tests (`npm run test:bks05-events-billing`) covering all creation paths and invariants. See [BKS-05 spec](../specs/backend/BKS-05-events-persistence-billing-linkage.md). |
 
 ---
-Last updated: 2025-01-14 20:00 (local)
+Last updated: 2025-01-14 21:00 (local)
 

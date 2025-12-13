@@ -280,7 +280,23 @@ export const AdminEventsDashboardPage: React.FC = () => {
                                 onClick={() => handleDeleteClick(ev.id)}
                                 className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-red-600 hover:bg-red-50 inline-flex items-center justify-center transition-colors"
                               >
-                                <span aria-hidden>🗑️</span>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  <line x1="10" y1="11" x2="10" y2="17" />
+                                  <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
                               </button>
                             ) : ev.status !== "CANCELLED" ? (
                               <button
@@ -289,7 +305,23 @@ export const AdminEventsDashboardPage: React.FC = () => {
                                 onClick={() => handleCancelClick(ev.id)}
                                 className="h-8 w-8 shrink-0 rounded-full border border-gray-200 bg-white text-orange-600 hover:bg-orange-50 inline-flex items-center justify-center transition-colors"
                               >
-                                <span aria-hidden>⛔</span>
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M3 6h18" />
+                                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                                  <line x1="10" y1="11" x2="10" y2="17" />
+                                  <line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
                               </button>
                             ) : (
                               <span className="text-gray-400 text-sm">Cancelled</span>
