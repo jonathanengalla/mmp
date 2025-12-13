@@ -268,15 +268,23 @@ const MemberInvoiceDetailPage: React.FC = () => {
         )}
 
         {/* Pay Now Action */}
-        {invoice.balanceCents > 0 && (
+        {invoice.balanceCents > 0 && invoice.status === "OUTSTANDING" && (
           <Card>
             <div style={{ textAlign: "center", padding: "var(--app-space-lg)" }}>
               <div style={{ fontSize: "var(--app-font-heading)", fontWeight: 600, marginBottom: "var(--app-space-md)" }}>
                 Amount Due: {formatCurrency(invoice.balanceCents)}
               </div>
-              <Button variant="primary" size="lg">
-                Pay Now
+              <Button 
+                variant="primary" 
+                size="lg"
+                disabled
+                title="Payment processing coming soon"
+              >
+                Pay Now (Coming Soon)
               </Button>
+              <div style={{ marginTop: "var(--app-space-sm)", fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)" }}>
+                Online payment processing will be available soon. Please contact the treasurer to make payment.
+              </div>
             </div>
           </Card>
         )}

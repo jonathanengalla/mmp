@@ -427,7 +427,40 @@ This should be shared between FIN-01 summary and FIN-02 list endpoints.
 - No invoices appear in both tabs
 - Empty states show appropriate messages
 
-## 7. Test Coverage
+## 7. QA Verification
+
+**QA Date:** 2025-01-14  
+**Environment:** rcme-dev  
+**Status:** ✅ Verified
+
+### Verified Behaviors
+
+1. **Period Filters:** Year to Date, Current Month, Last 12 Months, All Time - all working, totals align with FIN-01
+2. **Status Filters:** Outstanding/Paid/Cancelled grouping correct across all views
+3. **Source Filters:** Dues/Donation/Event/Other filtering works correctly
+4. **Search:** Invoice number, member name, email, event title - all functional
+5. **Sorting:** Default and all sort options work correctly
+6. **Balance Calculation:** Correct for paid, partially paid, and unpaid invoices
+7. **Zero-Amount Exclusion:** Verified excluded in both list and summary views
+8. **Member Isolation:** Security verified - members cannot access other members' invoices (404 on unauthorized access)
+9. **Status Consistency:** Same invoice shows same status badge across all views
+10. **Cross-View Alignment:** FIN-01 totals match FIN-02 list aggregates for same periods
+
+### Known Limitations
+
+- **Pay Now Button:** Currently disabled with "Coming Soon" message. Payment flow integration deferred to future ticket.
+
+### Sample Test Data
+
+For QA verification, use rcme-dev tenant with seeded data:
+- Admin account: admin@rcme-dev.com
+- Member account: testmember@rcme-dev.com
+- Invoice types: Mix of DUES, DONATION, EVENT invoices
+- Statuses: Outstanding, Partially Paid, Paid, Cancelled invoices
+
+See full QA report: `docs/qa/FIN-02-qa-verification.md`
+
+## 8. Test Coverage
 
 ### Backend Tests
 

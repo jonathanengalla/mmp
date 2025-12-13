@@ -6,7 +6,6 @@ import { Card, Button, PageShell, Input } from "../ui";
 import { FinancePeriodSelector } from "../components/FinancePeriodSelector";
 import { formatCurrency } from "../utils/formatters";
 import { Tag } from "../components/primitives/Tag";
-import React from "react";
 
 const AdminInvoicesPage: React.FC = () => {
   const { tokens } = useSession();
