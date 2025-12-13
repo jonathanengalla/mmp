@@ -204,6 +204,7 @@ export interface CreateEventPayload {
   tags?: string[];
   registrationMode?: "rsvp" | "pay_now";
   location?: string | null;
+  eventType?: "IN_PERSON" | "ONLINE";
 }
 
 export const createEventDraft = async (token: string, payload: CreateEventPayload): Promise<EventDetailDto> => {

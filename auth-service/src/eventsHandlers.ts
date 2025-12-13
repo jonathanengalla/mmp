@@ -358,7 +358,7 @@ export const createEventHandler = [
     const tenantId = (req as any).user?.tenantId;
     if (!tenantId) return res.status(401).json({ error: { message: "Unauthorized" } });
 
-    const { title, description, startDate, endDate, capacity, priceCents, price, currency, tags, location, registrationMode } = req.body || {};
+    const { title, description, startDate, endDate, capacity, priceCents, price, currency, tags, location, registrationMode, eventType } = req.body || {};
     if (!title || !startDate) {
       return res.status(400).json({ error: { message: "title and startDate are required" } });
     }
@@ -393,6 +393,7 @@ export const createEventHandler = [
           currency: currency ?? null,
           tags: Array.isArray(tags) ? tags : [],
           registrationMode: regMode,
+          eventType: (eventType === "ONLINE" ? "ONLINE" : "IN_PERSON") as "IN_PERSON" | "ONLINE",
           startsAt: start,
           endsAt: end,
         },

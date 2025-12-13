@@ -51,7 +51,7 @@
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
 | EVT-01 | Schema and Clean Slate | 🟢 | Schema migrated (registrationMode, checkedInAt); rcme-dev events/registrations = 0 |
-| EVT-02 | Event Creation and Registration | 🟡 | In progress; see [EVT-02 spec](../specs/events/EVT-02-event-creation-and-registration.md) |
+| EVT-02 | Event Creation and Registration | 🟡 | In progress; Admin Event Creation form refactor (Free vs Paid toggle, RSVP vs Pay now, PHP-only currency, dev tools section) plus Event Type (IN_PERSON vs ONLINE) capture driving labels ("Check in" vs "Mark attended") and location display. Backend PAY_NOW invoice wiring in place; see [EVT-02 spec](../specs/events/EVT-02-event-creation-and-registration.md). |
 | EVT-03 | Attendance and Reporting | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
 | EVT-04 | Event Invoicing and Post Event Features | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
 | EVT-05A | Admin Events Dashboard Micro UI Polish | 🟢 | Title/sublabel layout, capacity two-line display with color semantics, action icon alignment & tooltips. No backend changes. See [EVT-05A spec](../specs/events/EVT-05-admin-events-dashboard-micro-ui-polish.md) |
@@ -67,5 +67,5 @@
 | UIR-07 | PASS | Login UX aligned with backend: /auth/login requires email/password/tenantId; smoke-tested happy path and basic error handling |
 
 ---
-Last updated: 2025-12-09 00:00 (local)
+Last updated: 2025-12-12 17:00 (local)
 
