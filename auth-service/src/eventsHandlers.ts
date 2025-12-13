@@ -870,9 +870,7 @@ export const listMyInvoicesHandler = async (req: AuthenticatedRequest, res: Resp
           event: true,
           allocations: {
             include: {
-              payment: {
-                where: { status: PaymentStatus.SUCCEEDED }, // Only count succeeded payments
-              },
+              payment: true, // Include payment, filter by status after
             },
           },
         },
@@ -883,8 +881,8 @@ export const listMyInvoicesHandler = async (req: AuthenticatedRequest, res: Resp
     ]);
 
     // PAY-10: Map to response format with status grouping and balance using Allocations
-    const items = invoices.map((inv) => {
-      const allocations = inv.allocations.filter((alloc: any) => alloc.payment); // Only allocations with succeeded payments
+    const items = invoices.map((inv: any) => {
+      const allocations = (inv.allocations || []).filter((alloc: any) => alloc.payment && alloc.payment.status === PaymentStatus.SUCCEEDED); // Only allocations with succeeded payments
       const balanceCents = calculateInvoiceBalanceFromAllocations(inv.amountCents, allocations);
       return {
         ...toInvoiceDto(inv),

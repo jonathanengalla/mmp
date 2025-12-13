@@ -217,9 +217,7 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
           member: true,
           allocations: {
             include: {
-              payment: {
-                where: { status: PaymentStatus.SUCCEEDED }, // Only count succeeded payments
-              },
+              payment: true, // Include payment, filter by status after
             },
           },
         },
@@ -237,7 +235,7 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     
     const invoiceList = invoices.map((inv: any) => {
       // Calculate balance from allocations
-      const allocations = inv.allocations.filter((alloc: any) => alloc.payment); // Only allocations with succeeded payments
+      const allocations = (inv.allocations || []).filter((alloc: any) => alloc.payment && alloc.payment.status === PaymentStatus.SUCCEEDED); // Only allocations with succeeded payments
       const balanceCents = calculateInvoiceBalanceFromAllocations(inv.amountCents, allocations);
       const allocationsTotal = allocations.reduce((sum: number, alloc: any) => sum + (alloc.amountCents || 0), 0);
       

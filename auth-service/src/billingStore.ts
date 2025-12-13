@@ -1,4 +1,4 @@
-import { InvoiceStatus, PaymentMethodStatus, PaymentStatus } from "@prisma/client";
+import { InvoiceStatus, PaymentMethodStatus, PaymentStatus, PaymentChannel, PaymentVerificationStatus } from "@prisma/client";
 import { prisma } from "./db/prisma";
 import { generateInvoiceNumber, InvoiceNumberType } from "./utils/invoiceNumber";
 
@@ -108,6 +108,8 @@ export async function recordInvoicePayment(tenantId: string, input: RecordInvoic
       amountCents: input.amountCents,
       currency: invoice.currency,
       status: PaymentStatus.SUCCEEDED,
+      channel: PaymentChannel.SIMULATED, // PAY-10: Legacy payments use SIMULATED channel
+      verificationStatus: PaymentVerificationStatus.NOT_REQUIRED, // PAY-10: Required field
       reference: input.externalRef ?? null,
       processedAt: new Date(),
     },
