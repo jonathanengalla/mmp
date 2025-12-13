@@ -13,7 +13,7 @@ import { Card } from "../components/primitives/Card";
 import { FormField } from "../components/primitives/FormField";
 import { Button } from "../components/primitives/Button";
 import { Tag } from "../components/primitives/Tag";
-import { getCardBrandLabel } from "../utils/cardBrand";
+import { CardBrandLogo } from "../components/CardBrandLogo";
 
 interface FormState {
   brand: string;
@@ -286,21 +286,17 @@ export const PaymentMethodsPage: React.FC = () => {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-                  {/* Card icon */}
+                  {/* Card brand logo */}
                   <div style={{
-                    width: 40,
-                    height: 28,
                     borderRadius: "var(--radius-sm)",
                     background: "var(--app-color-surface-0)",
                     border: "1px solid var(--app-color-border-subtle)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: "var(--font-caption)",
-                    fontWeight: "var(--font-weight-bold)",
-                    color: "var(--app-color-text-secondary)",
+                    overflow: "hidden",
                   }}>
-                    {getCardBrandLabel(method.brand)}
+                    <CardBrandLogo brand={method.brand} size="md" />
                   </div>
                   <div>
                     <div style={{ 
@@ -358,6 +354,9 @@ export const PaymentMethodsPage: React.FC = () => {
                   <option value="MasterCard">MasterCard</option>
                   <option value="American Express">American Express</option>
                   <option value="Discover">Discover</option>
+                  <option value="JCB">JCB</option>
+                  <option value="Diners Club">Diners Club</option>
+                  <option value="UnionPay">UnionPay</option>
                 </select>
               </FormField>
 

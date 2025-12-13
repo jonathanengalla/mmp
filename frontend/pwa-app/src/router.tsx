@@ -20,6 +20,9 @@ import { AdminNewEventPage } from "./pages/AdminNewEventPage";
 import EventsPage from "./pages/EventsPage";
 import EventDetailPage from "./pages/EventDetailPage";
 import InvoicesPage from "./pages/InvoicesPage";
+import AdminInvoicesPage from "./pages/AdminInvoicesPage";
+import AdminInvoiceDetailPage from "./pages/AdminInvoiceDetailPage";
+import MemberInvoiceDetailPage from "./pages/MemberInvoiceDetailPage";
 import EventCheckoutPage from "./pages/EventCheckoutPage";
 
 import { AdminBroadcastsPage } from "./pages/AdminBroadcastsPage";
@@ -228,6 +231,30 @@ export const AppRouter: React.FC = () => (
             <ProtectedRoute>
               <InvoicesPage />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/invoices/:id"
+          element={
+            <ProtectedRoute>
+              <MemberInvoiceDetailPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/invoices"
+          element={
+            <AdminRoute roles={["admin", "finance_manager", "officer"]}>
+              <AdminInvoicesPage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/invoices/:id"
+          element={
+            <AdminRoute roles={["admin", "finance_manager", "officer"]}>
+              <AdminInvoiceDetailPage />
+            </AdminRoute>
           }
         />
 

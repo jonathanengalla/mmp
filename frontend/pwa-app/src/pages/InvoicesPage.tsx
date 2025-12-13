@@ -1,58 +1,56 @@
 import React, { useEffect, useState } from "react";
-import { listMyInvoices, listTenantInvoices, getFinanceSummary } from "../api/client";
+import { useNavigate } from "react-router-dom";
+import { listMyInvoices, InvoiceListItem, InvoiceReportingStatus, FinancePeriod } from "../api/client";
 import { useSession } from "../hooks/useSession";
-import { Card, Button, PageShell, Input } from "../ui";
+import { Card, PageShell } from "../ui";
+import { Tag } from "../components/primitives/Tag";
+import { formatCurrency } from "../utils/formatters";
 
-type AdminStatus = "all" | "ISSUED" | "PARTIALLY_PAID" | "PAID" | "OVERDUE" | "DRAFT" | "VOID" | "FAILED";
-type MemberStatus = "all" | "outstanding" | "paid";
+type MemberTab = "outstanding" | "history";
 
 const InvoicesPage: React.FC = () => {
   const { tokens, hasRole } = useSession();
+  const navigate = useNavigate();
   const token = tokens?.access_token || null;
   const isAdminFinance =
     hasRole?.("admin") || hasRole?.("finance_manager") || hasRole?.("officer") || hasRole?.("super_admin");
 
-  const [invoices, setInvoices] = useState<any[]>([]);
+  // Redirect admins to admin invoice page
+  React.useEffect(() => {
+    if (isAdminFinance) {
+      navigate("/admin/invoices", { replace: true });
+    }
+  }, [isAdminFinance, navigate]);
+
+  const navigate = useNavigate();
+  const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [pagination, setPagination] = useState<{ page: number; pageSize: number; total: number; totalPages: number } | null>(
     null
   );
-  const [summary, setSummary] = useState<any>(null);
-  const [financeSummary, setFinanceSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  // Member tab state
+  const [memberTab, setMemberTab] = useState<MemberTab>("outstanding");
+  const [memberPeriod, setMemberPeriod] = useState<FinancePeriod>("ALL_TIME");
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
   const loadInvoices = async () => {
-    if (!token) {
+    if (!token || isAdminFinance) {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
-      if (isAdminFinance) {
-        const [invoiceResp, summaryResp] = await Promise.all([
-          listTenantInvoices(token, {
-            status: statusFilter === "all" ? undefined : statusFilter,
-            search: search || undefined,
-            page,
-            pageSize,
-          }),
-          getFinanceSummary(token),
-        ]);
-        setInvoices(invoiceResp.invoices || invoiceResp.items || []);
-        setPagination(invoiceResp.pagination || null);
-        setSummary(invoiceResp.summary || null);
-        setFinanceSummary(summaryResp || null);
-      } else {
-        const resp = await listMyInvoices(token, { status: statusFilter as MemberStatus, page, pageSize });
-        setInvoices(resp.invoices || resp.items || []);
-        setPagination(resp.pagination || null);
-        setSummary(resp.summary || null);
-        setFinanceSummary(null);
-      }
+      // FIN-02: Member invoice list with tab support
+      const resp = await listMyInvoices(token, {
+        tab: memberTab,
+        period: memberPeriod,
+        page,
+        pageSize,
+      });
+      setInvoices(resp.items || resp.invoices || []);
+      setPagination(resp.pagination || null);
       setError(null);
     } catch (e: any) {
       setError(e?.message || "Failed to load invoices");
@@ -64,190 +62,108 @@ const InvoicesPage: React.FC = () => {
   useEffect(() => {
     loadInvoices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, statusFilter, search, page]);
+  }, [token, statusFilter, search, page, memberTab, memberPeriod]);
 
-  const formatCurrency = (cents: number, currency = "PHP") =>
-    `${currency} ${(cents / 100).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-  const statusBadge = (status: string) => {
-    const s = status.toUpperCase();
-    if (s === "PAID") return { label: "paid", cls: "bg-green-100 text-green-800" };
-    if (s === "ISSUED") return { label: "issued", cls: "bg-yellow-100 text-yellow-800" };
-    if (s === "PARTIALLY_PAID") return { label: "partially paid", cls: "bg-blue-100 text-blue-800" };
-    if (s === "OVERDUE") return { label: "overdue", cls: "bg-red-100 text-red-800" };
-    if (s === "DRAFT") return { label: "draft", cls: "bg-gray-100 text-gray-800" };
-    if (s === "VOID") return { label: "void", cls: "bg-gray-200 text-gray-700" };
-    if (s === "FAILED") return { label: "failed", cls: "bg-red-100 text-red-800" };
-    return { label: s.toLowerCase(), cls: "bg-gray-100 text-gray-800" };
+  const getStatusBadgeVariant = (status: InvoiceReportingStatus): "success" | "default" | "danger" => {
+    if (status === "PAID") return "success";
+    if (status === "OUTSTANDING") return "default";
+    return "danger";
   };
 
-  const getTypeLabel = (inv: any) => {
-    // Prefer canonical source; fall back to invoice number segment so DUES/EVT/DON never show as Other
-    const source = (inv.source || "").toUpperCase();
-    const fromSource =
-      source === "DUES"
-        ? "Dues"
-        : source === "EVT"
-        ? "Event"
-        : source === "DONATION" || source === "DON"
-        ? "Donation"
-        : source === "OTHER"
-        ? "Other"
-        : undefined;
-
-    if (fromSource) return fromSource;
-
-    const seg = inv.invoiceNumber?.split("-")?.[2]?.toUpperCase();
-    if (seg === "DUES") return "Dues";
-    if (seg === "EVT") return "Event";
-    if (seg === "DON") return "Donation";
-    return "Other";
+  const getSourceLabel = (source: string): string => {
+    const labels: Record<string, string> = {
+      DUES: "Dues",
+      DONATION: "Donation",
+      EVENT: "Event",
+      OTHER: "Other",
+    };
+    return labels[source] || source;
   };
 
-  const handleRefresh = () => {
-    setPage(1);
-    loadInvoices();
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return "—";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
   };
+
+
+
+  if (isAdminFinance) {
+    return null; // Will redirect
+  }
 
   return (
     <PageShell
-      title="Invoices"
-      description={isAdminFinance ? "All tenant invoices with filters and metrics." : "Your invoices and balance."}
-      actions={
-        <Button variant="secondary" size="sm" onClick={handleRefresh}>
-          Refresh
-        </Button>
-      }
+      title="My Invoices"
+      description="View your outstanding invoices and payment history."
     >
       <div className="invoices-layout" style={{ display: "grid", gap: "var(--app-space-lg)" }}>
         {error && (
-          <div
-            style={{
-              padding: "var(--rcme-space-md)",
-              background: "var(--rcme-color-surface-2)",
-              border: "1px solid var(--rcme-color-border-strong)",
-              borderRadius: "var(--rcme-radius-md)",
-              color: "var(--rcme-color-state-error)",
-            }}
-          >
-            {error}
-          </div>
+          <Card>
+            <div style={{ padding: "var(--app-space-md)", color: "var(--app-color-state-error)" }}>{error}</div>
+          </Card>
         )}
 
-        {summary && (
-          <div
-            style={{
-              display: "grid",
-              gap: "var(--app-space-sm)",
-              gridTemplateColumns: isAdminFinance ? "repeat(auto-fit, minmax(200px, 1fr))" : "repeat(auto-fit, minmax(240px, 1fr))",
-            }}
-          >
-            <Card>
-              <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>
-                {isAdminFinance ? "Outstanding balance" : "My outstanding balance"}
-              </div>
-              <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700 }}>
-                {formatCurrency((financeSummary?.outstanding?.totalCents ?? summary.outstanding?.totalCents) || 0)}
-              </div>
-              <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
-                {(financeSummary?.outstanding?.count ?? summary.outstanding?.count) || 0} invoices
-              </div>
-            </Card>
-            {isAdminFinance && (
-              <Card>
-                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Overdue</div>
-                <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-state-error)" }}>
-                  {formatCurrency((financeSummary?.overdue?.totalCents ?? summary.overdue?.totalCents) || 0)}
-                </div>
-                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
-                  {(financeSummary?.overdue?.count ?? summary.overdue?.count) || 0} invoices
-                </div>
-              </Card>
-            )}
-            {isAdminFinance && (
-              <Card>
-                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Paid (last 30 days)</div>
-                <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-state-success)" }}>
-                  {formatCurrency((financeSummary?.paidLast30Days?.totalCents ?? summary.paidLast30Days?.totalCents) || 0)}
-                </div>
-                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
-                  {(financeSummary?.paidLast30Days?.count ?? summary.paidLast30Days?.count) || 0} invoices
-                </div>
-              </Card>
-            )}
-            {isAdminFinance && financeSummary && (
-              <Card>
-                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Total donations</div>
-                <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-text-primary)" }}>
-                  {formatCurrency(financeSummary.totalDonations?.totalCents || 0)}
-                </div>
-                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
-                  {financeSummary.totalDonations?.count || 0} donations
-                </div>
-              </Card>
-            )}
-            {isAdminFinance && financeSummary && (
-              <Card>
-                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-label)" }}>Donations (last 30 days)</div>
-                <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-text-primary)" }}>
-                  {formatCurrency(financeSummary.donationsLast30Days?.totalCents || 0)}
-                </div>
-                <div style={{ color: "var(--app-color-text-muted)", fontSize: "var(--app-font-body)" }}>
-                  {financeSummary.donationsLast30Days?.count || 0} donations
-                </div>
-              </Card>
-            )}
-          </div>
-        )}
-
-        <Card elevation="sm" padding="sm">
-          <div style={{ display: "flex", gap: "var(--app-space-sm)", flexWrap: "wrap", alignItems: "center" }}>
-            <Input
-              placeholder="Search invoices (number, member, email, event)"
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              style={{ minWidth: 240, flex: "1 1 240px" }}
-              disabled={!isAdminFinance}
-            />
+        {/* Member Tabs */}
+        <Card elevation="sm" padding="md">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--app-space-md)" }}>
+            <div style={{ display: "flex", gap: "var(--app-space-xs)", borderBottom: "2px solid var(--app-color-border-subtle)" }}>
+              <button
+                onClick={() => {
+                  setMemberTab("outstanding");
+                  setPage(1);
+                }}
+                style={{
+                  padding: "var(--app-space-sm) var(--app-space-md)",
+                  border: "none",
+                  background: "transparent",
+                  borderBottom: memberTab === "outstanding" ? "2px solid var(--app-color-primary)" : "2px solid transparent",
+                  color: memberTab === "outstanding" ? "var(--app-color-primary)" : "var(--app-color-text-muted)",
+                  fontWeight: memberTab === "outstanding" ? 600 : 400,
+                  cursor: "pointer",
+                }}
+              >
+                Outstanding
+              </button>
+              <button
+                onClick={() => {
+                  setMemberTab("history");
+                  setPage(1);
+                }}
+                style={{
+                  padding: "var(--app-space-sm) var(--app-space-md)",
+                  border: "none",
+                  background: "transparent",
+                  borderBottom: memberTab === "history" ? "2px solid var(--app-color-primary)" : "2px solid transparent",
+                  color: memberTab === "history" ? "var(--app-color-primary)" : "var(--app-color-text-muted)",
+                  fontWeight: memberTab === "history" ? 600 : 400,
+                  cursor: "pointer",
+                }}
+              >
+                History
+              </button>
+            </div>
             <select
-              value={statusFilter}
+              value={memberPeriod}
               onChange={(e) => {
-                setStatusFilter(e.target.value);
+                setMemberPeriod(e.target.value as FinancePeriod);
                 setPage(1);
               }}
               style={{
-                padding: "10px 12px",
+                padding: "8px 12px",
                 borderRadius: "var(--app-radius-md)",
                 border: "1px solid var(--app-color-border-subtle)",
-                background: "var(--app-color-surface-0)",
+                background: "var(--app-color-surface-1)",
                 color: "var(--app-color-text-primary)",
-                minWidth: 180,
               }}
             >
-              <option value="all">All statuses</option>
-              {isAdminFinance ? (
-                <>
-                  <option value="ISSUED">Issued</option>
-                  <option value="PARTIALLY_PAID">Partially paid</option>
-                  <option value="PAID">Paid</option>
-                  <option value="OVERDUE">Overdue</option>
-                  <option value="DRAFT">Draft</option>
-                  <option value="VOID">Void</option>
-                  <option value="FAILED">Failed</option>
-                </>
-              ) : (
-                <>
-                  <option value="outstanding">Outstanding</option>
-                  <option value="paid">Paid</option>
-                </>
-              )}
+              <option value="ALL_TIME">All Time</option>
+              <option value="YEAR_TO_DATE">This Year</option>
+              <option value="LAST_12_MONTHS">Last 12 Months</option>
             </select>
-            <Button variant="ghost" onClick={handleRefresh}>
-              Refresh
-            </Button>
           </div>
         </Card>
 
@@ -257,7 +173,7 @@ const InvoicesPage: React.FC = () => {
           )}
           {!loading && invoices.length === 0 && !error && (
             <div style={{ padding: "var(--app-space-lg)", textAlign: "center", color: "var(--app-color-text-muted)" }}>
-              No invoices found
+              {memberTab === "outstanding" ? "You have no outstanding invoices" : "You have no invoice history"}
             </div>
           )}
           {!loading && !error && invoices.length > 0 && (
@@ -265,55 +181,57 @@ const InvoicesPage: React.FC = () => {
               <table className="w-full" style={{ borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ textAlign: "left", borderBottom: "1px solid var(--app-color-border-subtle)" }}>
-                    {isAdminFinance && <th style={{ padding: "12px" }}>Member</th>}
                     <th style={{ padding: "12px" }}>Invoice #</th>
-                    <th style={{ padding: "12px" }}>Type</th>
+                    <th style={{ padding: "12px" }}>Source</th>
                     <th style={{ padding: "12px" }}>Due date</th>
                     <th style={{ padding: "12px", textAlign: "right" }}>Amount</th>
+                    {memberTab === "outstanding" && <th style={{ padding: "12px", textAlign: "right" }}>Balance</th>}
                     <th style={{ padding: "12px" }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((inv) => {
-                    const typeLabel = getTypeLabel(inv);
-                    const due = inv.dueDate ? new Date(inv.dueDate).toLocaleDateString("en-PH") : "-";
-                    const badge = statusBadge(inv.status);
-                    return (
-                      <tr key={inv.id} style={{ borderBottom: "1px solid var(--app-color-border-subtle)" }}>
-                        {isAdminFinance && (
-                          <td style={{ padding: "12px", verticalAlign: "top" }}>
-                            <div style={{ fontWeight: 600 }}>
-                              {inv.member?.firstName} {inv.member?.lastName}
-                            </div>
-                            <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)" }}>
-                              {inv.member?.email}
-                            </div>
-                          </td>
+                  {invoices.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      style={{
+                        borderBottom: "1px solid var(--app-color-border-subtle)",
+                        cursor: "pointer",
+                      }}
+                      onClick={() => navigate(`/invoices/${inv.id}`)}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "var(--app-color-surface-2)";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLTableRowElement).style.backgroundColor = "transparent";
+                      }}
+                    >
+                      <td style={{ padding: "12px", fontFamily: "monospace" }}>{inv.invoiceNumber}</td>
+                      <td style={{ padding: "12px" }}>
+                        <Tag variant="default" size="sm">
+                          {getSourceLabel(inv.source)}
+                        </Tag>
+                        {inv.event?.title && (
+                          <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginTop: "4px" }}>
+                            {inv.event.title}
+                          </div>
                         )}
-                        <td style={{ padding: "12px", fontFamily: "monospace" }}>{inv.invoiceNumber}</td>
-                        <td style={{ padding: "12px" }}>
-                          <div>{typeLabel}</div>
-                          {inv.event?.title && (
-                            <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)" }}>
-                              {inv.event.title}
-                            </div>
-                          )}
+                      </td>
+                      <td style={{ padding: "12px" }}>{formatDate(inv.dueAt)}</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>
+                        {formatCurrency(inv.amountCents)}
+                      </td>
+                      {memberTab === "outstanding" && (
+                        <td style={{ padding: "12px", textAlign: "right", fontWeight: 600, color: "var(--app-color-state-error)" }}>
+                          {inv.balanceCents > 0 ? formatCurrency(inv.balanceCents) : "—"}
                         </td>
-                        <td style={{ padding: "12px" }}>{due}</td>
-                        <td style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>
-                          {formatCurrency(inv.amountCents, inv.currency)}
-                        </td>
-                        <td style={{ padding: "12px" }}>
-                          <span
-                            className={badge.cls}
-                            style={{ display: "inline-block", padding: "4px 8px", borderRadius: "12px", fontSize: "12px" }}
-                          >
-                            {badge.label}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                      )}
+                      <td style={{ padding: "12px" }}>
+                        <Tag variant={getStatusBadgeVariant(inv.status)} size="sm">
+                          {inv.status}
+                        </Tag>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

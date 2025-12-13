@@ -7,7 +7,8 @@ import { applyTenantScope } from "./tenantGuard";
 import { toInvoiceDto } from "./eventsHandlers";
 import { generateInvoiceNumber } from "./utils/invoiceNumber";
 import { resolveFinancePeriod, FinancePeriod } from "./utils/financePeriod";
-import { mapInvoiceStatusToReporting, isOutstandingStatus, isPaidStatus, isCancelledStatus } from "./utils/invoiceStatusMapper";
+import { mapInvoiceStatusToReporting, isOutstandingStatus, isPaidStatus, isCancelledStatus, ReportingStatus } from "./utils/invoiceStatusMapper";
+import { calculateInvoiceBalance } from "./utils/invoiceBalance";
 
 const sanitizeInvoice = (inv: any) => ({
   id: inv.id,
@@ -24,32 +25,54 @@ const sanitizeInvoice = (inv: any) => ({
   source: inv.source ?? null,
 });
 
-const sanitizeInvoiceDetailed = (inv: any) => ({
-  id: inv.id,
-  invoiceNumber: inv.invoiceNumber,
-  memberId: inv.memberId,
-  member: inv.member
-    ? {
-        id: inv.member.id,
-        firstName: inv.member.firstName,
-        lastName: inv.member.lastName,
-        email: inv.member.email,
-      }
-    : undefined,
-  eventId: inv.eventId,
-  event: inv.event
-    ? {
-        id: inv.event.id,
-        title: inv.event.title,
-      }
-    : undefined,
-  description: inv.description,
-  amountCents: inv.amountCents,
-  currency: inv.currency,
-  status: inv.status,
-  dueDate: inv.dueAt,
-  createdAt: inv.createdAt,
-});
+const sanitizeInvoiceDetailed = (inv: any, includeBalance = false) => {
+  const base = {
+    id: inv.id,
+    invoiceNumber: inv.invoiceNumber,
+    memberId: inv.memberId,
+    member: inv.member
+      ? {
+          id: inv.member.id,
+          firstName: inv.member.firstName,
+          lastName: inv.member.lastName,
+          email: inv.member.email,
+        }
+      : undefined,
+    eventId: inv.eventId,
+    event: inv.event
+      ? {
+          id: inv.event.id,
+          title: inv.event.title,
+        }
+      : undefined,
+    description: inv.description,
+    amountCents: inv.amountCents,
+    currency: inv.currency,
+    status: inv.status,
+    rawStatus: inv.status, // Keep raw status for detail views
+    dueDate: inv.dueAt,
+    issuedAt: inv.issuedAt,
+    paidAt: inv.paidAt,
+    createdAt: inv.createdAt,
+    source: inv.source || null,
+  };
+
+  // Add balance calculation if payments are included
+  if (includeBalance && inv.payments) {
+    const balanceCents = calculateInvoiceBalance(inv.amountCents, inv.payments);
+    return {
+      ...base,
+      balanceCents,
+      status: mapInvoiceStatusToReporting(inv.status) as ReportingStatus,
+    };
+  }
+
+  // Map status to reporting status for list views
+  return {
+    ...base,
+    status: mapInvoiceStatusToReporting(inv.status) as ReportingStatus,
+  };
+};
 
 const sanitizePaymentMethod = (pm: any) => ({
   id: pm.id,
@@ -67,6 +90,10 @@ const sanitizePaymentMethod = (pm: any) => ({
   token: pm.token, // token is safe; no PAN/CVC stored
 });
 
+/**
+ * FIN-02: Enhanced Admin Invoice List Handler
+ * Supports period filtering, status/source filtering, sorting, and balance calculation
+ */
 export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedRequest, res: Response) {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
@@ -74,19 +101,72 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     const isPrivileged = roles.includes("ADMIN") || roles.includes("OFFICER") || roles.includes("FINANCE_MANAGER");
     if (!isPrivileged) return res.status(403).json({ error: "Forbidden" });
 
+    // Parse query parameters
     const page = Math.max(parseInt((req.query.page as string) || "1", 10), 1);
     const pageSize = Math.max(Math.min(parseInt((req.query.pageSize as string) || "50", 10), 200), 1);
     const search = (req.query.search as string | undefined)?.trim();
-    const status = (req.query.status as string | undefined) || undefined;
-    const source = (req.query.source as string | undefined)?.toUpperCase();
+    
+    // Support array or single value for status and source
+    const statusParam = req.query.status;
+    const statusArray = Array.isArray(statusParam) ? statusParam : statusParam ? [statusParam] : [];
+    const statusFilters = statusArray.filter((s: string) => s && s !== "all").map((s: string) => s.toUpperCase());
+    
+    const sourceParam = req.query.source;
+    const sourceArray = Array.isArray(sourceParam) ? sourceParam : sourceParam ? [sourceParam] : [];
+    const sourceFilters = sourceArray.filter((s: string) => s && s !== "all").map((s: string) => s.toUpperCase());
+    
+    // Period filtering (FIN-01 compatible)
+    let period: FinancePeriod | null = null;
+    if (req.query.period || req.query.from || req.query.to) {
+      try {
+        period = resolveFinancePeriod(
+          req.query.period as string | undefined,
+          req.query.from as string | undefined,
+          req.query.to as string | undefined
+        );
+      } catch (err: any) {
+        return res.status(400).json({ error: err.message || "Invalid period parameters" });
+      }
+    }
 
-    const where: any = { tenantId: req.user.tenantId, amountCents: { gt: 0 } };
-    if (status && status !== "all") {
-      where.status = status as InvoiceStatus;
+    // Sort parameters
+    const sortBy = (req.query.sortBy as string) || "issuedAt";
+    const sortOrder = (req.query.sortOrder as string)?.toUpperCase() === "ASC" ? "asc" : "desc";
+
+    // Build where clause
+    const where: any = {
+      tenantId: req.user.tenantId,
+      amountCents: { gt: 0 }, // Zero-amount exclusion
+    };
+
+    // Period filter (on issuedAt)
+    if (period) {
+      where.issuedAt = { gte: period.from, lte: period.to };
     }
-    if (source) {
-      where.source = source;
+
+    // Status filter: map reporting statuses to raw statuses
+    if (statusFilters.length > 0) {
+      const statusConditions: InvoiceStatus[] = [];
+      statusFilters.forEach((reportingStatus: string) => {
+        if (reportingStatus === "OUTSTANDING") {
+          statusConditions.push(InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE);
+        } else if (reportingStatus === "PAID") {
+          statusConditions.push(InvoiceStatus.PAID);
+        } else if (reportingStatus === "CANCELLED") {
+          statusConditions.push(InvoiceStatus.VOID, InvoiceStatus.FAILED, InvoiceStatus.DRAFT);
+        }
+      });
+      if (statusConditions.length > 0) {
+        where.status = { in: statusConditions };
+      }
     }
+
+    // Source filter
+    if (sourceFilters.length > 0) {
+      where.source = { in: sourceFilters };
+    }
+
+    // Search filter
     if (search) {
       where.OR = [
         { invoiceNumber: { contains: search, mode: "insensitive" } },
@@ -98,57 +178,48 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
       ];
     }
 
-    const [total, invoices, outstanding, overdue, recentPaid] = await Promise.all([
+    // Build orderBy clause
+    const orderBy: any = {};
+    if (sortBy === "dueAt") {
+      orderBy.dueAt = sortOrder;
+    } else if (sortBy === "amountCents") {
+      orderBy.amountCents = sortOrder;
+    } else if (sortBy === "memberName") {
+      // Sort by member last name, then first name
+      orderBy.member = { lastName: sortOrder, firstName: sortOrder };
+    } else {
+      // Default: issuedAt
+      orderBy.issuedAt = sortOrder;
+    }
+
+    // Fetch invoices with payments for balance calculation
+    const [total, invoices] = await Promise.all([
       prisma.invoice.count({ where }),
       prisma.invoice.findMany({
         where,
-        include: { event: true, member: true },
-        orderBy: { createdAt: "desc" },
+        include: {
+          event: true,
+          member: true,
+          payments: {
+            where: { status: PaymentStatus.SUCCEEDED },
+          },
+        },
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.invoice.aggregate({
-        where: { tenantId: req.user.tenantId, status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] as any } },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      prisma.invoice.aggregate({
-        where: { tenantId: req.user.tenantId, status: "OVERDUE" as any },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      prisma.invoice.aggregate({
-        where: {
-          tenantId: req.user.tenantId,
-          status: "PAID" as any,
-          updatedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
-        },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
     ]);
 
+    // Map invoices with balance calculation
+    const invoiceList = invoices.map((inv: any) => sanitizeInvoiceDetailed(inv, true));
+    
     return res.json({
-      invoices: invoices.map(sanitizeInvoiceDetailed),
+      invoices: invoiceList,
       pagination: {
         page,
         pageSize,
         total,
         totalPages: Math.max(1, Math.ceil(total / pageSize)),
-      },
-      summary: {
-        outstanding: {
-          count: outstanding._count || 0,
-          totalCents: outstanding._sum.amountCents || 0,
-        },
-        overdue: {
-          count: overdue._count || 0,
-          totalCents: overdue._sum.amountCents || 0,
-        },
-        paidLast30Days: {
-          count: recentPaid._count || 0,
-          totalCents: recentPaid._sum.amountCents || 0,
-        },
       },
     });
   } catch (err) {
@@ -209,7 +280,7 @@ export async function listMemberInvoicesHandler(req: AuthenticatedRequest, res: 
     });
 
     return res.json({
-      invoices: invoices.map(sanitizeInvoiceDetailed),
+      invoices: invoices.map((inv: any) => sanitizeInvoiceDetailed(inv, false)),
       pagination: {
         page,
         pageSize,
@@ -249,6 +320,259 @@ export async function createManualInvoiceHandler(req: AuthenticatedRequest, res:
     return res.status(201).json(sanitizeInvoice(invoice));
   } catch (err) {
     console.error("[billing] createManualInvoiceHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * FIN-02: Admin Invoice Detail Handler
+ * Returns full invoice details with payment history and source context
+ */
+export async function getAdminInvoiceDetailHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const roles = (req.user.roles || []).map((r) => r.toUpperCase());
+    const isPrivileged = roles.includes("ADMIN") || roles.includes("OFFICER") || roles.includes("FINANCE_MANAGER");
+    if (!isPrivileged) return res.status(403).json({ error: "Forbidden" });
+
+    const invoiceId = req.params.id;
+    if (!invoiceId) return res.status(400).json({ error: "Invoice ID required" });
+
+    const invoice = await prisma.invoice.findFirst({
+      where: {
+        id: invoiceId,
+        tenantId: req.user.tenantId,
+      },
+      include: {
+        member: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+          },
+        },
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startsAt: true,
+            endsAt: true,
+          },
+        },
+        payments: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            paymentMethod: {
+              select: {
+                id: true,
+                brand: true,
+                last4: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // Calculate balance
+    const succeededPayments = invoice.payments.filter((p) => p.status === PaymentStatus.SUCCEEDED);
+    const balanceCents = calculateInvoiceBalance(invoice.amountCents, succeededPayments);
+
+    // Build source context
+    const sourceContext: any = {
+      type: (invoice.source || "OTHER").toUpperCase(),
+    };
+
+    if (invoice.source === "EVENT" && invoice.event) {
+      sourceContext.event = {
+        id: invoice.event.id,
+        eventTitle: invoice.event.title,
+        eventDate: invoice.event.startsAt,
+      };
+    } else if (invoice.source === "DUES") {
+      // Extract membership year from invoice number or description if available
+      const yearMatch = invoice.invoiceNumber?.match(/\d{4}/);
+      sourceContext.membershipYear = yearMatch ? yearMatch[0] : new Date(invoice.issuedAt).getFullYear().toString();
+      sourceContext.description = invoice.description;
+    } else if (invoice.source === "DONATION") {
+      sourceContext.description = invoice.description;
+      // Campaign name would come from a future field if we add it
+    } else {
+      sourceContext.description = invoice.description;
+    }
+
+    // Build line items (single item from invoice description for now)
+    const lineItems = [
+      {
+        description: invoice.description || `Invoice ${invoice.invoiceNumber}`,
+        quantity: 1,
+        unitAmountCents: invoice.amountCents,
+        totalAmountCents: invoice.amountCents,
+      },
+    ];
+
+    // Map payments
+    const paymentRecords = invoice.payments.map((p) => ({
+      id: p.id,
+      amountCents: p.amountCents,
+      currency: p.currency,
+      status: p.status,
+      reference: p.reference,
+      processedAt: p.processedAt,
+      createdAt: p.createdAt,
+      paymentMethod: p.paymentMethod
+        ? {
+            id: p.paymentMethod.id,
+            brand: p.paymentMethod.brand,
+            last4: p.paymentMethod.last4,
+          }
+        : null,
+    }));
+
+    return res.json({
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      memberId: invoice.memberId,
+      member: invoice.member,
+      source: invoice.source || "OTHER",
+      status: mapInvoiceStatusToReporting(invoice.status),
+      rawStatus: invoice.status,
+      amountCents: invoice.amountCents,
+      balanceCents,
+      currency: invoice.currency,
+      issuedAt: invoice.issuedAt,
+      dueAt: invoice.dueAt,
+      paidAt: invoice.paidAt,
+      description: invoice.description,
+      lineItems,
+      payments: paymentRecords,
+      sourceContext,
+    });
+  } catch (err) {
+    console.error("[billing] getAdminInvoiceDetailHandler error", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * FIN-02: Member Invoice Detail Handler
+ * Returns invoice details for authenticated member (restricted)
+ */
+export async function getMemberInvoiceDetailHandler(req: AuthenticatedRequest, res: Response) {
+  try {
+    if (!req.user) return res.status(401).json({ error: "Unauthorized" });
+    const memberId = req.user.memberId;
+    if (!memberId) return res.status(403).json({ error: "No member context" });
+
+    const invoiceId = req.params.id;
+    if (!invoiceId) return res.status(400).json({ error: "Invoice ID required" });
+
+    const invoice = await prisma.invoice.findFirst({
+      where: {
+        id: invoiceId,
+        tenantId: req.user.tenantId,
+        memberId, // Enforce ownership
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startsAt: true,
+          },
+        },
+        payments: {
+          where: { status: PaymentStatus.SUCCEEDED },
+          orderBy: { createdAt: "desc" },
+          include: {
+            paymentMethod: {
+              select: {
+                id: true,
+                brand: true,
+                last4: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!invoice) {
+      // Return 404 to avoid leaking existence
+      return res.status(404).json({ error: "Invoice not found" });
+    }
+
+    // Calculate balance
+    const balanceCents = calculateInvoiceBalance(invoice.amountCents, invoice.payments);
+
+    // Build simplified source context for member view
+    const sourceContext: any = {
+      type: (invoice.source || "OTHER").toUpperCase(),
+    };
+
+    if (invoice.source === "EVENT" && invoice.event) {
+      sourceContext.event = {
+        id: invoice.event.id,
+        eventTitle: invoice.event.title,
+        eventDate: invoice.event.startsAt,
+      };
+    } else if (invoice.source === "DUES") {
+      const yearMatch = invoice.invoiceNumber?.match(/\d{4}/);
+      sourceContext.membershipYear = yearMatch ? yearMatch[0] : new Date(invoice.issuedAt).getFullYear().toString();
+    }
+
+    // Build line items
+    const lineItems = [
+      {
+        description: invoice.description || `Invoice ${invoice.invoiceNumber}`,
+        quantity: 1,
+        unitAmountCents: invoice.amountCents,
+        totalAmountCents: invoice.amountCents,
+      },
+    ];
+
+    // Map payments (only succeeded for member view)
+    const paymentRecords = invoice.payments.map((p) => ({
+      id: p.id,
+      amountCents: p.amountCents,
+      currency: p.currency,
+      status: p.status,
+      reference: p.reference,
+      processedAt: p.processedAt,
+      createdAt: p.createdAt,
+      paymentMethod: p.paymentMethod
+        ? {
+            id: p.paymentMethod.id,
+            brand: p.paymentMethod.brand,
+            last4: p.paymentMethod.last4,
+          }
+        : null,
+    }));
+
+    return res.json({
+      id: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      source: invoice.source || "OTHER",
+      status: mapInvoiceStatusToReporting(invoice.status),
+      rawStatus: invoice.status,
+      amountCents: invoice.amountCents,
+      balanceCents,
+      currency: invoice.currency,
+      issuedAt: invoice.issuedAt,
+      dueAt: invoice.dueAt,
+      paidAt: invoice.paidAt,
+      description: invoice.description,
+      lineItems,
+      payments: paymentRecords,
+      sourceContext,
+    });
+  } catch (err) {
+    console.error("[billing] getMemberInvoiceDetailHandler error", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 }

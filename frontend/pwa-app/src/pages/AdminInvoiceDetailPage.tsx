@@ -1,0 +1,320 @@
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { getAdminInvoiceDetail, InvoiceDetail } from "../api/client";
+import { useSession } from "../hooks/useSession";
+import { Card, Button, PageShell } from "../ui";
+import { Tag } from "../components/primitives/Tag";
+import { formatCurrency } from "../utils/formatters";
+
+const AdminInvoiceDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { tokens } = useSession();
+  const token = tokens?.access_token || null;
+
+  const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadInvoice = async () => {
+      if (!token || !id) {
+        setLoading(false);
+        return;
+      }
+      try {
+        setLoading(true);
+        const data = await getAdminInvoiceDetail(token, id);
+        setInvoice(data);
+        setError(null);
+      } catch (e: any) {
+        setError(e?.message || "Failed to load invoice");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadInvoice();
+  }, [token, id]);
+
+  const getStatusBadgeVariant = (status: string): "success" | "default" | "danger" => {
+    if (status === "PAID") return "success";
+    if (status === "OUTSTANDING") return "default";
+    return "danger";
+  };
+
+  const getSourceLabel = (source: string): string => {
+    const labels: Record<string, string> = {
+      DUES: "Dues",
+      DONATION: "Donation",
+      EVENT: "Event",
+      OTHER: "Other",
+    };
+    return labels[source] || source;
+  };
+
+  const formatDate = (dateString: string | null): string => {
+    if (!dateString) return "Not set";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  if (loading) {
+    return (
+      <PageShell title="Invoice Detail">
+        <Card>
+          <div style={{ padding: "var(--app-space-lg)", textAlign: "center" }}>Loading invoice...</div>
+        </Card>
+      </PageShell>
+    );
+  }
+
+  if (error || !invoice) {
+    return (
+      <PageShell title="Invoice Detail">
+        <Card>
+          <div style={{ padding: "var(--app-space-lg)", color: "var(--app-color-state-error)" }}>
+            {error || "Invoice not found"}
+          </div>
+          <div style={{ padding: "var(--app-space-md)" }}>
+            <Button variant="secondary" onClick={() => navigate("/admin/invoices")}>
+              Back to Invoices
+            </Button>
+          </div>
+        </Card>
+      </PageShell>
+    );
+  }
+
+  const totalPaid = invoice.payments.reduce((sum, p) => sum + p.amountCents, 0);
+
+  return (
+    <PageShell
+      title={`Invoice ${invoice.invoiceNumber}`}
+      description={`View invoice details, payment history, and source context`}
+      actions={
+        <Button variant="secondary" onClick={() => navigate("/admin/invoices")}>
+          Back to Invoices
+        </Button>
+      }
+    >
+      <div style={{ display: "grid", gap: "var(--app-space-lg)" }}>
+        {/* Header Section */}
+        <Card>
+          <div style={{ display: "grid", gap: "var(--app-space-md)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "var(--app-space-md)" }}>
+              <div>
+                <h2 style={{ fontSize: "var(--app-font-title)", fontWeight: 700, marginBottom: "var(--app-space-xs)" }}>
+                  {invoice.invoiceNumber}
+                </h2>
+                <div style={{ display: "flex", gap: "var(--app-space-sm)", alignItems: "center", flexWrap: "wrap" }}>
+                  <Tag variant={getStatusBadgeVariant(invoice.status)}>{invoice.status}</Tag>
+                  <Tag variant="default">{getSourceLabel(invoice.source)}</Tag>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: "var(--app-font-label)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>
+                  Total Amount
+                </div>
+                <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700 }}>
+                  {formatCurrency(invoice.amountCents)}
+                </div>
+                {invoice.balanceCents > 0 && (
+                  <>
+                    <div style={{ fontSize: "var(--app-font-label)", color: "var(--app-color-text-muted)", marginTop: "var(--app-space-sm)", marginBottom: "4px" }}>
+                      Outstanding Balance
+                    </div>
+                    <div style={{ fontSize: "var(--app-font-heading)", fontWeight: 700, color: "var(--app-color-state-error)" }}>
+                      {formatCurrency(invoice.balanceCents)}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Member Info */}
+            {invoice.member && (
+              <div style={{ paddingTop: "var(--app-space-md)", borderTop: "1px solid var(--app-color-border-subtle)" }}>
+                <div style={{ fontSize: "var(--app-font-label)", fontWeight: 600, marginBottom: "var(--app-space-xs)" }}>Member</div>
+                <div>
+                  <div style={{ fontWeight: 500 }}>
+                    {invoice.member.firstName} {invoice.member.lastName}
+                  </div>
+                  <div style={{ fontSize: "var(--app-font-body)", color: "var(--app-color-text-muted)" }}>
+                    {invoice.member.email}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Dates */}
+            <div style={{ paddingTop: "var(--app-space-md)", borderTop: "1px solid var(--app-color-border-subtle)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--app-space-md)" }}>
+              <div>
+                <div style={{ fontSize: "var(--app-font-label)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>Issued</div>
+                <div>{formatDate(invoice.issuedAt)}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: "var(--app-font-label)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>Due Date</div>
+                <div>{formatDate(invoice.dueAt)}</div>
+              </div>
+              {invoice.paidAt && (
+                <div>
+                  <div style={{ fontSize: "var(--app-font-label)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>Paid</div>
+                  <div>{formatDate(invoice.paidAt)}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Source Context */}
+        {invoice.sourceContext && (
+          <Card>
+            <h3 style={{ fontSize: "var(--app-font-heading)", fontWeight: 600, marginBottom: "var(--app-space-md)" }}>Source Context</h3>
+            {invoice.sourceContext.event && (
+              <div>
+                <div style={{ fontSize: "var(--app-font-label)", fontWeight: 500, marginBottom: "var(--app-space-xs)" }}>Event</div>
+                <Link
+                  to={`/admin/events/${invoice.sourceContext.event.id}`}
+                  style={{ color: "var(--app-color-primary)", textDecoration: "none", fontWeight: 500 }}
+                >
+                  {invoice.sourceContext.event.eventTitle}
+                </Link>
+                {invoice.sourceContext.event.eventDate && (
+                  <div style={{ fontSize: "var(--app-font-body)", color: "var(--app-color-text-muted)", marginTop: "4px" }}>
+                    {formatDate(invoice.sourceContext.event.eventDate)}
+                  </div>
+                )}
+              </div>
+            )}
+            {invoice.sourceContext.membershipYear && (
+              <div style={{ marginTop: invoice.sourceContext.event ? "var(--app-space-md)" : 0 }}>
+                <div style={{ fontSize: "var(--app-font-label)", fontWeight: 500, marginBottom: "var(--app-space-xs)" }}>Membership Year</div>
+                <div>{invoice.sourceContext.membershipYear}</div>
+              </div>
+            )}
+            {invoice.sourceContext.description && !invoice.sourceContext.event && (
+              <div>
+                <div style={{ fontSize: "var(--app-font-label)", fontWeight: 500, marginBottom: "var(--app-space-xs)" }}>Description</div>
+                <div>{invoice.sourceContext.description}</div>
+              </div>
+            )}
+          </Card>
+        )}
+
+        {/* Line Items */}
+        <Card>
+          <h3 style={{ fontSize: "var(--app-font-heading)", fontWeight: 600, marginBottom: "var(--app-space-md)" }}>Line Items</h3>
+          <div className="overflow-auto">
+            <table className="w-full" style={{ borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "2px solid var(--app-color-border-subtle)" }}>
+                  <th style={{ padding: "12px", fontWeight: 600 }}>Description</th>
+                  <th style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>Quantity</th>
+                  <th style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>Unit Price</th>
+                  <th style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.lineItems.map((item, idx) => (
+                  <tr key={idx} style={{ borderBottom: "1px solid var(--app-color-border-subtle)" }}>
+                    <td style={{ padding: "12px" }}>{item.description}</td>
+                    <td style={{ padding: "12px", textAlign: "right" }}>{item.quantity}</td>
+                    <td style={{ padding: "12px", textAlign: "right" }}>{formatCurrency(item.unitAmountCents)}</td>
+                    <td style={{ padding: "12px", textAlign: "right", fontWeight: 500 }}>{formatCurrency(item.totalAmountCents)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr style={{ borderTop: "2px solid var(--app-color-border-subtle)" }}>
+                  <td colSpan={3} style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>Total</td>
+                  <td style={{ padding: "12px", textAlign: "right", fontWeight: 700, fontSize: "var(--app-font-heading)" }}>
+                    {formatCurrency(invoice.amountCents)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </Card>
+
+        {/* Payment History */}
+        <Card>
+          <h3 style={{ fontSize: "var(--app-font-heading)", fontWeight: 600, marginBottom: "var(--app-space-md)" }}>Payment History</h3>
+          {invoice.payments.length === 0 ? (
+            <div style={{ padding: "var(--app-space-md)", color: "var(--app-color-text-muted)", textAlign: "center" }}>
+              No payments recorded
+            </div>
+          ) : (
+            <>
+              <div className="overflow-auto">
+                <table className="w-full" style={{ borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", borderBottom: "2px solid var(--app-color-border-subtle)" }}>
+                      <th style={{ padding: "12px", fontWeight: 600 }}>Date</th>
+                      <th style={{ padding: "12px", fontWeight: 600 }}>Method</th>
+                      <th style={{ padding: "12px", fontWeight: 600 }}>Reference</th>
+                      <th style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>Amount</th>
+                      <th style={{ padding: "12px", fontWeight: 600 }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoice.payments.map((payment) => (
+                      <tr key={payment.id} style={{ borderBottom: "1px solid var(--app-color-border-subtle)" }}>
+                        <td style={{ padding: "12px" }}>{formatDate(payment.processedAt || payment.createdAt)}</td>
+                        <td style={{ padding: "12px" }}>
+                          {payment.paymentMethod ? (
+                            <div>
+                              <div>{payment.paymentMethod.brand}</div>
+                              <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)" }}>
+                                •••• {payment.paymentMethod.last4}
+                              </div>
+                            </div>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td style={{ padding: "12px", fontFamily: "monospace", fontSize: "var(--app-font-body)" }}>
+                          {payment.reference || "—"}
+                        </td>
+                        <td style={{ padding: "12px", textAlign: "right", fontWeight: 500 }}>{formatCurrency(payment.amountCents)}</td>
+                        <td style={{ padding: "12px" }}>
+                          <Tag variant={payment.status === "SUCCEEDED" ? "success" : payment.status === "FAILED" ? "danger" : "default"} size="sm">
+                            {payment.status}
+                          </Tag>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ borderTop: "2px solid var(--app-color-border-subtle)" }}>
+                      <td colSpan={3} style={{ padding: "12px", textAlign: "right", fontWeight: 600 }}>Total Paid</td>
+                      <td style={{ padding: "12px", textAlign: "right", fontWeight: 700, fontSize: "var(--app-font-heading)" }}>
+                        {formatCurrency(totalPaid)}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              {invoice.balanceCents > 0 && (
+                <div style={{ marginTop: "var(--app-space-md)", padding: "var(--app-space-md)", backgroundColor: "var(--app-color-surface-2)", borderRadius: "var(--app-radius-md)" }}>
+                  <div style={{ fontSize: "var(--app-font-label)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>Remaining Balance</div>
+                  <div style={{ fontSize: "var(--app-font-title)", fontWeight: 700, color: "var(--app-color-state-error)" }}>
+                    {formatCurrency(invoice.balanceCents)}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </Card>
+      </div>
+    </PageShell>
+  );
+};
+
+export default AdminInvoiceDetailPage;
+

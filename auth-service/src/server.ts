@@ -48,6 +48,8 @@ import {
   runPaymentRemindersHandler,
   sendInvoiceHandler,
   listTenantInvoicesPaginatedHandler,
+  getAdminInvoiceDetailHandler,
+  getMemberInvoiceDetailHandler,
   getFinanceSummaryHandler,
 } from "./billingHandlers";
 import { listMembersReport } from "./reportingHandlers";
@@ -213,6 +215,7 @@ billingRouter.post("/invoices/:id/mark-paid", requireOfficerOrAdmin, recordInvoi
 billingRouter.post("/invoices", requireOfficerOrAdmin, createManualInvoiceHandler);
 billingRouter.get("/invoices", requireMemberOrHigher, listMemberInvoicesHandler);
 billingRouter.get("/invoices/tenant", requireAdminOrFinance, listTenantInvoicesPaginatedHandler);
+billingRouter.get("/admin/invoices/:id", requireAdminOrFinance, getAdminInvoiceDetailHandler);
 billingRouter.get("/admin/finance/summary", requireAdminOrFinance, getFinanceSummaryHandler);
 
 // Out-of-scope stubs
@@ -227,6 +230,7 @@ app.use("/billing", billingRouter);
 
 const invoicesRouter = Router();
 invoicesRouter.get("/invoices/me", requireMemberOrHigher, listMyInvoicesHandler);
+invoicesRouter.get("/invoices/me/:id", requireMemberOrHigher, getMemberInvoiceDetailHandler);
 invoicesRouter.post("/invoices/:id/record-payment", requireOfficerOrAdmin, recordInvoicePaymentHandler);
 app.use("/", invoicesRouter);
 app.use("/api", invoicesRouter);

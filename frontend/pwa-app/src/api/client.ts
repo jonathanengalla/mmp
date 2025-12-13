@@ -333,12 +333,119 @@ export const eventCheckout = async (token: string, eventId: string): Promise<Eve
   return json(res);
 };
 
+// FIN-02: Invoice List/Detail Types
+export type InvoiceReportingStatus = "OUTSTANDING" | "PAID" | "CANCELLED";
+export type InvoiceSource = "DUES" | "DONATION" | "EVENT" | "OTHER";
+
+export interface InvoiceListItem {
+  id: string;
+  invoiceNumber: string;
+  memberId: string;
+  member?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  source: InvoiceSource;
+  status: InvoiceReportingStatus;
+  rawStatus: string;
+  amountCents: number;
+  balanceCents: number;
+  currency: string;
+  issuedAt: string;
+  dueAt: string | null;
+  paidAt: string | null;
+  eventId: string | null;
+  event?: {
+    id: string;
+    title: string;
+  };
+  description: string | null;
+}
+
+export interface InvoiceLineItem {
+  description: string;
+  quantity: number;
+  unitAmountCents: number;
+  totalAmountCents: number;
+}
+
+export interface PaymentRecord {
+  id: string;
+  amountCents: number;
+  currency: string;
+  status: string;
+  reference: string | null;
+  processedAt: string | null;
+  createdAt: string;
+  paymentMethod: {
+    id: string;
+    brand: string;
+    last4: string;
+  } | null;
+}
+
+export interface InvoiceSourceContext {
+  type: InvoiceSource;
+  event?: {
+    id: string;
+    eventTitle: string;
+    eventDate: string | null;
+  };
+  membershipYear?: string;
+  description?: string | null;
+  campaignName?: string | null;
+}
+
+export interface InvoiceDetail {
+  id: string;
+  invoiceNumber: string;
+  memberId?: string;
+  member?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  source: InvoiceSource;
+  status: InvoiceReportingStatus;
+  rawStatus: string;
+  amountCents: number;
+  balanceCents: number;
+  currency: string;
+  issuedAt: string;
+  dueAt: string | null;
+  paidAt: string | null;
+  description: string | null;
+  lineItems: InvoiceLineItem[];
+  payments: PaymentRecord[];
+  sourceContext: InvoiceSourceContext;
+}
+
+export interface InvoiceListResponse {
+  invoices?: InvoiceListItem[];
+  items?: InvoiceListItem[]; // Member endpoint uses items
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export const listMyInvoices = async (
   token: string,
-  params: { status?: "all" | "outstanding" | "paid"; page?: number; pageSize?: number } = {}
-) => {
+  params: {
+    tab?: "outstanding" | "history";
+    period?: FinancePeriod;
+    page?: number;
+    pageSize?: number;
+  } = {}
+): Promise<InvoiceListResponse> => {
   const search = new URLSearchParams();
-  if (params.status && params.status !== "all") search.set("status", params.status);
+  if (params.tab) search.set("tab", params.tab);
+  if (params.period) search.set("period", params.period);
   if (params.page) search.set("page", String(params.page));
   if (params.pageSize) search.set("pageSize", String(params.pageSize));
   const res = await fetch(`${API_BASE_URL}/invoices/me?${search.toString()}`, {
@@ -347,17 +454,59 @@ export const listMyInvoices = async (
   return json(res);
 };
 
+// FIN-02: Enhanced Admin Invoice List
 export const listTenantInvoices = async (
   token: string,
-  params: { status?: string; search?: string; page?: number; pageSize?: number; source?: string } = {}
-) => {
+  params: {
+    status?: InvoiceReportingStatus | InvoiceReportingStatus[];
+    source?: InvoiceSource | InvoiceSource[];
+    period?: FinancePeriod;
+    from?: string;
+    to?: string;
+    search?: string;
+    sortBy?: "issuedAt" | "dueAt" | "amountCents" | "memberName";
+    sortOrder?: "ASC" | "DESC";
+    page?: number;
+    pageSize?: number;
+  } = {}
+): Promise<InvoiceListResponse> => {
   const search = new URLSearchParams();
-  if (params.status && params.status !== "all") search.set("status", params.status);
+  
+  // Support array or single value for status and source
+  if (params.status) {
+    const statusArray = Array.isArray(params.status) ? params.status : [params.status];
+    statusArray.forEach((s) => search.append("status", s));
+  }
+  if (params.source) {
+    const sourceArray = Array.isArray(params.source) ? params.source : [params.source];
+    sourceArray.forEach((s) => search.append("source", s));
+  }
+  
+  if (params.period) search.set("period", params.period);
+  if (params.from) search.set("from", params.from);
+  if (params.to) search.set("to", params.to);
   if (params.search) search.set("search", params.search);
+  if (params.sortBy) search.set("sortBy", params.sortBy);
+  if (params.sortOrder) search.set("sortOrder", params.sortOrder);
   if (params.page) search.set("page", String(params.page));
   if (params.pageSize) search.set("pageSize", String(params.pageSize));
-  if (params.source) search.set("source", params.source);
+  
   const res = await fetch(`${API_BASE_URL}/billing/invoices/tenant?${search.toString()}`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  return json(res);
+};
+
+// FIN-02: Invoice Detail Endpoints
+export const getAdminInvoiceDetail = async (token: string, invoiceId: string): Promise<InvoiceDetail> => {
+  const res = await fetch(`${API_BASE_URL}/billing/admin/invoices/${encodeURIComponent(invoiceId)}`, {
+    headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
+  });
+  return json(res);
+};
+
+export const getMemberInvoiceDetail = async (token: string, invoiceId: string): Promise<InvoiceDetail> => {
+  const res = await fetch(`${API_BASE_URL}/invoices/me/${encodeURIComponent(invoiceId)}`, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);

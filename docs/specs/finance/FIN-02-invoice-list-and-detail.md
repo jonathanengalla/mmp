@@ -434,6 +434,41 @@ This should be shared between FIN-01 summary and FIN-02 list endpoints.
 **File:** `auth-service/tests/fin02-invoice-list.test.ts`
 
 **Test Cases:**
+1. Status mapping: ISSUED/PARTIALLY_PAID/OVERDUE → OUTSTANDING
+2. Status mapping: PAID → PAID
+3. Status mapping: VOID/FAILED/DRAFT → CANCELLED
+4. Balance calculation: unpaid invoice (full amount)
+5. Balance calculation: partially paid invoice
+6. Balance calculation: fully paid invoice (balance = 0)
+7. Balance calculation: ignores non-succeeded payments
+8. Balance calculation: never returns negative balance
+9. Period resolution: YEAR_TO_DATE
+10. Period resolution: CURRENT_MONTH
+11. Period resolution: custom date range
+
+**Test Command:**
+```bash
+cd auth-service
+npm run test:fin02
+```
+
+**Note:** Integration tests for endpoint handlers (filtering, pagination, member isolation) are recommended but not yet implemented. Manual QA scenarios cover these behaviors.
+
+### Frontend Tests
+
+**Status:** Not yet implemented. Basic smoke tests recommended for:
+- Filter interactions trigger correct API calls
+- Tab switching updates invoice list
+- Navigation to detail pages works
+- Empty states display correctly
+
+### Test Commands
+
+### Backend Tests
+
+**File:** `auth-service/tests/fin02-invoice-list.test.ts`
+
+**Test Cases:**
 1. Filter by collapsed status (OUTSTANDING, PAID, CANCELLED) returns only matching invoices
 2. Filter by source (DUES, DONATION, EVENT, OTHER) returns only matching invoices
 3. Period filtering respects date boundaries (YTD, Current Month, etc.)

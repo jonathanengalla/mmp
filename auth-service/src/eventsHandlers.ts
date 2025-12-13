@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { EventRegistrationStatus as PrismaEventRegistrationStatus, EventStatus as PrismaEventStatus, InvoiceStatus as PrismaInvoiceStatus } from "@prisma/client";
+import { EventRegistrationStatus as PrismaEventRegistrationStatus, EventStatus as PrismaEventStatus, InvoiceStatus as PrismaInvoiceStatus, InvoiceStatus as InvoiceStatus, PaymentStatus } from "@prisma/client";
 import { prisma } from "./db/prisma";
 import { applyTenantScope } from "./tenantGuard";
 import type { AuthenticatedRequest } from "./authMiddleware";
@@ -30,6 +30,8 @@ import {
   setEvent,
 } from "./eventsStore";
 import { createEventInvoice as createEventInvoiceFromStore, getInvoiceById } from "./billingStore";
+import { mapInvoiceStatusToReporting } from "./utils/invoiceStatusMapper";
+import { calculateInvoiceBalance } from "./utils/invoiceBalance";
 import { sendEmail } from "./notifications/emailSender";
 import { buildEventInvoiceEmail, buildEventRsvpEmail } from "./notifications/emailTemplates";
 
@@ -791,24 +793,95 @@ export const eventCheckoutHandler = async (req: Request, res: Response) => {
   return res.status(201).json(payload);
 };
 
+/**
+ * FIN-02: Enhanced Member Invoice List Handler
+ * Supports Outstanding/History tabs, period filtering, and pagination
+ */
 export const listMyInvoicesHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: { message: "Unauthorized" } });
     const memberId = req.user.memberId;
     if (!memberId) return res.status(403).json({ error: { message: "No member context" } });
 
-    const invoices = await prisma.invoice.findMany(
-      applyTenantScope(
-        {
-          where: { memberId },
-          include: { event: true },
-          orderBy: { issuedAt: "desc" },
+    // Parse query parameters
+    const page = Math.max(parseInt((req.query.page as string) || "1", 10), 1);
+    const pageSize = Math.max(Math.min(parseInt((req.query.pageSize as string) || "50", 10), 200), 1);
+    
+    // Tab filter: outstanding or history
+    const tab = (req.query.tab as string) || (req.query.status as string) || "all";
+    
+    // Period filtering (simplified for member view)
+    let period: any = null;
+    if (req.query.period) {
+      const periodType = (req.query.period as string).toUpperCase();
+      const now = new Date();
+      if (periodType === "YEAR_TO_DATE" || periodType === "CURRENT_YEAR") {
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        period = { gte: yearStart, lte: now };
+      } else if (periodType === "LAST_12_MONTHS") {
+        const twelveMonthsAgo = new Date(now);
+        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+        period = { gte: twelveMonthsAgo, lte: now };
+      }
+      // ALL_TIME: no period filter
+    }
+
+    // Build where clause
+    const where: any = {
+      memberId,
+      tenantId: req.user.tenantId,
+      amountCents: { gt: 0 }, // Zero-amount exclusion
+    };
+
+    // Status filter based on tab
+    if (tab === "outstanding" || tab === "OUTSTANDING") {
+      where.status = { in: [InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE] };
+    } else if (tab === "history" || tab === "HISTORY") {
+      where.status = { in: [InvoiceStatus.PAID, InvoiceStatus.VOID, InvoiceStatus.FAILED, InvoiceStatus.DRAFT] };
+    }
+
+    // Period filter
+    if (period) {
+      where.issuedAt = period;
+    }
+
+    // Fetch with pagination
+    const [total, invoices] = await Promise.all([
+      prisma.invoice.count({ where }),
+      prisma.invoice.findMany({
+        where,
+        include: {
+          event: true,
+          payments: {
+            where: { status: PaymentStatus.SUCCEEDED },
+          },
         },
-        req.user.tenantId
-      )
-    );
-    const items = invoices.map(toInvoiceDto);
-    return res.json({ items });
+        orderBy: { issuedAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
+
+    // Map to response format with status grouping and balance
+    const items = invoices.map((inv) => {
+      const balanceCents = calculateInvoiceBalance(inv.amountCents, inv.payments || []);
+      return {
+        ...toInvoiceDto(inv),
+        status: mapInvoiceStatusToReporting(inv.status),
+        rawStatus: inv.status,
+        balanceCents,
+      };
+    });
+
+    return res.json({
+      items,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    });
   } catch (err) {
     console.error("[invoices] listMyInvoicesHandler error", err);
     return res.status(500).json({ error: { message: "Internal server error" } });
