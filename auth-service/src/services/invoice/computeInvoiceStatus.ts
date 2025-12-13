@@ -38,8 +38,14 @@ export function computeInvoiceStatus(
     return InvoiceStatus.VOID;
   }
 
-  const allocated = allocationsTotalCents;
+  // Handle negative allocations (defensive - should not happen)
+  const allocated = Math.max(allocationsTotalCents, 0);
   const due = invoice.dueAt;
+
+  // Zero amount invoice is considered paid
+  if (invoice.amountCents === 0) {
+    return InvoiceStatus.PAID;
+  }
 
   // No allocations
   if (allocated <= 0) {

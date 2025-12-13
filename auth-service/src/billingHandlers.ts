@@ -842,25 +842,36 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         }
       } else if (reportingStatus === "PAID") {
         totalCollected.count += 1;
-        totalCollected.totalCents += collectedAmount; // Full invoice amount for PAID
+        totalCollected.totalCents += invoice.amountCents; // Full invoice amount for PAID (use invoice amount as source of truth)
       } else {
         totalCancelled.count += 1;
         totalCancelled.totalCents += invoice.amountCents;
       }
 
       // Update bySource (only for non-cancelled)
+      // Count invoices by status to match top metrics, not just by amount
       if (!isCancelledStatus(invoice.status)) {
         const sourceKey = source === "EVT" ? "EVENT" : source;
         const bucket = bySource[sourceKey] || bySource.OTHER;
 
-        if (outstandingAmount > 0) {
+        // Count outstanding invoices by status (matches top metrics logic)
+        if (reportingStatus === "OUTSTANDING") {
           bucket.outstanding.count += 1;
           bucket.outstanding.totalCents += outstandingAmount;
         }
 
-        if (collectedAmount > 0) {
+        // Count collected invoices: PAID status OR any collected amount (for partially paid)
+        if (reportingStatus === "PAID") {
           bucket.collected.count += 1;
+          // For PAID invoices, use invoice amount (they're fully paid)
+          // Allocations should match, but use invoice amount as source of truth for PAID status
+          bucket.collected.totalCents += invoice.amountCents;
+        } else if (reportingStatus === "OUTSTANDING" && collectedAmount > 0) {
+          // Partially paid invoices: count in collected but not as a separate invoice count
+          // (they're already counted in outstanding)
           bucket.collected.totalCents += collectedAmount;
+          // Note: We don't increment count here to avoid double-counting the invoice
+          // The invoice is counted once in outstanding, and we just add its collected amount
         }
       }
     }

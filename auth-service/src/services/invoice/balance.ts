@@ -37,5 +37,7 @@ export function computeInvoiceBalanceCents(
   invoice: { amountCents: number },
   allocationsTotalCents: number
 ): number {
-  return Math.max(invoice.amountCents - allocationsTotalCents, 0);
+  // Handle negative allocations (defensive - should not happen)
+  const allocated = Math.max(allocationsTotalCents, 0);
+  return Math.max(invoice.amountCents - allocated, 0);
 }
