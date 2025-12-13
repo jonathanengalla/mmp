@@ -923,14 +923,16 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
     let totalCancelled = { count: 0, totalCents: 0 };
 
     for (const invoice of allInvoices) {
-      const source = (invoice.source || "OTHER").toUpperCase();
+      // Normalize source: handle null, undefined, empty string, and whitespace
+      const rawSource = invoice.source;
+      const source = (rawSource && rawSource.trim() ? rawSource.trim().toUpperCase() : "OTHER");
       const reportingStatus = mapInvoiceStatusToReporting(invoice.status);
       const outstandingAmount = calculateOutstandingAmount(invoice);
       const collectedAmount = calculateCollectedAmount(invoice);
 
-      // Debug logging for outstanding invoices to trace source mapping
-      if (reportingStatus === "OUTSTANDING" && outstandingAmount > 0) {
-        console.log(`[FIN-01 Debug] Outstanding invoice ${invoice.invoiceNumber}: source="${invoice.source}", normalized="${source}", outstanding=${outstandingAmount}, status=${invoice.status}`);
+      // Debug logging for ALL outstanding invoices to trace source mapping
+      if (reportingStatus === "OUTSTANDING") {
+        console.log(`[FIN-01 Debug] Outstanding invoice ${invoice.invoiceNumber}: source="${invoice.source}", normalized="${source}", outstanding=${outstandingAmount}, status=${invoice.status}, cancelled=${isCancelledStatus(invoice.status)}`);
       }
 
       // Update byStatus
@@ -968,19 +970,19 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         // Database may store: "EVT", "EVENT", "DUES", "DUE", "DONATION", "DON", "OTHER", "OTH", or null/empty
         // Invoice numbers use: "EVT", "DUES", "DON", "OTH"
         // Frontend may send: "EVENT", "DUES", "DONATION", "OTHER"
+        // Note: source is already normalized to uppercase and trimmed above
         let sourceKey: string;
-        const normalizedSource = source.trim();
-        if (normalizedSource === "EVT" || normalizedSource === "EVENT") {
+        if (source === "EVT" || source === "EVENT") {
           sourceKey = "EVENT";
-        } else if (normalizedSource === "DUES" || normalizedSource === "DUE") {
+        } else if (source === "DUES" || source === "DUE") {
           sourceKey = "DUES";
-        } else if (normalizedSource === "DONATION" || normalizedSource === "DON") {
+        } else if (source === "DONATION" || source === "DON") {
           sourceKey = "DONATION";
-        } else if (normalizedSource === "OTHER" || normalizedSource === "OTH") {
+        } else if (source === "OTHER" || source === "OTH") {
           sourceKey = "OTHER";
         } else {
           // Fallback: log unexpected source value for debugging
-          console.warn(`[FIN-01] Unexpected invoice source value: "${invoice.source}" (normalized: "${normalizedSource}") for invoice ${invoice.invoiceNumber}`);
+          console.warn(`[FIN-01] Unexpected invoice source value: "${rawSource}" (normalized: "${source}") for invoice ${invoice.invoiceNumber}`);
           sourceKey = "OTHER";
         }
         const bucket = bySource[sourceKey] || bySource.OTHER;
@@ -994,6 +996,7 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         if (reportingStatus === "OUTSTANDING") {
           bucket.outstanding.count += 1;
           bucket.outstanding.totalCents += outstandingAmount;
+          console.log(`[FIN-01 Debug] Added outstanding invoice ${invoice.invoiceNumber} to ${sourceKey}: count=${bucket.outstanding.count}, totalCents=${bucket.outstanding.totalCents}`);
         }
 
         // Count collected invoices: PAID status OR any collected amount (for partially paid)
@@ -1013,7 +1016,11 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         // Cancelled invoices are excluded from Revenue Breakdown (they don't contribute to revenue)
         // This is intentional: Revenue Breakdown shows revenue-generating invoices only
         // Status Breakdown includes all invoices (outstanding + paid + cancelled) for completeness
-        console.log(`[FIN-01 Debug] Cancelled invoice ${invoice.invoiceNumber} with source="${invoice.source}" excluded from Revenue Breakdown (expected behavior)`);
+        if (reportingStatus === "OUTSTANDING") {
+          console.error(`[FIN-01 Error] Outstanding invoice ${invoice.invoiceNumber} marked as cancelled! source="${invoice.source}", status="${invoice.status}", reportingStatus="${reportingStatus}"`);
+        } else {
+          console.log(`[FIN-01 Debug] Cancelled invoice ${invoice.invoiceNumber} with source="${invoice.source}" excluded from Revenue Breakdown (expected behavior)`);
+        }
       }
     }
 
@@ -1059,6 +1066,10 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
     
     // Validation: Ensure Revenue Breakdown invoice count matches non-cancelled total
     if (bySourceTotalCount !== expectedNonCancelledCount) {
+      // Find which outstanding invoices are missing
+      const missingOutstandingCount = totalOutstanding.count - bySourceOutstandingCount;
+      const missingCollectedCount = totalCollected.count - bySourceCollectedCount;
+      
       console.error("[FIN-01 Error] Revenue Breakdown invoice count mismatch:", {
         bySourceTotalCount,
         expectedNonCancelledCount,
@@ -1067,6 +1078,8 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
         topOutstandingCount: totalOutstanding.count,
         topCollectedCount: totalCollected.count,
         topCancelledCount: totalCancelled.count,
+        missingOutstandingCount,
+        missingCollectedCount,
         bySourceBreakdown: {
           DUES: { outstanding: bySource.DUES.outstanding.count, collected: bySource.DUES.collected.count },
           DONATION: { outstanding: bySource.DONATION.outstanding.count, collected: bySource.DONATION.collected.count },
@@ -1074,6 +1087,19 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
           OTHER: { outstanding: bySource.OTHER.outstanding.count, collected: bySource.OTHER.collected.count },
         },
       });
+      
+      // Log all outstanding invoices to help identify missing ones
+      console.log("[FIN-01 Debug] All outstanding invoices:", 
+        allInvoices
+          .filter(inv => mapInvoiceStatusToReporting(inv.status) === "OUTSTANDING")
+          .map(inv => ({
+            invoiceNumber: inv.invoiceNumber,
+            source: inv.source,
+            status: inv.status,
+            amountCents: inv.amountCents,
+            cancelled: isCancelledStatus(inv.status),
+          }))
+      );
     }
 
     // Debug: Log summary of bySource aggregation
