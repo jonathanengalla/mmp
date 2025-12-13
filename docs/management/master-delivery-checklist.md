@@ -52,7 +52,7 @@
 | --- | --- | --- | --- |
 | EVT-01 | Schema and Clean Slate | 🟢 | Schema migrated (registrationMode, checkedInAt); rcme-dev events/registrations = 0 |
 | EVT-02 | Event Creation and Registration | 🟡 | In progress; Admin Event Creation form refactor (Free vs Paid toggle, RSVP vs Pay now, PHP-only currency, dev tools section) plus Event Type (IN_PERSON vs ONLINE) capture driving labels ("Check in" vs "Mark attended") and location display. Backend PAY_NOW invoice wiring in place; see [EVT-02 spec](../specs/events/EVT-02-event-creation-and-registration.md). |
-| EVT-03 | Attendance and Reporting | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
+| EVT-03 | Attendance and Reporting | 🟢 | Complete: Attendance tracking (mark/undo/bulk) with event type-aware labels (Check in vs Mark attended), server-side filtering/search/export, payment status filter for paid events, invoice context display. See [EVT-03 spec](../specs/events/EVT-03-attendance-and-reporting.md) |
 | EVT-04 | Event Invoicing and Post Event Features | ⚪ | See [oneledger-events-master-plan.md](../specs/events/oneledger-events-master-plan.md) |
 | EVT-05A | Admin Events Dashboard Micro UI Polish | 🟢 | Title/sublabel layout, capacity two-line display with color semantics, action icon alignment & tooltips. No backend changes. See [EVT-05A spec](../specs/events/EVT-05-admin-events-dashboard-micro-ui-polish.md) |
 
