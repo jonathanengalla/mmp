@@ -156,38 +156,52 @@ const AdminInvoicesPage: React.FC = () => {
                 <label style={{ display: "block", marginBottom: "var(--app-space-xs)", fontSize: "var(--app-font-label)", fontWeight: 500 }}>
                   Status
                 </label>
-                <div style={{ display: "flex", gap: "var(--app-space-xs)", flexWrap: "wrap" }}>
-                  {(["OUTSTANDING", "PAID", "CANCELLED"] as InvoiceReportingStatus[]).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleStatusToggle(s)}
-                      style={{
-                        padding: "6px 12px",
-                        border: statusFilter.includes(s) ? "2px solid var(--app-color-primary)" : "2px solid #e5e7eb",
-                        borderRadius: "var(--app-radius-md)",
-                        background: statusFilter.includes(s) ? "var(--app-color-primary)" : "#f3f4f6",
-                        color: statusFilter.includes(s) ? "white" : "#374151",
-                        cursor: "pointer",
-                        fontSize: "var(--app-font-body)",
-                        fontWeight: statusFilter.includes(s) ? 600 : 500,
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!statusFilter.includes(s)) {
-                          e.currentTarget.style.background = "#e5e7eb";
-                          e.currentTarget.style.borderColor = "var(--app-color-primary)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!statusFilter.includes(s)) {
-                          e.currentTarget.style.background = "#f3f4f6";
-                          e.currentTarget.style.borderColor = "#e5e7eb";
-                        }
-                      }}
-                    >
-                      {s}
-                    </button>
-                  ))}
+                <div style={{ display: "flex", gap: "var(--app-space-xs)", flexWrap: "nowrap" }}>
+                  {(["OUTSTANDING", "PAID", "CANCELLED"] as InvoiceReportingStatus[]).map((s) => {
+                    const isSelected = statusFilter.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => handleStatusToggle(s)}
+                        style={{
+                          padding: "6px 12px",
+                          border: isSelected ? "2px solid #3b82f6" : "2px solid var(--app-color-border)",
+                          borderRadius: "var(--app-radius-md)",
+                          backgroundColor: isSelected ? "#3b82f6" : "var(--app-color-surface-2)",
+                          color: isSelected ? "#ffffff" : "var(--app-color-text-primary)",
+                          cursor: "pointer",
+                          fontSize: "var(--app-font-body)",
+                          fontWeight: isSelected ? 600 : 500,
+                          transition: "all 0.2s ease",
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                          textAlign: "center",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = "var(--app-color-surface-3)";
+                            e.currentTarget.style.borderColor = "#3b82f6";
+                          } else {
+                            // Keep blue when selected, even on hover
+                            e.currentTarget.style.backgroundColor = "#3b82f6";
+                            e.currentTarget.style.borderColor = "#3b82f6";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = "var(--app-color-surface-2)";
+                            e.currentTarget.style.borderColor = "var(--app-color-border)";
+                          } else {
+                            // Keep blue when selected
+                            e.currentTarget.style.backgroundColor = "#3b82f6";
+                            e.currentTarget.style.borderColor = "#3b82f6";
+                          }
+                        }}
+                      >
+                        {s}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -197,37 +211,51 @@ const AdminInvoicesPage: React.FC = () => {
                   Source
                 </label>
                 <div style={{ display: "flex", gap: "var(--app-space-xs)", flexWrap: "wrap" }}>
-                  {(["DUES", "DONATION", "EVENT", "OTHER"] as InvoiceSource[]).map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => handleSourceToggle(s)}
-                      style={{
-                        padding: "6px 12px",
-                        border: sourceFilter.includes(s) ? "2px solid var(--app-color-primary)" : "2px solid #e5e7eb",
-                        borderRadius: "var(--app-radius-md)",
-                        background: sourceFilter.includes(s) ? "var(--app-color-primary)" : "#f3f4f6",
-                        color: sourceFilter.includes(s) ? "white" : "#374151",
-                        cursor: "pointer",
-                        fontSize: "var(--app-font-body)",
-                        fontWeight: sourceFilter.includes(s) ? 600 : 500,
-                        transition: "all 0.2s ease",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!sourceFilter.includes(s)) {
-                          e.currentTarget.style.background = "#e5e7eb";
-                          e.currentTarget.style.borderColor = "var(--app-color-primary)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!sourceFilter.includes(s)) {
-                          e.currentTarget.style.background = "#f3f4f6";
-                          e.currentTarget.style.borderColor = "#e5e7eb";
-                        }
-                      }}
-                    >
-                      {getSourceLabel(s)}
-                    </button>
-                  ))}
+                  {(["DUES", "DONATION", "EVENT", "OTHER"] as InvoiceSource[]).map((s) => {
+                    const isSelected = sourceFilter.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => handleSourceToggle(s)}
+                        style={{
+                          padding: "6px 12px",
+                          border: isSelected ? "2px solid #3b82f6" : "2px solid var(--app-color-border)",
+                          borderRadius: "var(--app-radius-md)",
+                          backgroundColor: isSelected ? "#3b82f6" : "var(--app-color-surface-2)",
+                          color: isSelected ? "#ffffff" : "var(--app-color-text-primary)",
+                          cursor: "pointer",
+                          fontSize: "var(--app-font-body)",
+                          fontWeight: isSelected ? 600 : 500,
+                          transition: "all 0.2s ease",
+                          flexShrink: 0,
+                          whiteSpace: "nowrap",
+                          textAlign: "center",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = "var(--app-color-surface-3)";
+                            e.currentTarget.style.borderColor = "#3b82f6";
+                          } else {
+                            // Keep blue when selected, even on hover
+                            e.currentTarget.style.backgroundColor = "#3b82f6";
+                            e.currentTarget.style.borderColor = "#3b82f6";
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isSelected) {
+                            e.currentTarget.style.backgroundColor = "var(--app-color-surface-2)";
+                            e.currentTarget.style.borderColor = "var(--app-color-border)";
+                          } else {
+                            // Keep blue when selected
+                            e.currentTarget.style.backgroundColor = "#3b82f6";
+                            e.currentTarget.style.borderColor = "#3b82f6";
+                          }
+                        }}
+                      >
+                        {getSourceLabel(s)}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>

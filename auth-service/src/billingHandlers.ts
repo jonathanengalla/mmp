@@ -146,24 +146,36 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     }
 
     // Status filter: map reporting statuses to raw statuses
+    // CRITICAL: After PAY-10, stored statuses may be stale. We need to query broadly
+    // and rely on post-filtering by computed status for accuracy.
     if (statusFilters.length > 0) {
-      const statusConditions: InvoiceStatus[] = [];
-      statusFilters.forEach((reportingStatus: string) => {
-        const upper = reportingStatus.toUpperCase();
-        if (upper === "OUTSTANDING") {
-          statusConditions.push(InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE);
-        } else if (upper === "PAID") {
-          statusConditions.push(InvoiceStatus.PAID);
-        } else if (upper === "CANCELLED") {
-          statusConditions.push(InvoiceStatus.VOID, InvoiceStatus.FAILED, InvoiceStatus.DRAFT);
-        }
-      });
-      if (statusConditions.length > 0) {
-        where.status = { in: statusConditions };
-        console.log("[billing] Status filter applied:", {
+      // Query broadly: include all possible statuses that could match after computation
+      // This ensures we don't miss invoices due to stale stored statuses
+      const allPossibleStatuses: InvoiceStatus[] = [];
+      const hasOutstanding = statusFilters.some((s: string) => s.toUpperCase() === "OUTSTANDING");
+      const hasPaid = statusFilters.some((s: string) => s.toUpperCase() === "PAID");
+      const hasCancelled = statusFilters.some((s: string) => s.toUpperCase() === "CANCELLED");
+      
+      // If filtering for OUTSTANDING or PAID, include all non-cancelled statuses
+      // because a stored PAID might actually be OUTSTANDING (or vice versa) if status is stale
+      if (hasOutstanding || hasPaid) {
+        allPossibleStatuses.push(
+          InvoiceStatus.ISSUED,
+          InvoiceStatus.PARTIALLY_PAID,
+          InvoiceStatus.OVERDUE,
+          InvoiceStatus.PAID
+        );
+      }
+      if (hasCancelled) {
+        allPossibleStatuses.push(InvoiceStatus.VOID, InvoiceStatus.FAILED, InvoiceStatus.DRAFT);
+      }
+      
+      if (allPossibleStatuses.length > 0) {
+        where.status = { in: allPossibleStatuses };
+        console.log("[billing] Status filter applied (broad query, will post-filter by computed status):", {
           requested: statusFilters,
-          mappedTo: statusConditions,
-          whereClause: where.status,
+          queryingStatuses: allPossibleStatuses,
+          reason: "Stored statuses may be stale after PAY-10 migration",
         });
       }
     }
@@ -179,6 +191,11 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
         return upper;
       });
       where.source = { in: normalizedSources };
+      console.log("[billing] Source filter applied:", {
+        requested: sourceFilters,
+        normalized: normalizedSources,
+        whereClause: where.source,
+      });
     }
 
     // Search filter
@@ -270,42 +287,60 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     
     // POST-FILTER: If status filter was applied, filter out invoices that don't match computed status
     // This handles cases where stored status is stale but we filtered by it
+    // CRITICAL: We MUST post-filter because stored status may be wrong after PAY-10 migration
     let filteredInvoiceList = invoiceList;
     if (statusFilters.length > 0) {
+      const beforeCount = invoiceList.length;
       filteredInvoiceList = invoiceList.filter((inv: any) => {
+        // inv.status is the computed reporting status (OUTSTANDING/PAID/CANCELLED)
         const matches = statusFilters.includes(inv.status);
         if (!matches) {
-          console.warn("[billing] Invoice filtered out due to status mismatch:", {
+          console.warn("[billing] Invoice filtered out - stored status was wrong:", {
             invoiceId: inv.id,
             invoiceNumber: inv.invoiceNumber,
-            computedStatus: inv.status,
+            computedReportingStatus: inv.status,
             requestedFilters: statusFilters,
+            storedStatus: inv.rawStatus || "unknown",
           });
         }
         return matches;
       });
       
-      // Update total count to reflect post-filtering
-      const filteredTotal = await prisma.invoice.count({ where });
-      // Recalculate total based on post-filter results
-      // Note: This is approximate since we can't efficiently count by computed status
       console.log("[billing] Post-filter status check:", {
-        beforeFilter: invoiceList.length,
+        beforeFilter: beforeCount,
         afterFilter: filteredInvoiceList.length,
         requestedStatuses: statusFilters,
+        removed: beforeCount - filteredInvoiceList.length,
       });
+      
+      // If we removed too many invoices, the stored statuses are likely stale
+      // This is expected after PAY-10 migration until statuses are recomputed
+      if (filteredInvoiceList.length === 0 && beforeCount > 0) {
+        console.warn("[billing] WARNING: All invoices filtered out! Stored statuses may be stale. Consider running status recomputation.");
+      }
     }
+    
+    // Final response - use filtered list
+    console.log("[billing] Returning invoice list:", {
+      totalFromDB: total,
+      filteredCount: filteredInvoiceList.length,
+      statusFilters: statusFilters.length > 0 ? statusFilters : "none",
+      sourceFilters: sourceFilters.length > 0 ? sourceFilters : "none",
+    });
     
     return res.json({
       invoices: filteredInvoiceList,
       pagination: {
         page,
         pageSize,
-        // If we post-filtered, the total might be slightly off, but it's the best we can do
-        // without recomputing status for all invoices in the database
-        total: statusFilters.length > 0 ? filteredInvoiceList.length : total,
+        // For status filters, we can't get accurate total without recomputing all statuses
+        // So we use the filtered count as an approximation
+        // For accurate totals, user should use Finance Dashboard which recomputes statuses
+        total: statusFilters.length > 0 
+          ? Math.max(filteredInvoiceList.length, total) // At least show what we have, but may be more
+          : total,
         totalPages: statusFilters.length > 0 
-          ? Math.max(1, Math.ceil(filteredInvoiceList.length / pageSize))
+          ? Math.max(1, Math.ceil(Math.max(filteredInvoiceList.length, total) / pageSize))
           : Math.max(1, Math.ceil(total / pageSize)),
       },
     });
