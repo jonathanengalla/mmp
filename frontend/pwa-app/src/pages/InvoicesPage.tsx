@@ -61,7 +61,7 @@ const InvoicesPage: React.FC = () => {
   useEffect(() => {
     loadInvoices();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, statusFilter, search, page, memberTab, memberPeriod]);
+  }, [token, page, memberTab, memberPeriod]);
 
   const getStatusBadgeVariant = (status: InvoiceReportingStatus): "success" | "default" | "danger" => {
     if (status === "PAID") return "success";
