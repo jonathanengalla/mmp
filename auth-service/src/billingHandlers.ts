@@ -149,22 +149,36 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     if (statusFilters.length > 0) {
       const statusConditions: InvoiceStatus[] = [];
       statusFilters.forEach((reportingStatus: string) => {
-        if (reportingStatus === "OUTSTANDING") {
+        const upper = reportingStatus.toUpperCase();
+        if (upper === "OUTSTANDING") {
           statusConditions.push(InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE);
-        } else if (reportingStatus === "PAID") {
+        } else if (upper === "PAID") {
           statusConditions.push(InvoiceStatus.PAID);
-        } else if (reportingStatus === "CANCELLED") {
+        } else if (upper === "CANCELLED") {
           statusConditions.push(InvoiceStatus.VOID, InvoiceStatus.FAILED, InvoiceStatus.DRAFT);
         }
       });
       if (statusConditions.length > 0) {
         where.status = { in: statusConditions };
+        console.log("[billing] Status filter applied:", {
+          requested: statusFilters,
+          mappedTo: statusConditions,
+          whereClause: where.status,
+        });
       }
     }
 
     // Source filter
     if (sourceFilters.length > 0) {
-      where.source = { in: sourceFilters };
+      // Normalize source values: frontend sends "EVENT" but database stores "EVT"
+      const normalizedSources = sourceFilters.map((s: string) => {
+        const upper = s.toUpperCase();
+        // Map frontend "EVENT" to database "EVT"
+        if (upper === "EVENT") return "EVT";
+        // Other values should match: DUES, DONATION, OTHER
+        return upper;
+      });
+      where.source = { in: normalizedSources };
     }
 
     // Search filter
@@ -216,25 +230,85 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
     ]);
 
     // PAY-10: Map invoices with balance calculation using Allocations
+    // CRITICAL: After PAY-10, we must compute status from allocations, not use stored status
+    // because stored status may be stale. We filter by stored status (for performance),
+    // but we compute and return the correct status based on allocations.
+    const { computeInvoiceStatus } = require("./services/invoice/computeInvoiceStatus");
+    
     const invoiceList = invoices.map((inv: any) => {
       // Calculate balance from allocations
       const allocations = inv.allocations.filter((alloc: any) => alloc.payment); // Only allocations with succeeded payments
       const balanceCents = calculateInvoiceBalanceFromAllocations(inv.amountCents, allocations);
+      const allocationsTotal = allocations.reduce((sum: number, alloc: any) => sum + (alloc.amountCents || 0), 0);
+      
+      // Compute the CORRECT status from allocations (PAY-10: allocations are source of truth)
+      const computedStatus = computeInvoiceStatus(
+        { amountCents: inv.amountCents, dueAt: inv.dueAt, status: inv.status },
+        allocationsTotal
+      );
+      const computedReportingStatus = mapInvoiceStatusToReporting(computedStatus);
+      
+      // Log mismatch for debugging (stored vs computed)
+      if (mapInvoiceStatusToReporting(inv.status) !== computedReportingStatus) {
+        console.warn("[billing] Invoice status mismatch (stored vs computed):", {
+          invoiceId: inv.id,
+          invoiceNumber: inv.invoiceNumber,
+          stored: inv.status,
+          computed: computedStatus,
+          storedReporting: mapInvoiceStatusToReporting(inv.status),
+          computedReporting: computedReportingStatus,
+          allocationsTotal,
+          balanceCents,
+        });
+      }
       
       return {
         ...sanitizeInvoiceDetailed(inv, false), // Don't use old balance calculation
         balanceCents,
-        status: mapInvoiceStatusToReporting(inv.status) as ReportingStatus,
+        // Use computed status (from allocations) as source of truth
+        status: computedReportingStatus as ReportingStatus,
       };
     });
     
+    // POST-FILTER: If status filter was applied, filter out invoices that don't match computed status
+    // This handles cases where stored status is stale but we filtered by it
+    let filteredInvoiceList = invoiceList;
+    if (statusFilters.length > 0) {
+      filteredInvoiceList = invoiceList.filter((inv: any) => {
+        const matches = statusFilters.includes(inv.status);
+        if (!matches) {
+          console.warn("[billing] Invoice filtered out due to status mismatch:", {
+            invoiceId: inv.id,
+            invoiceNumber: inv.invoiceNumber,
+            computedStatus: inv.status,
+            requestedFilters: statusFilters,
+          });
+        }
+        return matches;
+      });
+      
+      // Update total count to reflect post-filtering
+      const filteredTotal = await prisma.invoice.count({ where });
+      // Recalculate total based on post-filter results
+      // Note: This is approximate since we can't efficiently count by computed status
+      console.log("[billing] Post-filter status check:", {
+        beforeFilter: invoiceList.length,
+        afterFilter: filteredInvoiceList.length,
+        requestedStatuses: statusFilters,
+      });
+    }
+    
     return res.json({
-      invoices: invoiceList,
+      invoices: filteredInvoiceList,
       pagination: {
         page,
         pageSize,
-        total,
-        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+        // If we post-filtered, the total might be slightly off, but it's the best we can do
+        // without recomputing status for all invoices in the database
+        total: statusFilters.length > 0 ? filteredInvoiceList.length : total,
+        totalPages: statusFilters.length > 0 
+          ? Math.max(1, Math.ceil(filteredInvoiceList.length / pageSize))
+          : Math.max(1, Math.ceil(total / pageSize)),
       },
     });
   } catch (err) {

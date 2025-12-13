@@ -38,6 +38,14 @@ const AdminInvoicesPage: React.FC = () => {
     }
     try {
       setLoading(true);
+      // Debug: Log filters being sent
+      console.log("[AdminInvoicesPage] Loading invoices with filters:", {
+        status: statusFilter,
+        source: sourceFilter,
+        period,
+        search,
+      });
+      
       const resp = await listTenantInvoices(token, {
         status: statusFilter.length > 0 ? statusFilter : undefined,
         source: sourceFilter.length > 0 ? sourceFilter : undefined,
@@ -48,10 +56,19 @@ const AdminInvoicesPage: React.FC = () => {
         page,
         pageSize,
       });
+      
+      // Debug: Log response
+      console.log("[AdminInvoicesPage] Received invoices:", {
+        count: resp.invoices?.length || 0,
+        statuses: resp.invoices?.map((inv) => inv.status),
+        sources: resp.invoices?.map((inv) => inv.source),
+      });
+      
       setInvoices(resp.invoices || []);
       setPagination(resp.pagination || null);
       setError(null);
     } catch (e: any) {
+      console.error("[AdminInvoicesPage] Error loading invoices:", e);
       setError(e?.message || "Failed to load invoices");
     } finally {
       setLoading(false);
@@ -146,13 +163,26 @@ const AdminInvoicesPage: React.FC = () => {
                       onClick={() => handleStatusToggle(s)}
                       style={{
                         padding: "6px 12px",
-                        border: statusFilter.includes(s) ? "1px solid var(--app-color-primary)" : "1px solid var(--app-color-border-subtle)",
+                        border: statusFilter.includes(s) ? "2px solid var(--app-color-primary)" : "2px solid #e5e7eb",
                         borderRadius: "var(--app-radius-md)",
-                        background: statusFilter.includes(s) ? "var(--app-color-primary)" : "var(--app-color-surface-1)",
-                        color: statusFilter.includes(s) ? "white" : "var(--app-color-text-primary)",
+                        background: statusFilter.includes(s) ? "var(--app-color-primary)" : "#f3f4f6",
+                        color: statusFilter.includes(s) ? "white" : "#374151",
                         cursor: "pointer",
                         fontSize: "var(--app-font-body)",
-                        fontWeight: statusFilter.includes(s) ? 600 : 400,
+                        fontWeight: statusFilter.includes(s) ? 600 : 500,
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!statusFilter.includes(s)) {
+                          e.currentTarget.style.background = "#e5e7eb";
+                          e.currentTarget.style.borderColor = "var(--app-color-primary)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!statusFilter.includes(s)) {
+                          e.currentTarget.style.background = "#f3f4f6";
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                        }
                       }}
                     >
                       {s}
@@ -173,13 +203,26 @@ const AdminInvoicesPage: React.FC = () => {
                       onClick={() => handleSourceToggle(s)}
                       style={{
                         padding: "6px 12px",
-                        border: sourceFilter.includes(s) ? "1px solid var(--app-color-primary)" : "1px solid var(--app-color-border-subtle)",
+                        border: sourceFilter.includes(s) ? "2px solid var(--app-color-primary)" : "2px solid #e5e7eb",
                         borderRadius: "var(--app-radius-md)",
-                        background: sourceFilter.includes(s) ? "var(--app-color-primary)" : "var(--app-color-surface-1)",
-                        color: sourceFilter.includes(s) ? "white" : "var(--app-color-text-primary)",
+                        background: sourceFilter.includes(s) ? "var(--app-color-primary)" : "#f3f4f6",
+                        color: sourceFilter.includes(s) ? "white" : "#374151",
                         cursor: "pointer",
                         fontSize: "var(--app-font-body)",
-                        fontWeight: sourceFilter.includes(s) ? 600 : 400,
+                        fontWeight: sourceFilter.includes(s) ? 600 : 500,
+                        transition: "all 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!sourceFilter.includes(s)) {
+                          e.currentTarget.style.background = "#e5e7eb";
+                          e.currentTarget.style.borderColor = "var(--app-color-primary)";
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!sourceFilter.includes(s)) {
+                          e.currentTarget.style.background = "#f3f4f6";
+                          e.currentTarget.style.borderColor = "#e5e7eb";
+                        }
                       }}
                     >
                       {getSourceLabel(s)}
@@ -251,6 +294,71 @@ const AdminInvoicesPage: React.FC = () => {
             </div>
           </div>
         </Card>
+
+        {/* Summary Metrics */}
+        {!loading && pagination && (
+          <Card elevation="sm" padding="md">
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--app-space-md)" }}>
+              <div>
+                <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>
+                  Filtered Invoices
+                </div>
+                <div style={{ fontSize: "var(--app-font-heading-sm)", fontWeight: 600, color: "var(--app-color-text-primary)" }}>
+                  {pagination.total.toLocaleString()}
+                </div>
+                <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginTop: "2px" }}>
+                  {invoices.length < pagination.total && `(${invoices.length} on this page)`}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>
+                  Outstanding (This Page)
+                </div>
+                <div style={{ fontSize: "var(--app-font-heading-sm)", fontWeight: 600, color: "var(--app-color-state-warning)" }}>
+                  {formatCurrency(
+                    invoices
+                      .filter((inv) => inv.status === "OUTSTANDING")
+                      .reduce((sum, inv) => sum + (inv.balanceCents || 0), 0)
+                  )}
+                </div>
+                <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginTop: "2px" }}>
+                  {invoices.filter((inv) => inv.status === "OUTSTANDING").length} invoices
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>
+                  Collected (This Page)
+                </div>
+                <div style={{ fontSize: "var(--app-font-heading-sm)", fontWeight: 600, color: "var(--app-color-state-success)" }}>
+                  {formatCurrency(
+                    invoices
+                      .filter((inv) => inv.status === "PAID")
+                      .reduce((sum, inv) => sum + inv.amountCents, 0)
+                  )}
+                </div>
+                <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginTop: "2px" }}>
+                  {invoices.filter((inv) => inv.status === "PAID").length} invoices
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginBottom: "4px" }}>
+                  Total Amount (This Page)
+                </div>
+                <div style={{ fontSize: "var(--app-font-heading-sm)", fontWeight: 600, color: "var(--app-color-text-primary)" }}>
+                  {formatCurrency(invoices.reduce((sum, inv) => sum + inv.amountCents, 0))}
+                </div>
+                <div style={{ fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)", marginTop: "2px" }}>
+                  {invoices.length} invoices
+                </div>
+              </div>
+            </div>
+            {invoices.length < pagination.total && (
+              <div style={{ marginTop: "var(--app-space-sm)", paddingTop: "var(--app-space-sm)", borderTop: "1px solid var(--app-color-border-subtle)", fontSize: "var(--app-font-caption)", color: "var(--app-color-text-muted)" }}>
+                💡 Tip: Amounts shown are for the current page only. Use the Finance Dashboard to see totals for all filtered invoices.
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Invoice Table */}
         <Card>
