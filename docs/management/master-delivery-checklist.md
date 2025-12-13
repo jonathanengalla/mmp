@@ -69,7 +69,7 @@
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
 | PAY-00 | Payments-First Alignment Plan | 🟢 | **Planning complete:** Full delta plan, schema proposals, route designs, UI updates, and risk assessment documented. Payments-first pathway defined: OneLedger as default settlement, Traxion primary rail, manual payments as controlled exceptions. See [PAY-00 spec](../specs/payments/PAY-00-payments-first-alignment-plan.md). |
-| PAY-10 | Core Payments Schema and Invoice Status Engine | 🟡 | **Implementation complete, ready for testing:** Payment model aligned (nullable invoiceId, channels, status, verification). Allocation model implemented as single source of truth. Credit model (v1: single invoice only). Invoice status engine (`computeInvoiceStatus`) - only path to update status. FIN-01/FIN-02 refactored to use Allocations. Migration script and unit tests created. **Next:** Run Prisma migration, test on rcme-dev, verify FIN-01/FIN-02 totals match. See [PAY-10 spec](../specs/payments/PAY-10-core-schema-and-status-engine.md) and [next steps](../specs/payments/PAY-10-next-steps.md). |
+| PAY-10 | Core Payments Schema and Invoice Status Engine | 🟢 | **Complete:** Payment model aligned (nullable invoiceId, channels, status, verification). Allocation model implemented as single source of truth. Credit model (v1: single invoice only). Invoice status engine (`computeInvoiceStatus`) - only path to update status. FIN-01/FIN-02 refactored to use Allocations. **Migration applied:** Database migration executed on rcme-dev, 44 paid invoices backfilled with Payments and Allocations, 330 unpaid invoices status recomputed. All tables created, no orphaned allocations. See [PAY-10 spec](../specs/payments/PAY-10-core-schema-and-status-engine.md) and [migration complete](../specs/payments/PAY-10-migration-complete.md). |
 | PAY-02 | Simulated & Manual Payment Flow | ⚪ | Build simulate payment endpoint for testing. Manual payment create/approve/reject workflow with proof upload. Allocation logic and credit capture on overpayment. |
 | PAY-03 | Member Payment Experience | ⚪ | Member payment history, receipts, deadline center (upcoming dues/event payments). Enhanced invoice list with Pay Now (when Traxion ready) and multi-invoice selection. |
 | PAY-04 | Admin Payments Inbox & Workflow | ⚪ | Payments inbox with pending verification queue. Manual payment entry UI. Payment detail page with allocations and audit trail. Credit management (view and manual apply). |
@@ -96,5 +96,5 @@
 | BKS-05 | PASS | Events persistence with billing linkage verified. **Invariants protected:** Free event protection (all paths), RSVP/PAY_NOW registration behavior, duplicate prevention, invoice linkage integrity (source=EVT, eventId, registration link), delete/cancel behavior, tenant isolation. **Automation:** Regression tests (`npm run test:bks05-events-billing`) covering all creation paths and invariants. See [BKS-05 spec](../specs/backend/BKS-05-events-persistence-billing-linkage.md). |
 
 ---
-Last updated: 2025-12-13 01:00 (local)
+Last updated: 2025-12-13 02:00 (local)
 

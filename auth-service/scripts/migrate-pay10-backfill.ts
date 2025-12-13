@@ -170,14 +170,29 @@ async function main() {
     console.log(`  Total processed: ${allInvoices.length}`);
 
     // Verification: Check for orphaned allocations
-    const orphanedAllocations = await prisma.allocation.findMany({
-      where: {
-        OR: [
-          { invoice: null },
-          { payment: null },
-        ],
-      },
+    // Query allocations and check if invoice/payment exist
+    const allAllocations = await prisma.allocation.findMany({
+      select: { id: true, invoiceId: true, paymentId: true },
     });
+    
+    const invoiceIds = [...new Set(allAllocations.map(a => a.invoiceId))];
+    const paymentIds = [...new Set(allAllocations.map(a => a.paymentId))];
+    
+    const existingInvoices = await prisma.invoice.findMany({
+      where: { id: { in: invoiceIds } },
+      select: { id: true },
+    });
+    const existingPayments = await prisma.payment.findMany({
+      where: { id: { in: paymentIds } },
+      select: { id: true },
+    });
+    
+    const existingInvoiceIds = new Set(existingInvoices.map(i => i.id));
+    const existingPaymentIds = new Set(existingPayments.map(p => p.id));
+    
+    const orphanedAllocations = allAllocations.filter(
+      a => !existingInvoiceIds.has(a.invoiceId) || !existingPaymentIds.has(a.paymentId)
+    );
 
     if (orphanedAllocations.length > 0) {
       console.warn(`WARNING: Found ${orphanedAllocations.length} orphaned allocations`);
