@@ -18,6 +18,9 @@
     "test:fin-01": "node -r ts-node/register --test tests/financeSummary.test.ts",
     "test:fin02": "node -r ts-node/register --test tests/fin02-invoice-list.test.ts",
     "test:bks05-events-billing": "node -r ts-node/register --test tests/bks05-events-billing-linkage.test.ts",
+    "test:pay10-status": "node -r ts-node/register --test tests/invoiceStatusEngine.test.ts",
+    "test:pay10-balance": "node -r ts-node/register --test tests/invoiceBalance.test.ts",
+    "test:pay10-regression": "node -r ts-node/register --test tests/fin01-fin02-regression.test.ts",
     "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma --skip-seed",
     "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "prisma:generate": "prisma generate",
@@ -30,7 +33,8 @@
     "demo:reset": "node scripts/demo-reset-and-seed.js",
     "hash:dev-password": "npm run build && node scripts/hash-dev-password.js",
     "seed:rcme": "ts-node --transpile-only scripts/seed-rcme-sandbox.ts",
-    "seed:rcme:reset": "ts-node --transpile-only scripts/seed-rcme-sandbox.ts --reset"
+    "seed:rcme:reset": "ts-node --transpile-only scripts/seed-rcme-sandbox.ts --reset",
+    "migrate:pay10-backfill": "ts-node --transpile-only scripts/migrate-pay10-backfill.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",

@@ -31,7 +31,7 @@ import {
 } from "./eventsStore";
 import { createEventInvoice as createEventInvoiceFromStore, getInvoiceById } from "./billingStore";
 import { mapInvoiceStatusToReporting } from "./utils/invoiceStatusMapper";
-import { calculateInvoiceBalance } from "./utils/invoiceBalance";
+import { calculateInvoiceBalance, calculateInvoiceBalanceFromAllocations } from "./utils/invoiceBalance";
 import { sendEmail } from "./notifications/emailSender";
 import { buildEventInvoiceEmail, buildEventRsvpEmail } from "./notifications/emailTemplates";
 
@@ -861,15 +861,19 @@ export const listMyInvoicesHandler = async (req: AuthenticatedRequest, res: Resp
       where.issuedAt = period;
     }
 
-    // Fetch with pagination
+    // PAY-10: Fetch with pagination using allocations
     const [total, invoices] = await Promise.all([
       prisma.invoice.count({ where }),
       prisma.invoice.findMany({
         where,
         include: {
           event: true,
-          payments: {
-            where: { status: PaymentStatus.SUCCEEDED },
+          allocations: {
+            include: {
+              payment: {
+                where: { status: PaymentStatus.SUCCEEDED }, // Only count succeeded payments
+              },
+            },
           },
         },
         orderBy: { issuedAt: "desc" },
@@ -878,9 +882,10 @@ export const listMyInvoicesHandler = async (req: AuthenticatedRequest, res: Resp
       }),
     ]);
 
-    // Map to response format with status grouping and balance
+    // PAY-10: Map to response format with status grouping and balance using Allocations
     const items = invoices.map((inv) => {
-      const balanceCents = calculateInvoiceBalance(inv.amountCents, inv.payments || []);
+      const allocations = inv.allocations.filter((alloc: any) => alloc.payment); // Only allocations with succeeded payments
+      const balanceCents = calculateInvoiceBalanceFromAllocations(inv.amountCents, allocations);
       return {
         ...toInvoiceDto(inv),
         status: mapInvoiceStatusToReporting(inv.status),

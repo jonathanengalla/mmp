@@ -8,7 +8,8 @@ import { toInvoiceDto } from "./eventsHandlers";
 import { generateInvoiceNumber } from "./utils/invoiceNumber";
 import { resolveFinancePeriod, FinancePeriod } from "./utils/financePeriod";
 import { mapInvoiceStatusToReporting, isOutstandingStatus, isPaidStatus, isCancelledStatus, ReportingStatus } from "./utils/invoiceStatusMapper";
-import { calculateInvoiceBalance } from "./utils/invoiceBalance";
+import { calculateInvoiceBalance, calculateInvoiceBalanceFromAllocations } from "./utils/invoiceBalance";
+import { getInvoiceAllocationsTotalCents, computeInvoiceBalanceCents } from "./services/invoice/balance";
 
 const sanitizeInvoice = (inv: any) => ({
   id: inv.id,
@@ -192,7 +193,7 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
       orderBy.issuedAt = sortOrder;
     }
 
-    // Fetch invoices with payments for balance calculation
+    // PAY-10: Fetch invoices with allocations for balance calculation
     const [total, invoices] = await Promise.all([
       prisma.invoice.count({ where }),
       prisma.invoice.findMany({
@@ -200,8 +201,12 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
         include: {
           event: true,
           member: true,
-          payments: {
-            where: { status: PaymentStatus.SUCCEEDED },
+          allocations: {
+            include: {
+              payment: {
+                where: { status: PaymentStatus.SUCCEEDED }, // Only count succeeded payments
+              },
+            },
           },
         },
         orderBy,
@@ -210,8 +215,18 @@ export async function listTenantInvoicesPaginatedHandler(req: AuthenticatedReque
       }),
     ]);
 
-    // Map invoices with balance calculation
-    const invoiceList = invoices.map((inv: any) => sanitizeInvoiceDetailed(inv, true));
+    // PAY-10: Map invoices with balance calculation using Allocations
+    const invoiceList = invoices.map((inv: any) => {
+      // Calculate balance from allocations
+      const allocations = inv.allocations.filter((alloc: any) => alloc.payment); // Only allocations with succeeded payments
+      const balanceCents = calculateInvoiceBalanceFromAllocations(inv.amountCents, allocations);
+      
+      return {
+        ...sanitizeInvoiceDetailed(inv, false), // Don't use old balance calculation
+        balanceCents,
+        status: mapInvoiceStatusToReporting(inv.status) as ReportingStatus,
+      };
+    });
     
     return res.json({
       invoices: invoiceList,
@@ -731,31 +746,55 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
     };
 
     // Get all invoices in period for aggregation
+    // PAY-10: Now we load allocations instead of payments directly
     const allInvoices = await prisma.invoice.findMany({
       where: baseWhere,
-      include: {
-        payments: {
-          where: { status: PaymentStatus.SUCCEEDED },
-        },
-      },
     });
 
-    // Calculate outstanding amounts (for partially paid invoices)
+    // PAY-10: Batch load allocations for all invoices
+    const invoiceIds = allInvoices.map((inv) => inv.id);
+    const allAllocations = invoiceIds.length > 0
+      ? await prisma.allocation.findMany({
+          where: {
+            tenantId,
+            invoiceId: { in: invoiceIds },
+            payment: {
+              status: PaymentStatus.SUCCEEDED, // Only count succeeded payments
+            },
+          },
+          include: {
+            payment: true,
+          },
+        })
+      : [];
+
+    // Group allocations by invoiceId for quick lookup
+    const allocationsByInvoice = new Map<string, typeof allAllocations>();
+    for (const alloc of allAllocations) {
+      if (!allocationsByInvoice.has(alloc.invoiceId)) {
+        allocationsByInvoice.set(alloc.invoiceId, []);
+      }
+      allocationsByInvoice.get(alloc.invoiceId)!.push(alloc);
+    }
+
+    // PAY-10: Calculate outstanding amounts using Allocations (single source of truth)
     const calculateOutstandingAmount = (invoice: any): number => {
       if (isPaidStatus(invoice.status)) return 0;
       if (isCancelledStatus(invoice.status)) return 0;
-      const totalPaid = invoice.payments.reduce((sum: number, p: any) => sum + (p.amountCents || 0), 0);
-      return Math.max(invoice.amountCents - totalPaid, 0);
+      
+      const allocations = allocationsByInvoice.get(invoice.id) || [];
+      const allocationsTotal = allocations.reduce((sum, alloc) => sum + (alloc.amountCents || 0), 0);
+      return computeInvoiceBalanceCents(invoice, allocationsTotal);
     };
 
+    // PAY-10: Calculate collected amounts using Allocations
     const calculateCollectedAmount = (invoice: any): number => {
       if (isCancelledStatus(invoice.status)) return 0;
-      // For PAID invoices, collected = full invoice amount
-      if (isPaidStatus(invoice.status)) {
-        return invoice.amountCents;
-      }
-      // For partially paid or outstanding, collected = sum of payments
-      return invoice.payments.reduce((sum: number, p: any) => sum + (p.amountCents || 0), 0);
+      
+      const allocations = allocationsByInvoice.get(invoice.id) || [];
+      const allocationsTotal = allocations.reduce((sum, alloc) => sum + (alloc.amountCents || 0), 0);
+      
+      return allocationsTotal;
     };
 
     // Aggregate by source and status
