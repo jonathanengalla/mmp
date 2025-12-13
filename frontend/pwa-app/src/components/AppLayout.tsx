@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSession } from "../hooks/useSession";
 import { useBranding, adminNavItems, NavItem } from "../config/branding";
 import { TenantThemeSwitcher } from "../ui/TenantThemeSwitcher";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -318,6 +319,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
           {/* Right side actions */}
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
+            <ThemeToggle />
             {isAdmin && <TenantThemeSwitcher />}
           </div>
         </header>
