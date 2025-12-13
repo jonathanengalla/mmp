@@ -4,6 +4,7 @@ import { Page } from "../components/primitives/Page";
 import { Card } from "../components/primitives/Card";
 import { Button } from "../components/primitives/Button";
 import { Tag } from "../components/primitives/Tag";
+import { EventStatusPill } from "../components/EventStatusPill";
 import { useSession } from "../hooks/useSession";
 import { cancelEventRegistration, getEventDetail, registerForEvent } from "../api/client";
 import { EventDetailDto } from "../../../../libs/shared/src/models";
@@ -174,8 +175,13 @@ export const EventDetailPage: React.FC = () => {
             )}
           </Card>
 
+          {/* Event Status Pill - shown directly under banner */}
+          <div style={{ marginTop: "var(--space-2)" }}>
+            <EventStatusPill status={event.status} endDate={event.endDate || undefined} />
+          </div>
+
+          {/* Additional tags for registration mode and event tags */}
           <div style={{ display: "flex", gap: "var(--space-sm)", alignItems: "center", flexWrap: "wrap" }}>
-            <Tag variant={statusVariant}>{event.status}</Tag>
             <Tag variant={registrationMode === "pay_now" ? "warning" : "info"}>
               {registrationMode === "pay_now" ? "Invoice required" : "RSVP"}
             </Tag>
@@ -207,7 +213,7 @@ export const EventDetailPage: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <div style={{ color: "var(--app-color-text-muted)" }}>Price</div>
+                    <div style={{ color: "var(--app-color-text-muted)" }}>Cost</div>
                     <div>{currencyDisplay(event.priceCents, event.currency)}</div>
                   </div>
                   {event.ticketCode && isRegistered && (

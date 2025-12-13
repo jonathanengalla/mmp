@@ -56,6 +56,15 @@
 | EVT-04 | Event Invoicing and Post Event Features | 🟢 | **Invoicing tools complete (feature-complete):** Bulk and individual invoice generation for paid RSVP events. Free events blocked (UI + API); duplicate prevention; uses existing invoice numbering (`EVT` source). UI actions in attendance report with conditional visibility (free/paid, RSVP/PAY_NOW). **QA:** 6 manual QA scenarios documented in EVT-04 spec for rcme-dev verification (primary gate). **Automation:** Test file `auth-service/tests/eventInvoiceHandlers.test.ts` exists with 7 guardrail tests (`npm run test:event-invoices`), but module mocking still needs refinement and is **not yet CI-enforced**. Manual QA scenarios are the primary regression guard until automation is stabilized. See [EVT-04 spec](../specs/events/EVT-04-event-invoicing-and-post-event-tools.md). **Post-event comms (thank-you emails) deferred to future ticket.** |
 | EVT-05A | Admin Events Dashboard Micro UI Polish | 🟢 | Title/sublabel layout, capacity two-line display with color semantics, action icon alignment & tooltips. No backend changes. See [EVT-05A spec](../specs/events/EVT-05-admin-events-dashboard-micro-ui-polish.md) |
 
+## Finance (FIN)
+| Code | Name | Status | Notes |
+| --- | --- | --- | --- |
+| FIN-01 | Event Finance Integration | ⚪ | Connect event invoices (source = EVT) cleanly into Finance views so the treasurer can see Dues / Donations / Events as separate slices. Focus is on alignment with EVT-01–EVT-04 and BKS-05. |
+| FIN-02 | Member Invoice & Receipts Experience | ⚪ | Polish the member-facing invoice list: clearer labels (Dues / Donations / Events), better grouping, and basic receipt visibility so members understand what they owe and what they have already paid. |
+| FIN-03 | Treasurer Finance Dashboard & KPIs | ⚪ | Define and surface core finance KPIs for the treasurer: totals and breakdowns for Dues / Donations / Events, paid vs outstanding, and simple trend or time filters. No deep analytics yet. |
+| FIN-04 | Treasurer Exports & Audit Trail | ⚪ | Provide CSV/Excel exports and a basic audit trail that finance can use for reconciliation and annual reporting. Focus is on reliable data, not complex visualization. |
+| FIN-05 | Donations & Fundraising Reporting | ⚪ | Give a clear view of donations and fundraising: who gave, to what campaign, and how it ties into overall revenue. Simpler slice than full analytics, but enough for board reporting. |
+
 ## QA / Gates
 | Code | Status | Notes |
 | --- | --- | --- |
@@ -69,5 +78,5 @@
 | EVT-04 | PARTIAL | Event invoicing tools (EVT-04) implemented and functionally complete. **Manual QA gate:** 6 QA scenarios documented in `EVT-04-event-invoicing-and-post-event-tools.md` for rcme-dev verification (treat as primary gate until automation stabilized). **Automation status:** Test file `eventInvoiceHandlers.test.ts` in place with 7 guardrail tests (`npm run test:event-invoices`), but module mocking not fully stabilized and **not wired to CI**. Manual QA scenarios are the current regression guard - automation needs refinement before CI enforcement. |
 
 ---
-Last updated: 2025-01-14 10:00 (local)
+Last updated: 2025-12-12 20:00 (local)
 

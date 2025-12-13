@@ -96,3 +96,38 @@ export function getEventStateLabels(
   };
 }
 
+/**
+ * Derive event status for status pill display.
+ * Business rules:
+ * 1. If status is "cancelled" → return "cancelled" (regardless of date)
+ * 2. If endDate is before now → return "past"
+ * 3. Otherwise → return "upcoming"
+ * 
+ * @param event - Event with status and endDate
+ * @param now - Reference date (defaults to current time)
+ * @returns "cancelled" | "past" | "upcoming"
+ */
+export function getEventStatusPill(
+  event: {
+    status: string;
+    endDate?: string | null;
+  },
+  now: Date = new Date(),
+): "cancelled" | "past" | "upcoming" {
+  // Check cancelled first (takes precedence over date)
+  if (event.status === "cancelled" || event.status === "CANCELLED") {
+    return "cancelled";
+  }
+  
+  // Check if event has ended
+  if (event.endDate) {
+    const endDate = parseISO(event.endDate);
+    if (now >= endDate) {
+      return "past";
+    }
+  }
+  
+  // Default to upcoming
+  return "upcoming";
+}
+
