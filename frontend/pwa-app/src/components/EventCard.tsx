@@ -1,5 +1,6 @@
 import React from "react";
 import { formatCurrency, formatEventDateRange, getEventStateLabels } from "../utils/eventHelpers";
+import { EventStatusPill } from "./EventStatusPill";
 
 interface Event {
   id: string;
@@ -18,14 +19,28 @@ interface Event {
 interface EventCardProps {
   event: Event;
   onRegister?: () => void;
+  onClick?: () => void;
 }
 
-export function EventCard({ event, onRegister }: EventCardProps) {
+export function EventCard({ event, onRegister, onClick }: EventCardProps) {
   const labels = getEventStateLabels(event);
   const isRegistrationOpen = labels.registrationLabel === "Registration open";
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on the register button or its container
+    if ((e.target as HTMLElement).closest('button, [role="button"]')) {
+      return;
+    }
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full">
+    <div 
+      className="bg-white rounded-lg shadow overflow-hidden flex flex-col h-full cursor-pointer hover:shadow-lg transition-shadow"
+      onClick={handleCardClick}
+    >
       {/* Banner - fixed height */}
       {event.bannerUrl && (
         <img src={event.bannerUrl} alt={event.title} className="w-full h-40 object-cover" />
@@ -38,22 +53,9 @@ export function EventCard({ event, onRegister }: EventCardProps) {
         {/* Description */}
         {event.description && <p className="text-sm text-gray-600 line-clamp-2 mb-3">{event.description}</p>}
 
-        {/* Inline chips */}
-        <div className="flex gap-2 mb-3">
-          <span
-            className={`inline-block px-2 py-1 text-xs rounded ${
-              labels.eventStatusLabel === "Upcoming"
-                ? "bg-blue-100 text-blue-800"
-                : labels.eventStatusLabel === "Past event"
-                ? "bg-gray-100 text-gray-800"
-                : labels.eventStatusLabel === "Cancelled"
-                ? "bg-red-100 text-red-800"
-                : "bg-yellow-100 text-yellow-800"
-            }`}
-          >
-            {labels.eventStatusLabel}
-          </span>
-          <span className="inline-block px-2 py-1 text-xs rounded bg-green-100 text-green-800">{labels.modeLabel}</span>
+        {/* Status Pill */}
+        <div className="mb-4">
+          <EventStatusPill status={event.status || "published"} endDate={event.endsAt} />
         </div>
 
         {/* Labeled details */}
@@ -98,17 +100,17 @@ export function EventCard({ event, onRegister }: EventCardProps) {
         </div>
 
         {/* Action button */}
-        <div className="mt-auto">
+        <div className="mt-auto pt-2">
           {isRegistrationOpen ? (
             <button
-              className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+              className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all shadow-md hover:shadow-lg text-base"
               onClick={onRegister}
               type="button"
             >
-              Register
+              Register Now
             </button>
           ) : (
-            <button className="w-full bg-gray-300 text-gray-600 py-2 rounded cursor-not-allowed" disabled type="button">
+            <button className="w-full bg-gray-200 text-gray-500 font-medium py-3 px-4 rounded-lg cursor-not-allowed text-base" disabled type="button">
               {labels.registrationLabel}
             </button>
           )}

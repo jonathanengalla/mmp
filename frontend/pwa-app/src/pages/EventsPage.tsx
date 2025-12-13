@@ -301,7 +301,7 @@ const EventsPage: React.FC = () => {
                 location: ev.location || undefined,
                 priceCents: ev.priceCents ?? 0,
                 capacity: ev.capacity ?? null,
-                status: ev.status?.toUpperCase?.(),
+                status: ev.status || "published",
                 registrations: ev.registrationsCount ?? 0,
               };
 
@@ -309,7 +309,18 @@ const EventsPage: React.FC = () => {
                 navigate(regMode === "pay_now" && !ev.isRegistered ? checkoutPath : detailPath);
               };
 
-              return <EventCard key={eventForCard.id} event={eventForCard} onRegister={handleRegister} />;
+              const handleCardClick = () => {
+                navigate(detailPath);
+              };
+
+              return (
+                <EventCard 
+                  key={eventForCard.id} 
+                  event={eventForCard} 
+                  onRegister={handleRegister}
+                  onClick={handleCardClick}
+                />
+              );
             })}
           </div>
         </div>

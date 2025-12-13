@@ -12,7 +12,7 @@ type EventStatusPillProps = {
  * Shows: "Upcoming event", "Past event", or "Cancelled event"
  * 
  * Styling:
- * - Upcoming: neutral/default variant
+ * - Upcoming: success/green variant (active color)
  * - Past: subtle neutral (default variant)
  * - Cancelled: danger variant
  */
@@ -33,16 +33,38 @@ export const EventStatusPill: React.FC<EventStatusPillProps> = ({ status, endDat
       break;
     case "upcoming":
       label = "Upcoming event";
-      variant = "default";
+      variant = "success";
       break;
     default:
       label = "Upcoming event";
-      variant = "default";
+      variant = "success";
   }
   
+  // Custom styling for upcoming events - darker green with white text
+  const isUpcoming = pillStatus === "upcoming";
+  const customStyle: React.CSSProperties = {
+    fontSize: "2.5rem", // doubled from 1.25rem
+    padding: "2rem 4rem", // doubled from 1rem 2rem
+    fontWeight: 700,
+    lineHeight: "1.4",
+    display: "inline-block",
+    borderRadius: "var(--radius-md, 0.5rem)",
+    ...(isUpcoming ? {
+      backgroundColor: "#059669", // darker green (emerald-600)
+      color: "#ffffff", // white text
+      border: "none"
+    } : {})
+  };
+
   return (
     <div style={{ display: "inline-block" }}>
-      <Tag variant={variant}>{label}</Tag>
+      <Tag 
+        variant={variant} 
+        size="lg"
+        style={customStyle}
+      >
+        {label}
+      </Tag>
     </div>
   );
 };

@@ -176,7 +176,7 @@ export const EventDetailPage: React.FC = () => {
           </Card>
 
           {/* Event Status Pill - shown directly under banner */}
-          <div style={{ marginTop: "var(--space-2)" }}>
+          <div style={{ marginTop: "var(--space-3)", marginBottom: "var(--space-2)" }}>
             <EventStatusPill status={event.status} endDate={event.endDate || undefined} />
           </div>
 
