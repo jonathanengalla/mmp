@@ -22,7 +22,6 @@ const InvoicesPage: React.FC = () => {
     }
   }, [isAdminFinance, navigate]);
 
-  const navigate = useNavigate();
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [pagination, setPagination] = useState<{ page: number; pageSize: number; total: number; totalPages: number } | null>(
     null
