@@ -24,7 +24,6 @@
 | BKS-03 | Membership + verification persistence | 🟢 | Membership register/list/approve/search/me now persisted via Prisma with tenant + RBAC; non-scope routes remain stubbed |
 | BKS-04 | Billing/payments persistence and PAN/CVC removal | 🟢 | Billing/payments via Prisma; tenant-scoped invoices/payments/payment methods with RBAC; PAN/CVC not stored; advanced flows remain stubbed |
 | BKS-05 | Events persistence with billing linkage | 🟢 | **Complete:** Events ↔ registrations ↔ invoices linkage audited and documented. Invariants enforced via regression tests (`npm run test:bks05-events-billing`). Free events blocked from invoicing; event invoices use `source=EVT` with tenant-safe paths only. Delete/cancel behavior protected. All creation paths verified (PAY_NOW registration, EVT-04 bulk/individual). See [BKS-05 spec](../specs/backend/BKS-05-events-persistence-billing-linkage.md). |
-| BKS-05 | Events persistence with billing linkage | ⚪ | Not started |
 | BKS-06 | Audit & reporting data store | ⚪ | Not started |
 | BKS-07 | Config Center baseline (org profile, feature flags) | ⚪ | Not started |
 
@@ -60,11 +59,27 @@
 ## Finance (FIN)
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
-| FIN-01 | Finance Dashboard Contract & Metrics Alignment | 🟢 | **Complete end-to-end:** Finance summary endpoint (`/api/billing/admin/finance/summary`) with time window support, source breakdown (DUES/DONATION/EVENT/OTHER), status mapping (OUTSTANDING/PAID/CANCELLED), zero-amount exclusion, tenant scoping. Response includes self-describing range labels. Backend tests (`npm run test:fin-01`). Frontend aligned via UIR-03 with regression tests (`npm test finance-helpers`, `npm test admin-finance-dashboard`). Spec: `docs/specs/finance/FIN-01-event-finance-integration.md`. |
-| FIN-02 | Invoice List & Detail Experience | 🟢 | **Complete & QA Verified:** Admin and member invoice list/detail implemented per FIN-02 spec. Backend: Enhanced list endpoints with period filtering, status mapping to FIN-01 groups, balance calculation, new detail endpoints. Frontend: Admin invoice list with filters (period, status, source, search, sort), admin detail page, member list with Outstanding/History tabs, member detail page. Tests: Unit tests for status mapping, balance calculation, period resolution (`npm run test:fin02` - all 11 tests passing). QA: Verified in rcme-dev - zero-amount exclusion, status grouping alignment with FIN-01, period filters, member isolation, balance calculations all working correctly. Pay Now button disabled with "Coming Soon" message (payment flow integration deferred). See [FIN-02 spec](../specs/finance/FIN-02-invoice-list-and-detail.md) and [QA report](../qa/FIN-02-qa-verification.md). |
+| FIN-01 | Finance Dashboard Contract & Metrics Alignment | 🟢 | **Complete end-to-end:** Finance summary endpoint (`/api/billing/admin/finance/summary`) with time window support, source breakdown (DUES/DONATION/EVENT/OTHER), status mapping (OUTSTANDING/PAID/CANCELLED), zero-amount exclusion, tenant scoping. Response includes self-describing range labels. Backend tests (`npm run test:fin-01`). Frontend aligned via UIR-03 with regression tests (`npm test finance-helpers`, `npm test admin-finance-dashboard`). Spec: `docs/specs/finance/FIN-01-event-finance-integration.md`. **Note:** Will need refactor when PAY-01 (Allocation model) is implemented - queries must use allocations instead of direct payments. |
+| FIN-02 | Invoice List & Detail Experience | 🟢 | **Complete & QA Verified:** Admin and member invoice list/detail implemented per FIN-02 spec. Backend: Enhanced list endpoints with period filtering, status mapping to FIN-01 groups, balance calculation, new detail endpoints. Frontend: Admin invoice list with filters (period, status, source, search, sort), admin detail page, member list with Outstanding/History tabs, member detail page. Tests: Unit tests for status mapping, balance calculation, period resolution (`npm run test:fin02` - all 11 tests passing). QA: Verified in rcme-dev - zero-amount exclusion, status grouping alignment with FIN-01, period filters, member isolation, balance calculations all working correctly. Pay Now button disabled with "Coming Soon" message (payment flow integration deferred). See [FIN-02 spec](../specs/finance/FIN-02-invoice-list-and-detail.md) and [QA report](../qa/FIN-02-qa-verification.md). **Note:** Will need refactor when PAY-01 (Allocation model) is implemented - balance calculation must use allocations instead of direct payments. |
 | FIN-03 | Treasurer Finance Dashboard & KPIs | ⚪ | Define and surface core finance KPIs for the treasurer: totals and breakdowns for Dues / Donations / Events, paid vs outstanding, and simple trend or time filters. No deep analytics yet. |
 | FIN-04 | Treasurer Exports & Audit Trail | ⚪ | Provide CSV/Excel exports and a basic audit trail that finance can use for reconciliation and annual reporting. Focus is on reliable data, not complex visualization. |
 | FIN-05 | Donations & Fundraising Reporting | ⚪ | Give a clear view of donations and fundraising: who gave, to what campaign, and how it ties into overall revenue. Simpler slice than full analytics, but enough for board reporting. |
+
+## Payments (PAY)
+| Code | Name | Status | Notes |
+| --- | --- | --- | --- |
+| PAY-00 | Payments-First Alignment Plan | 🟢 | **Planning complete:** Full delta plan, schema proposals, route designs, UI updates, and risk assessment documented. Payments-first pathway defined: OneLedger as default settlement, Traxion primary rail, manual payments as controlled exceptions. See [PAY-00 spec](../specs/payments/PAY-00-payments-first-alignment-plan.md). |
+| PAY-01 | Payment Model & Allocation Schema | ⚪ | Add Payment, Allocation, Credit models with full lifecycle. Make Payment.invoiceId nullable, add channel/status/verification enums. Migration script for existing paid invoices. Update FIN-01/FIN-02 queries to use allocations. |
+| PAY-02 | Simulated & Manual Payment Flow | ⚪ | Build simulate payment endpoint for testing. Manual payment create/approve/reject workflow with proof upload. Allocation logic and credit capture on overpayment. |
+| PAY-03 | Member Payment Experience | ⚪ | Member payment history, receipts, deadline center (upcoming dues/event payments). Enhanced invoice list with Pay Now (when Traxion ready) and multi-invoice selection. |
+| PAY-04 | Admin Payments Inbox & Workflow | ⚪ | Payments inbox with pending verification queue. Manual payment entry UI. Payment detail page with allocations and audit trail. Credit management (view and manual apply). |
+| PAY-05 | Traxion Integration | ⚪ | Traxion checkout flow, webhook handlers (Succeeded/Failed/Refunded/Reversed), idempotency handling, reconciliation job. Deferred until Traxion API ready. |
+| PAY-06 | Reminder Engine (Minimal v1) | ⚪ | Scheduled job for invoice reminders (upcoming due, overdue). Tenant configuration for enable/disable and timing. Reminder logging per invoice. Uses existing email infrastructure. |
+
+## Communications (COMMS)
+| Code | Name | Status | Notes |
+| --- | --- | --- | --- |
+| COMMS-01 | Invoice Reminder Engine | ⚪ | Automated reminders tied to due dates: upcoming (7 days, 3 days before) and overdue (Day 1, 7, 14). Event invoice payment deadlines use same engine. Minimal v1: no template designer, uses predefined templates. See PAY-06 for implementation. |
 
 ## QA / Gates
 | Code | Status | Notes |
@@ -81,5 +96,5 @@
 | BKS-05 | PASS | Events persistence with billing linkage verified. **Invariants protected:** Free event protection (all paths), RSVP/PAY_NOW registration behavior, duplicate prevention, invoice linkage integrity (source=EVT, eventId, registration link), delete/cancel behavior, tenant isolation. **Automation:** Regression tests (`npm run test:bks05-events-billing`) covering all creation paths and invariants. See [BKS-05 spec](../specs/backend/BKS-05-events-persistence-billing-linkage.md). |
 
 ---
-Last updated: 2025-01-14 21:00 (local)
+Last updated: 2025-12-12 22:00 (local)
 
