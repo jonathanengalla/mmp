@@ -24,6 +24,32 @@
 - Basic API smoke tests must pass (auth login/refresh, membership register/approve, payments create payment, invoices send, events create/publish/register, communications send broadcast/reminder).
 - Lint/format must pass.
 
+## EVT-03 Regression Test Suite
+
+**Purpose:** Protect event attendance and reporting functionality from regressions.
+
+**Trigger:** Automatically runs on PRs that modify:
+- `auth-service/src/attendanceHandlers.ts`
+- `auth-service/src/eventsHandlers.ts`
+- `frontend/pwa-app/src/pages/AdminEventAttendanceReportPage.tsx`
+
+**Test Coverage:**
+- **Backend:** 16 tests via `npm run test:attendance` in `auth-service/`
+- **Frontend:** 10+ tests via `npm test admin-event-attendance-report` in `frontend/pwa-app/`
+
+**Merge Blocking:** Any failing EVT-03 test blocks merge for PRs that modify attendance or event reporting logic.
+
+**Local Debug Commands:**
+```bash
+# Backend tests
+cd auth-service
+npm run test:attendance
+
+# Frontend tests
+cd frontend/pwa-app
+npm test admin-event-attendance-report
+```
+
 ## Health/Monitoring Wiring
 - **Health endpoints**: `/health` (liveness), `/status` (readiness) scraped by K8s probes and monitoring.
 - **Logs**: structured JSON with trace/tenant IDs; shipped to log stack; alert on error rates.

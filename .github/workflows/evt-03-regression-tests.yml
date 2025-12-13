@@ -1,0 +1,70 @@
+name: EVT-03 Regression Tests
+
+on:
+  pull_request:
+    paths:
+      - 'auth-service/src/attendanceHandlers.ts'
+      - 'auth-service/src/eventsHandlers.ts'
+      - 'frontend/pwa-app/src/pages/AdminEventAttendanceReportPage.tsx'
+  push:
+    branches:
+      - main
+    paths:
+      - 'auth-service/src/attendanceHandlers.ts'
+      - 'auth-service/src/eventsHandlers.ts'
+      - 'frontend/pwa-app/src/pages/AdminEventAttendanceReportPage.tsx'
+
+jobs:
+  evt-03-backend-tests:
+    name: EVT-03 Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-service
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: auth-service/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run prisma:generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://user:pass@localhost:5432/test' }}
+
+      - name: Run EVT-03 backend tests
+        run: npm run test:attendance
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://user:pass@localhost:5432/test' }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET || 'test-secret-key-for-ci' }}
+
+  evt-03-frontend-tests:
+    name: EVT-03 Frontend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/pwa-app
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+          cache-dependency-path: frontend/pwa-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run EVT-03 frontend tests
+        run: npm test admin-event-attendance-report
