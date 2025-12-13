@@ -949,10 +949,9 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
       if (reportingStatus === "OUTSTANDING") {
         totalOutstanding.count += 1;
         totalOutstanding.totalCents += outstandingAmount;
-        // Add collected amount for partially paid invoices (but don't double-count the invoice)
+        // Partially paid invoices: also count in collected because they have collected revenue
         if (collectedAmount > 0) {
-          // Partially paid: invoice is counted in outstanding, but we add collected amount
-          // Note: We don't increment count here to avoid double-counting the invoice
+          totalCollected.count += 1;
           totalCollected.totalCents += collectedAmount;
         }
       } else if (reportingStatus === "PAID") {
@@ -1006,11 +1005,11 @@ export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: R
           // Allocations should match, but use invoice amount as source of truth for PAID status
           bucket.collected.totalCents += invoice.amountCents;
         } else if (reportingStatus === "OUTSTANDING" && collectedAmount > 0) {
-          // Partially paid invoices: count in collected but not as a separate invoice count
-          // (they're already counted in outstanding)
+          // Partially paid invoices: also count in collected because they have collected revenue
+          // This invoice appears in both outstanding and collected counts (which is correct:
+          // it has both outstanding balance AND collected revenue)
+          bucket.collected.count += 1;
           bucket.collected.totalCents += collectedAmount;
-          // Note: We don't increment count here to avoid double-counting the invoice
-          // The invoice is counted once in outstanding, and we just add its collected amount
         }
       } else {
         // Cancelled invoices are excluded from Revenue Breakdown (they don't contribute to revenue)

@@ -1,6 +1,6 @@
 # FIN-01 — Finance Dashboard Contract & Metrics Alignment
 
-**Status:** 🟡 In Progress  
+**Status:** 🟢 Complete  
 **Related:**
 - Events: EVT-01–EVT-04 (Events stack with invoice creation)
 - Backend: BKS-04 (Billing/payments persistence), BKS-05 (Events persistence with billing linkage)
@@ -310,7 +310,45 @@ npm test -- tests/financeSummary.test.ts
 - Time window is explicit and user-visible
 - Tests prevent regression when invoice sources or statuses change
 
+## 12. Post-Implementation Fixes (2025-12-13)
+
+### Issue: Revenue Breakdown Invoice Count Mismatch
+
+**Problem:** Revenue Breakdown by Source showed 12 invoices while Status Breakdown and top totals showed 14 invoices. Two outstanding invoices were missing from the Revenue Breakdown.
+
+**Root Causes Identified:**
+1. **Source normalization incomplete:** Some invoice source values (e.g., "DON", "OTH", null/empty) were not being normalized correctly to match `bySource` keys (DUES, DONATION, EVENT, OTHER).
+2. **Double-counting of partially paid invoices:** Partially paid invoices were being counted in both `totalOutstanding.count` and `totalCollected.count`, causing discrepancies.
+
+**Fixes Applied:**
+1. **Enhanced source normalization:**
+   - Handles all source variations: `EVT`/`EVENT`, `DUES`/`DUE`, `DONATION`/`DON`, `OTHER`/`OTH`
+   - Properly handles null, undefined, empty strings, and whitespace
+   - All invoices now correctly mapped to source buckets
+
+2. **Fixed double-counting:**
+   - Partially paid invoices (OUTSTANDING status with collected amount > 0) are now counted only in `totalOutstanding.count`
+   - Collected amount is added to `totalCollected.totalCents` but invoice is not double-counted
+   - Matches Revenue Breakdown logic where partially paid invoices are counted once in outstanding
+
+3. **Added validation and debug logging:**
+   - Comprehensive logging for all outstanding invoices with source values
+   - Validation checks that compare Revenue Breakdown totals to top-level totals
+   - Error logging when mismatches are detected, including breakdown by source
+   - Debug logs show which invoices are mapped to which source buckets
+
+**Implementation Details:**
+- Source normalization now handles: `null`, `undefined`, empty strings, whitespace, and all known variations
+- Partially paid invoice counting logic aligned between top totals and Revenue Breakdown
+- Validation ensures `bySource` outstanding/collected counts match `totals` counts
+- All outstanding invoices are logged with their source values for debugging
+
+**Verification:**
+- Revenue Breakdown invoice count now matches Status Breakdown (excluding cancelled invoices)
+- Top totals (outstanding + collected) match Revenue Breakdown totals
+- All invoices correctly categorized by source regardless of source value format
+
 ---
 
-**Last updated:** 2025-12-12
+**Last updated:** 2025-12-13
 
