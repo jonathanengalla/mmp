@@ -35,8 +35,15 @@ export const EventStatusPill: React.FC<EventStatusPillProps> = ({ status, endDat
       label = "Upcoming event";
       variant = "default";
       break;
+    default:
+      label = "Upcoming event";
+      variant = "default";
   }
   
-  return <Tag variant={variant}>{label}</Tag>;
+  return (
+    <div style={{ display: "inline-block" }}>
+      <Tag variant={variant}>{label}</Tag>
+    </div>
+  );
 };
 
