@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { EventRegistrationStatus as PrismaEventRegistrationStatus, EventStatus as PrismaEventStatus, InvoiceStatus as PrismaInvoiceStatus, InvoiceStatus as InvoiceStatus, PaymentStatus } from "@prisma/client";
+import { EventRegistrationStatus as PrismaEventRegistrationStatus, EventStatus as PrismaEventStatus, InvoiceStatus as PrismaInvoiceStatus, PaymentStatus } from "@prisma/client";
 import { prisma } from "./db/prisma";
 import { applyTenantScope } from "./tenantGuard";
 import type { AuthenticatedRequest } from "./authMiddleware";
@@ -276,16 +276,32 @@ const toAttendanceDto = (e: EventRecord): EventAttendanceReportItem => ({
 });
 
 export const toInvoiceDto = (invoice: any): Invoice => {
+  // Map Prisma InvoiceStatus enum (uppercase) to shared model InvoiceStatus type (lowercase)
   const statusMap: Record<string, InvoiceStatus> = {
+    DRAFT: "draft",
+    ISSUED: "unpaid",
+    PARTIALLY_PAID: "pending",
+    PAID: "paid",
+    OVERDUE: "overdue",
+    VOID: "cancelled",
+    FAILED: "cancelled",
+    // Also handle lowercase variants if any
+    draft: "draft",
+    issued: "unpaid",
+    partially_paid: "pending",
+    paid: "paid",
+    overdue: "overdue",
     void: "cancelled",
+    failed: "cancelled",
   };
   const amountCents = invoice.amountCents ?? invoice.amount ?? 0;
+  const prismaStatus = invoice.status?.toUpperCase?.() || invoice.status || "DRAFT";
   return {
     id: invoice.id,
     memberId: invoice.memberId,
     amountCents,
     currency: invoice.currency,
-    status: (statusMap[invoice.status] as InvoiceStatus) || (invoice.status as InvoiceStatus),
+    status: statusMap[prismaStatus] || "draft",
     description: invoice.description || invoice.type || "Invoice",
     eventId: invoice.eventId || null,
     eventTitle: invoice.event?.title || invoice.eventTitle || null,
@@ -833,11 +849,11 @@ export const listMyInvoicesHandler = async (req: AuthenticatedRequest, res: Resp
       amountCents: { gt: 0 }, // Zero-amount exclusion
     };
 
-    // Status filter based on tab
+    // Status filter based on tab (use Prisma enum values for database queries)
     if (tab === "outstanding" || tab === "OUTSTANDING") {
-      where.status = { in: [InvoiceStatus.ISSUED, InvoiceStatus.PARTIALLY_PAID, InvoiceStatus.OVERDUE] };
+      where.status = { in: [PrismaInvoiceStatus.ISSUED, PrismaInvoiceStatus.PARTIALLY_PAID, PrismaInvoiceStatus.OVERDUE] };
     } else if (tab === "history" || tab === "HISTORY") {
-      where.status = { in: [InvoiceStatus.PAID, InvoiceStatus.VOID, InvoiceStatus.FAILED, InvoiceStatus.DRAFT] };
+      where.status = { in: [PrismaInvoiceStatus.PAID, PrismaInvoiceStatus.VOID, PrismaInvoiceStatus.FAILED, PrismaInvoiceStatus.DRAFT] };
     }
 
     // Period filter
