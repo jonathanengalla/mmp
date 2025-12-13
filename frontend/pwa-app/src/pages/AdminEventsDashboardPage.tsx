@@ -140,13 +140,13 @@ export const AdminEventsDashboardPage: React.FC = () => {
               <table className="w-full mx-auto" style={{ minWidth: 1300 }}>
                 <thead className="bg-gray-50">
                   <tr>
-                  <th className="px-3 py-3 text-left w-[28%]">Title</th>
-                  <th className="px-3 py-3 text-left w-[20%]">When</th>
-                  <th className="px-3 py-3 text-left w-[12%]">Capacity</th>
-                  <th className="px-3 py-3 text-right w-[10%]">Price</th>
-                  <th className="px-3 py-3 text-right w-[10%]">Revenue</th>
+                  <th className="px-4 py-3.5 text-left w-[28%]">Title</th>
+                  <th className="px-4 py-3.5 text-left w-[20%]">When</th>
+                  <th className="px-4 py-3.5 text-left w-[12%]">Capacity</th>
+                  <th className="px-4 py-3.5 text-right w-[10%]">Price</th>
+                  <th className="px-4 py-3.5 text-right w-[10%]">Revenue</th>
                     <th
-                      className="px-3 py-3 whitespace-nowrap"
+                      className="px-4 py-3.5 whitespace-nowrap"
                       style={{ minWidth: 260, textAlign: "center", verticalAlign: "middle" }}
                     >
                       Actions
@@ -157,6 +157,18 @@ export const AdminEventsDashboardPage: React.FC = () => {
                   {events.map((ev) => {
                     const startsAt = ev.startsAt || ev.startDate || "";
                     const endsAt = ev.endsAt || ev.endDate || startsAt;
+                    const startDate = startsAt ? new Date(startsAt) : null;
+                    const endDate = endsAt ? new Date(endsAt) : null;
+                    const datePart =
+                      startDate &&
+                      startDate.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+                    const timePart =
+                      startDate && endDate
+                        ? `${startDate.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })} – ${endDate.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`
+                        : "";
                     const labels = getEventStateLabels({
                       status: ev.status || undefined,
                       startsAt,
@@ -176,51 +188,88 @@ export const AdminEventsDashboardPage: React.FC = () => {
 
                     return (
                       <tr key={ev.id} className="border-t hover:bg-gray-50">
-                        <td className="px-3 py-3 align-top">
-                          <div className="font-medium truncate mb-1" title={ev.title}>
+                        <td className="px-4 py-3.5 align-top">
+                          <div className="text-sm font-semibold text-slate-900 truncate" title={ev.title}>
                             {ev.title}
                           </div>
-                          <div className="flex gap-2">
+                          <div className="mt-1 flex flex-wrap gap-1">
                             <span
-                              className={`inline-block px-2 py-0.5 text-xs rounded ${
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
                                 labels.eventStatusLabel === "Upcoming"
-                                  ? "bg-blue-100 text-blue-800"
+                                  ? "bg-emerald-50 text-emerald-700"
                                   : labels.eventStatusLabel === "Past event"
-                                  ? "bg-gray-100 text-gray-800"
+                                  ? "bg-slate-50 text-slate-600"
                                   : labels.eventStatusLabel === "Cancelled"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
+                                  ? "bg-rose-50 text-rose-700"
+                                  : "bg-amber-50 text-amber-700"
                               }`}
                             >
                               {labels.eventStatusLabel}
                             </span>
-                            <span className="inline-block px-2 py-0.5 text-xs rounded bg-green-100 text-green-800">
-                              {labels.modeLabel}
+                            <span
+                              className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                                (ev.priceCents || 0) > 0 ? "bg-indigo-50 text-indigo-700" : "bg-sky-50 text-sky-700"
+                              }`}
+                            >
+                              {(ev.priceCents || 0) > 0 ? "Paid event" : "Free event"}
                             </span>
                           </div>
                         </td>
 
-                        <td className="px-3 py-3 text-sm align-top">{formatEventDateRange(startsAt, endsAt)}</td>
-
-                        <td className="px-3 py-3 text-sm align-top">
-                          <span
-                            className={
-                              labels.capacityLabel.startsWith("Over capacity") ? "text-red-600 font-medium" : undefined
-                            }
-                          >
-                            {labels.capacityLabel}
-                          </span>
+                        <td className="px-4 py-3.5 align-top text-xs text-slate-600 leading-5">
+                          <div>{datePart || formatEventDateRange(startsAt, endsAt)}</div>
+                          {timePart && <div>{timePart}</div>}
                         </td>
 
-                        <td className="px-3 py-3 text-right text-sm align-top">{priceValue}</td>
+                        <td className="px-4 py-3.5 align-top">
+                          {ev.capacity ? (
+                            <>
+                              <div className="text-sm font-medium text-slate-900">
+                                {ev.registrationsCount ?? 0} / {ev.capacity}
+                              </div>
+                              <div className="mt-0.5 flex items-center gap-1">
+                                {ev.registrationsCount && ev.registrationsCount >= ev.capacity ? (
+                                  <span className="text-xs font-medium text-rose-700">Full</span>
+                                ) : (
+                                  <>
+                                    <span className="text-xs text-slate-500">
+                                      {(ev.capacity - (ev.registrationsCount || 0)).toString()} seats left
+                                    </span>
+                                    {ev.capacity - (ev.registrationsCount || 0) <= 10 && (
+                                      <span className="inline-flex rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
+                                        Limited
+                                      </span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="text-sm text-slate-500">—</div>
+                          )}
+                        </td>
 
-                        <td className="px-3 py-3 text-right text-sm font-medium align-top">{revenueValue}</td>
+                        <td className="px-4 py-3.5 text-right align-top">
+                          {(ev.priceCents || 0) > 0 ? (
+                            <span className="text-sm font-medium text-slate-900">{priceValue}</span>
+                          ) : (
+                            <span className="text-xs font-medium text-emerald-700">Free</span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3.5 text-right align-top">
+                          {ev.revenueCents && ev.revenueCents > 0 ? (
+                            <span className="text-sm font-medium text-slate-900">{revenueValue}</span>
+                          ) : (
+                            <span className="text-sm text-slate-400">—</span>
+                          )}
+                        </td>
 
                         <td
-                          className="px-3 py-3 align-top"
+                          className="px-4 py-3.5 align-top"
                           style={{ minWidth: 260, whiteSpace: "nowrap", textAlign: "center", verticalAlign: "middle" }}
                         >
-                          <div className="flex flex-nowrap gap-1 justify-center items-center" style={{ whiteSpace: "nowrap" }}>
+                          <div className="flex flex-nowrap gap-2 justify-center items-center" style={{ whiteSpace: "nowrap" }}>
                             <button
                               title="Edit"
                               aria-label="Edit"
