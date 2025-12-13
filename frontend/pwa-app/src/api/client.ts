@@ -363,8 +363,65 @@ export const listTenantInvoices = async (
   return json(res);
 };
 
-export const getFinanceSummary = async (token: string) => {
-  const res = await fetch(`${API_BASE_URL}/billing/admin/finance/summary`, {
+export interface FinanceSummaryResponse {
+  range: {
+    type: "YEAR_TO_DATE" | "ALL_TIME" | "LAST_12_MONTHS" | "CURRENT_MONTH" | "CUSTOM";
+    from: string;
+    to: string;
+    label: string;
+  };
+  totals: {
+    outstanding: { count: number; totalCents: number };
+    collected: { count: number; totalCents: number };
+    cancelled: { count: number; totalCents: number };
+  };
+  bySource: {
+    DUES: {
+      outstanding: { count: number; totalCents: number };
+      collected: { count: number; totalCents: number };
+    };
+    DONATION: {
+      collected: { count: number; totalCents: number };
+    };
+    EVENT: {
+      outstanding: { count: number; totalCents: number };
+      collected: { count: number; totalCents: number };
+    };
+    OTHER: {
+      outstanding: { count: number; totalCents: number };
+      collected: { count: number; totalCents: number };
+    };
+  };
+  byStatus: {
+    OUTSTANDING: { count: number; totalCents: number };
+    PAID: { count: number; totalCents: number };
+    CANCELLED: { count: number; totalCents: number };
+  };
+}
+
+export type FinancePeriod = "YEAR_TO_DATE" | "ALL_TIME" | "LAST_12_MONTHS" | "CURRENT_MONTH";
+
+export const getFinanceSummary = async (
+  token: string,
+  options?: {
+    period?: FinancePeriod;
+    from?: string;
+    to?: string;
+  }
+): Promise<FinanceSummaryResponse> => {
+  const params = new URLSearchParams();
+  if (options?.period) {
+    params.set("period", options.period);
+  }
+  if (options?.from) {
+    params.set("from", options.from);
+  }
+  if (options?.to) {
+    params.set("to", options.to);
+  }
+  const queryString = params.toString();
+  const url = `${API_BASE_URL}/billing/admin/finance/summary${queryString ? `?${queryString}` : ""}`;
+  const res = await fetch(url, {
     headers: { ...authHeaders(), Authorization: `Bearer ${token}` },
   });
   return json(res);

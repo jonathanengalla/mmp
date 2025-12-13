@@ -4,10 +4,12 @@ import { Card } from "../components/primitives/Card";
 import { Table, TableBody, TableCell, TableHeadCell, TableHeader, TableRow, TableCard } from "../components/ui/Table";
 import { Tag } from "../components/primitives/Tag";
 import { useSession } from "../hooks/useSession";
-import { listMyInvoices, listEventAttendanceReport, listTenantInvoices, getFinanceSummary } from "../api/client";
+import { listTenantInvoices, getFinanceSummary, type FinancePeriod } from "../api/client";
+import { FinancePeriodSelector } from "../components/FinancePeriodSelector";
+import { mapFinanceSummaryToDisplay, getDefaultFinanceDisplayData } from "../utils/financeHelpers";
+import { formatCurrency } from "../utils/formatters";
 
 type DashboardInvoice = any;
-type DashboardEventRow = any;
 
 interface LoadState<T> {
   loading: boolean;
@@ -28,144 +30,110 @@ const formatMoney = (amountCents: number | null | undefined, currency?: string) 
 export const AdminFinanceDashboardPage: React.FC = () => {
   const { tokens, hasRole } = useSession();
   const token = tokens?.access_token || null;
+  const isAdmin = hasRole?.("admin") || hasRole?.("finance_manager") || hasRole?.("super_admin");
 
-  const [invoicesState, setInvoicesState] = React.useState<LoadState<DashboardInvoice[]>>({
+  const [period, setPeriod] = React.useState<FinancePeriod>("YEAR_TO_DATE");
+  const [financeSummaryState, setFinanceSummaryState] = React.useState<LoadState<any>>({
     loading: true,
     error: null,
     data: null,
   });
-  const [eventsState, setEventsState] = React.useState<LoadState<DashboardEventRow[]>>({
-    loading: true,
-    error: null,
-    data: null,
-  });
-  const [financeSummary, setFinanceSummary] = React.useState<any>(null);
-  const [duesInvoicesState, setDuesInvoicesState] = React.useState<LoadState<DashboardInvoice[]>>({
-    loading: true,
+  const [recentInvoicesState, setRecentInvoicesState] = React.useState<LoadState<DashboardInvoice[]>>({
+    loading: false,
     error: null,
     data: null,
   });
 
+  // Load finance summary when period changes
   React.useEffect(() => {
     let cancelled = false;
 
-    const loadAll = async () => {
-      if (!token) {
-        setInvoicesState({ loading: false, error: "Not authenticated", data: null });
-        setEventsState({ loading: false, error: "Not authenticated", data: null });
-        setDuesInvoicesState({ loading: false, error: "Not authenticated", data: null });
-        setFinanceSummary(null);
+    const loadSummary = async () => {
+      if (!token || !isAdmin) {
+        setFinanceSummaryState({ loading: false, error: "Not authenticated or insufficient permissions", data: null });
         return;
       }
-      // invoices
+
+      setFinanceSummaryState((prev) => ({ ...prev, loading: true, error: null }));
       try {
-        setInvoicesState((prev) => ({ ...prev, loading: true, error: null }));
-        const useTenantScope = hasRole?.("admin") || hasRole?.("finance_manager") || hasRole?.("super_admin");
-        const invResp: any = useTenantScope ? await listTenantInvoices(token, { pageSize: 200 }) : await listMyInvoices(token);
+        const summary = await getFinanceSummary(token, { period });
         if (!cancelled) {
-          const items: DashboardInvoice[] = (invResp?.invoices ?? invResp?.items ?? []) as DashboardInvoice[];
-          setInvoicesState({ loading: false, error: null, data: items });
-        }
-        if (useTenantScope) {
-          try {
-            const summary = await getFinanceSummary(token);
-            if (!cancelled) setFinanceSummary(summary);
-          } catch (err) {
-            if (!cancelled) setFinanceSummary(null);
-          }
-          try {
-            setDuesInvoicesState((prev) => ({ ...prev, loading: true, error: null }));
-            const duesResp: any = await listTenantInvoices(token, { pageSize: 5, source: "DUES" });
-            if (!cancelled) {
-              const duesItems: DashboardInvoice[] = (duesResp?.invoices ?? duesResp?.items ?? []) as DashboardInvoice[];
-              setDuesInvoicesState({ loading: false, error: null, data: duesItems });
-            }
-          } catch (err: any) {
-            if (!cancelled) {
-              setDuesInvoicesState((prev) => ({
-                ...prev,
-                loading: false,
-                error: err?.message || "Unable to load dues invoices",
-              }));
-            }
-          }
-        } else {
-          setFinanceSummary(null);
-          setDuesInvoicesState({ loading: false, error: null, data: null });
+          setFinanceSummaryState({ loading: false, error: null, data: summary });
         }
       } catch (err: any) {
         if (!cancelled) {
-          setInvoicesState((prev) => ({
-            ...prev,
+          setFinanceSummaryState({
             loading: false,
-            error: err?.message || "Unable to load invoices",
-          }));
-        }
-      }
-      // events
-      try {
-        setEventsState((prev) => ({ ...prev, loading: true, error: null }));
-        const evtResp: any = await listEventAttendanceReport(token, { status: "published" });
-        if (!cancelled) {
-          const items: DashboardEventRow[] = (evtResp.items ?? []) as DashboardEventRow[];
-          setEventsState({ loading: false, error: null, data: items });
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          setEventsState((prev) => ({
-            ...prev,
-            loading: false,
-            error: err?.message || "Unable to load event metrics",
-          }));
+            error: err?.message || "Failed to load finance summary",
+            data: null,
+          });
         }
       }
     };
 
-    loadAll();
+    loadSummary();
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, period, isAdmin]);
 
-  const invoices = invoicesState.data ?? [];
-  const events = eventsState.data ?? [];
+  // Load recent invoices (keep existing functionality)
+  React.useEffect(() => {
+    let cancelled = false;
 
-  const totalOutstanding = financeSummary?.outstanding || { count: 0, totalCents: 0 };
-  const last30DaysPaid = financeSummary?.paidLast30Days || { count: 0, totalCents: 0 };
-  const revenueMix = financeSummary?.revenueMix || {
-    DUES: { totalCents: 0, count: 0 },
-    EVT: { totalCents: 0, count: 0 },
-    DONATION: { totalCents: 0, count: 0 },
-    OTHER: { totalCents: 0, count: 0 },
-  };
+    const loadRecentInvoices = async () => {
+      if (!token || !isAdmin) {
+        return;
+      }
 
-  const recentInvoices = React.useMemo(() => {
-    return [...invoices]
-      .sort((a, b) => {
-        const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bDate - aDate;
-      })
-      .slice(0, 5);
-  }, [invoices]);
+      setRecentInvoicesState((prev) => ({ ...prev, loading: true, error: null }));
+      try {
+        const invResp: any = await listTenantInvoices(token, { pageSize: 5 });
+        if (!cancelled) {
+          const items: DashboardInvoice[] = (invResp?.invoices ?? invResp?.items ?? []) as DashboardInvoice[];
+          setRecentInvoicesState({ loading: false, error: null, data: items });
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setRecentInvoicesState({
+            loading: false,
+            error: err?.message || "Unable to load recent invoices",
+            data: null,
+          });
+        }
+      }
+    };
 
-  const topEvents = React.useMemo(() => {
-    return [...events]
-      .map((ev) => {
-        const revenueCents = (ev as any).totalAmountCents ?? 0;
-        const registrations = (ev as any).registrationsCount ?? 0;
-        return { ...ev, revenueCents, registrations };
-      })
-      .sort((a, b) => b.revenueCents - a.revenueCents)
-      .slice(0, 5);
-  }, [events]);
+    loadRecentInvoices();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, isAdmin]);
+
+  const displayData = financeSummaryState.data
+    ? mapFinanceSummaryToDisplay(financeSummaryState.data)
+    : getDefaultFinanceDisplayData();
+
+  if (!isAdmin) {
+    return (
+      <Page title="Finance Dashboard">
+        <Card>
+          <div style={{ color: "var(--app-color-state-error)" }}>
+            You do not have permission to view the finance dashboard.
+          </div>
+        </Card>
+      </Page>
+    );
+  }
 
   return (
     <Page
-      title="Finance Dashboard"
-      description="High level view of dues, invoices, and event revenue for admin and finance roles."
+      title="Finance Overview"
+      description={financeSummaryState.data ? displayData.range.label : "Finance Overview"}
+      actions={<FinancePeriodSelector value={period} onChange={setPeriod} />}
     >
       <div style={{ display: "grid", gap: "var(--space-lg)" }}>
+        {/* Headline Cards */}
         <div
           style={{
             display: "grid",
@@ -173,119 +141,235 @@ export const AdminFinanceDashboardPage: React.FC = () => {
             gap: "var(--space-md)",
           }}
         >
-          <Card title="Outstanding invoices">
-            {invoicesState.error ? (
-              <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>
+          <Card title="Total Outstanding">
+            {financeSummaryState.loading ? (
+              <div>Loading...</div>
+            ) : financeSummaryState.error ? (
+              <div style={{ color: "var(--app-color-state-error)" }}>{financeSummaryState.error}</div>
             ) : (
               <div style={{ display: "grid", gap: "var(--space-xs)" }}>
-                <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>
-                  {formatMoney(totalOutstanding.totalCents, invoices[0]?.currency)}
-                </div>
+                <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>{displayData.headlineCards.outstanding.amount}</div>
                 <div style={{ fontSize: "0.85rem", color: "var(--app-color-text-muted)" }}>
-                  {totalOutstanding.count} open invoice{totalOutstanding.count === 1 ? "" : "s"}
+                  {displayData.headlineCards.outstanding.label}
                 </div>
               </div>
             )}
           </Card>
 
-          <Card title="Paid last 30 days">
-            {invoicesState.error ? (
-              <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>
+          <Card title="Total Collected">
+            {financeSummaryState.loading ? (
+              <div>Loading...</div>
+            ) : financeSummaryState.error ? (
+              <div style={{ color: "var(--app-color-state-error)" }}>{financeSummaryState.error}</div>
             ) : (
               <div style={{ display: "grid", gap: "var(--space-xs)" }}>
-                <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>
-                  {formatMoney(last30DaysPaid.totalCents, invoices[0]?.currency)}
-                </div>
+                <div style={{ fontSize: "1.4rem", fontWeight: 600 }}>{displayData.headlineCards.collected.amount}</div>
                 <div style={{ fontSize: "0.85rem", color: "var(--app-color-text-muted)" }}>
-                  {last30DaysPaid.count} invoice{last30DaysPaid.count === 1 ? "" : "s"} paid in the last 30 days
+                  {displayData.headlineCards.collected.label}
                 </div>
               </div>
             )}
           </Card>
 
-          <Card title="Revenue mix (paid)">
-            {invoicesState.error ? (
-              <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>
-            ) : (
-              <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.9rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>Dues</span>
-                  <span>{formatMoney(revenueMix.DUES.totalCents, invoices[0]?.currency)}</span>
+          {displayData.headlineCards.cancelled.count > 0 && (
+            <Card title="Total Cancelled">
+              {financeSummaryState.loading ? (
+                <div>Loading...</div>
+              ) : financeSummaryState.error ? (
+                <div style={{ color: "var(--app-color-state-error)" }}>{financeSummaryState.error}</div>
+              ) : (
+                <div style={{ display: "grid", gap: "var(--space-xs)" }}>
+                  <div
+                    style={{ fontSize: "1.4rem", fontWeight: 600, color: "var(--app-color-text-muted)" }}
+                  >
+                    {displayData.headlineCards.cancelled.amount}
+                  </div>
+                  <div style={{ fontSize: "0.85rem", color: "var(--app-color-text-muted)" }}>
+                    {displayData.headlineCards.cancelled.label}
+                  </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>Events</span>
-                  <span>{formatMoney(revenueMix.EVT.totalCents, invoices[0]?.currency)}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>Donations</span>
-                  <span>{formatMoney(revenueMix.DONATION.totalCents, invoices[0]?.currency)}</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span>Other</span>
-                  <span>{formatMoney(revenueMix.OTHER.totalCents, invoices[0]?.currency)}</span>
-                </div>
-              </div>
-            )}
-          </Card>
+              )}
+            </Card>
+          )}
         </div>
 
-        <Card title="Dues summary">
-          {financeSummary ? (
-            <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.95rem" }}>
-              <div>Total billed: {formatMoney(financeSummary.duesSummary?.billedTotalCents || 0, invoices[0]?.currency)}</div>
-              <div>Collected: {formatMoney(financeSummary.duesSummary?.paidTotalCents || 0, invoices[0]?.currency)}</div>
+        {/* Source Breakdown */}
+        <Card title="Revenue Breakdown by Source">
+          {financeSummaryState.loading ? (
+            <div>Loading...</div>
+          ) : financeSummaryState.error ? (
+            <div style={{ color: "var(--app-color-state-error)" }}>{financeSummaryState.error}</div>
+          ) : (
+            <div style={{ display: "grid", gap: "var(--space-md)" }}>
+              {/* Dues */}
               <div>
-                Outstanding:{" "}
-                {formatMoney(financeSummary.duesSummary?.outstandingCents || 0, invoices[0]?.currency)}
+                <div style={{ fontWeight: 600, marginBottom: "var(--space-xs)" }}>Dues</div>
+                <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.9rem", marginLeft: "var(--space-md)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>Outstanding:</span>
+                    <span
+                      style={
+                        displayData.sourceBreakdown.dues.outstanding.count === 0
+                          ? { color: "var(--app-color-text-muted)" }
+                          : {}
+                      }
+                    >
+                      {displayData.sourceBreakdown.dues.outstanding.amount} ({displayData.sourceBreakdown.dues.outstanding.count})
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>Collected:</span>
+                    <span>{displayData.sourceBreakdown.dues.collected.amount} ({displayData.sourceBreakdown.dues.collected.count})</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Donations */}
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: "var(--space-xs)" }}>Donations</div>
+                <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.9rem", marginLeft: "var(--space-md)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>Collected:</span>
+                    <span>{displayData.sourceBreakdown.donations.collected.amount} ({displayData.sourceBreakdown.donations.collected.count})</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Events */}
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: "var(--space-xs)" }}>Events</div>
+                <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.9rem", marginLeft: "var(--space-md)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>Outstanding:</span>
+                    <span
+                      style={
+                        displayData.sourceBreakdown.events.outstanding.count === 0
+                          ? { color: "var(--app-color-text-muted)" }
+                          : {}
+                      }
+                    >
+                      {displayData.sourceBreakdown.events.outstanding.amount} ({displayData.sourceBreakdown.events.outstanding.count})
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>Collected:</span>
+                    <span>{displayData.sourceBreakdown.events.collected.amount} ({displayData.sourceBreakdown.events.collected.count})</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Other */}
+              <div>
+                <div style={{ fontWeight: 600, marginBottom: "var(--space-xs)" }}>Other</div>
+                <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.9rem", marginLeft: "var(--space-md)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>Outstanding:</span>
+                    <span
+                      style={
+                        displayData.sourceBreakdown.other.outstanding.count === 0
+                          ? { color: "var(--app-color-text-muted)" }
+                          : {}
+                      }
+                    >
+                      {displayData.sourceBreakdown.other.outstanding.amount} ({displayData.sourceBreakdown.other.outstanding.count})
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ color: "var(--app-color-text-muted)" }}>Collected:</span>
+                    <span>{displayData.sourceBreakdown.other.collected.amount} ({displayData.sourceBreakdown.other.collected.count})</span>
+                  </div>
+                </div>
               </div>
             </div>
-          ) : (
-            <div style={{ color: "var(--app-color-state-error)" }}>Unable to load dues summary right now.</div>
           )}
         </Card>
 
-        <Card title="Recent dues invoices">
-          {duesInvoicesState.loading && <div>Loading dues invoices…</div>}
-          {duesInvoicesState.error && (
-            <div style={{ color: "var(--app-color-state-error)" }}>{duesInvoicesState.error}</div>
+        {/* Status Breakdown */}
+        <Card title="Status Breakdown">
+          {financeSummaryState.loading ? (
+            <div>Loading...</div>
+          ) : financeSummaryState.error ? (
+            <div style={{ color: "var(--app-color-state-error)" }}>{financeSummaryState.error}</div>
+          ) : (
+            <div style={{ display: "grid", gap: "var(--space-xs)", fontSize: "0.95rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Outstanding:</span>
+                <span>{displayData.statusBreakdown.outstanding.amount} ({displayData.statusBreakdown.outstanding.count} invoices)</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Paid:</span>
+                <span>{displayData.statusBreakdown.paid.amount} ({displayData.statusBreakdown.paid.count} invoices)</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <span>Cancelled:</span>
+                <span style={{ color: "var(--app-color-text-muted)" }}>
+                  {displayData.statusBreakdown.cancelled.amount} ({displayData.statusBreakdown.cancelled.count} invoices)
+                </span>
+              </div>
+            </div>
           )}
-          {!duesInvoicesState.loading &&
-            !duesInvoicesState.error &&
-            (duesInvoicesState.data ?? []).length === 0 && (
-              <div style={{ color: "var(--app-color-text-muted)" }}>No dues invoices yet.</div>
+        </Card>
+
+        {/* Recent Invoices Table (keep existing functionality) */}
+        <Card title="Recent Invoices">
+          {recentInvoicesState.loading && <div>Loading invoices…</div>}
+          {recentInvoicesState.error && (
+            <div style={{ color: "var(--app-color-state-error)" }}>{recentInvoicesState.error}</div>
+          )}
+          {!recentInvoicesState.loading &&
+            !recentInvoicesState.error &&
+            (recentInvoicesState.data ?? []).length === 0 && (
+              <div style={{ color: "var(--app-color-text-muted)" }}>No invoices found.</div>
             )}
-          {!duesInvoicesState.loading &&
-            !duesInvoicesState.error &&
-            (duesInvoicesState.data ?? []).length > 0 && (
+          {!recentInvoicesState.loading &&
+            !recentInvoicesState.error &&
+            (recentInvoicesState.data ?? []).length > 0 && (
               <TableCard>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHeadCell>Invoice #</TableHeadCell>
-                      <TableHeadCell>Member</TableHeadCell>
+                      <TableHeadCell>Invoice</TableHeadCell>
+                      <TableHeadCell>Source</TableHeadCell>
                       <TableHeadCell align="right">Amount</TableHeadCell>
                       <TableHeadCell>Status</TableHeadCell>
                       <TableHeadCell>Created</TableHeadCell>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(duesInvoicesState.data ?? []).map((inv) => (
+                    {(recentInvoicesState.data ?? []).map((inv) => (
                       <TableRow key={inv.id}>
-                        <TableCell>{inv.invoiceNumber || inv.description || "Invoice"}</TableCell>
                         <TableCell>
-                          {inv.member?.firstName || inv.member?.lastName
-                            ? `${inv.member?.firstName ?? ""} ${inv.member?.lastName ?? ""}`.trim()
-                            : inv.member?.email ?? "—"}
+                          <div style={{ display: "flex", flexDirection: "column" }}>
+                            <span>{inv.description || inv.invoiceNumber || "Invoice"}</span>
+                            {inv.eventTitle && (
+                              <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>
+                                Event: {inv.eventTitle}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const source = (inv.source || "").toUpperCase();
+                            if (source === "DUES") return <Tag variant="info">Dues</Tag>;
+                            if (source === "EVT" || source === "EVENT") return <Tag variant="success">Event</Tag>;
+                            if (source === "DONATION" || source === "DON") return <Tag variant="info">Donations</Tag>;
+                            if (!source) return <Tag variant="default">Manual</Tag>;
+                            return <Tag variant="default">{source}</Tag>;
+                          })()}
                         </TableCell>
                         <TableCell align="right">{formatMoney(inv.amountCents, inv.currency)}</TableCell>
                         <TableCell>
                           <Tag
                             variant={
-                              inv.status === "PAID"
+                              inv.status === "PAID" || inv.status === "paid"
                                 ? "success"
-                                : inv.status === "OVERDUE"
+                                : inv.status === "OVERDUE" || inv.status === "overdue"
                                 ? "danger"
-                                : inv.status === "CANCELLED" || inv.status === "VOID" || inv.status === "FAILED"
+                                : inv.status === "CANCELLED" ||
+                                  inv.status === "cancelled" ||
+                                  inv.status === "VOID" ||
+                                  inv.status === "void"
                                 ? "default"
                                 : "warning"
                             }
@@ -307,138 +391,9 @@ export const AdminFinanceDashboardPage: React.FC = () => {
               </TableCard>
             )}
         </Card>
-
-        <Card title="Recent invoices">
-          {invoicesState.loading && <div>Loading invoices…</div>}
-          {invoicesState.error && <div style={{ color: "var(--app-color-state-error)" }}>{invoicesState.error}</div>}
-          {!invoicesState.loading && !invoicesState.error && recentInvoices.length === 0 && (
-            <div style={{ color: "var(--app-color-text-muted)" }}>No invoices found.</div>
-          )}
-          {!invoicesState.loading && !invoicesState.error && recentInvoices.length > 0 && (
-            <TableCard>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHeadCell>Invoice</TableHeadCell>
-                    <TableHeadCell>Source</TableHeadCell>
-                    <TableHeadCell align="right">Amount</TableHeadCell>
-                    <TableHeadCell>Status</TableHeadCell>
-                    <TableHeadCell>Created</TableHeadCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentInvoices.map((inv) => (
-                    <TableRow key={inv.id}>
-                      <TableCell>
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span>{inv.description || "Invoice"}</span>
-                          {inv.eventTitle && (
-                            <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>Event: {inv.eventTitle}</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const source = (inv.source || "").toUpperCase();
-                          if (source === "DUES") return <Tag variant="info">Dues</Tag>;
-                          if (source === "EVT") return <Tag variant="success">Event</Tag>;
-                          if (source === "DONATION" || source === "DON") return <Tag variant="info">Donations</Tag>;
-                          if (!source) return <Tag variant="default">Manual</Tag>;
-                          return <Tag variant="default">{source}</Tag>;
-                        })()}
-                      </TableCell>
-                      <TableCell align="right">{formatMoney(inv.amountCents, inv.currency)}</TableCell>
-                      <TableCell>
-                        <Tag
-                          variant={
-                            inv.status === "paid"
-                              ? "success"
-                              : inv.status === "overdue"
-                              ? "danger"
-                              : inv.status === "cancelled" || inv.status === "void"
-                              ? "default"
-                              : "warning"
-                          }
-                        >
-                          {inv.status}
-                        </Tag>
-                      </TableCell>
-                      <TableCell>
-                        {inv.createdAt ? (
-                          <span>{new Date(inv.createdAt).toLocaleDateString()}</span>
-                        ) : (
-                          <span style={{ color: "var(--app-color-text-muted)" }}>–</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableCard>
-          )}
-        </Card>
-
-        <Card title="Top events">
-          {eventsState.loading && <div>Loading events…</div>}
-          {eventsState.error && <div style={{ color: "var(--app-color-state-error)" }}>{eventsState.error}</div>}
-          {!eventsState.loading && !eventsState.error && topEvents.length === 0 && (
-            <div style={{ color: "var(--app-color-text-muted)" }}>No event data yet.</div>
-          )}
-          {!eventsState.loading && !eventsState.error && topEvents.length > 0 && (
-            <TableCard>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHeadCell>Event</TableHeadCell>
-                    <TableHeadCell align="right">Registrations</TableHeadCell>
-                    <TableHeadCell align="right">Revenue</TableHeadCell>
-                    <TableHeadCell>Status</TableHeadCell>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {topEvents.map((ev) => (
-                    <TableRow key={ev.event_id ?? ev.title}>
-                      <TableCell>
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <span>{ev.title}</span>
-                          {ev.startDate && (
-                            <span style={{ fontSize: "0.8rem", color: "var(--app-color-text-muted)" }}>
-                              {new Date(ev.startDate).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell align="right">{(ev as any).registrationsCount ?? 0}</TableCell>
-                      <TableCell align="right">
-                        {formatMoney((ev as any).totalAmountCents ?? 0, invoices[0]?.currency)}
-                      </TableCell>
-                      <TableCell>
-                        <Tag
-                          variant={
-                            ev.status === "completed"
-                              ? "success"
-                              : ev.status === "cancelled"
-                              ? "danger"
-                              : ev.status === "published"
-                              ? "info"
-                              : "default"
-                          }
-                        >
-                          {ev.status}
-                        </Tag>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableCard>
-          )}
-        </Card>
       </div>
     </Page>
   );
 };
 
 export default AdminFinanceDashboardPage;
-
-

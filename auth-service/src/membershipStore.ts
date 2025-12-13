@@ -7,6 +7,8 @@ export type CreateMemberInput = {
   lastName: string;
   phone?: string | null;
   address?: string | null;
+  linkedinUrl?: string | null;
+  otherSocials?: string | null;
 };
 
 export function listMembersForTenant(tenantId: string, status?: MemberStatus) {
@@ -34,6 +36,8 @@ export function createMemberForTenant(tenantId: string, payload: CreateMemberInp
       lastName: payload.lastName,
       phone: payload.phone ?? null,
       address: payload.address ?? null,
+      linkedinUrl: payload.linkedinUrl ?? null,
+      otherSocials: payload.otherSocials ?? null,
       status: MemberStatus.PENDING_VERIFICATION,
     },
   });

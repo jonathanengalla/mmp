@@ -141,11 +141,37 @@ export const getCurrentMember = async (req: AuthenticatedRequest, res: Response)
 export const createRegistration = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
-    const { email, firstName, lastName, phone, address } = req.body || {};
+    
+    // Support both snake_case (from frontend) and camelCase field names
+    const body = req.body || {};
+    const email = body.email;
+    const firstName = body.firstName || body.first_name;
+    const lastName = body.lastName || body.last_name;
+    const phone = body.phone;
+    const address = body.address;
+    const linkedinUrl = body.linkedinUrl;
+    const otherSocials = body.otherSocials;
+    
     if (!email || !firstName || !lastName) {
-      return res.status(400).json({ error: "email, firstName, lastName are required" });
+      return res.status(400).json({ 
+        error: "Validation failed",
+        details: [
+          ...(!email ? [{ field: "email", issue: "required" }] : []),
+          ...(!firstName ? [{ field: "firstName", issue: "required" }] : []),
+          ...(!lastName ? [{ field: "lastName", issue: "required" }] : []),
+        ]
+      });
     }
-    const member = await createMemberForTenant(req.user.tenantId, { email, firstName, lastName, phone, address });
+    
+    const member = await createMemberForTenant(req.user.tenantId, { 
+      email, 
+      firstName, 
+      lastName, 
+      phone: normalizeOptional(phone),
+      address: normalizeOptional(address),
+      linkedinUrl: normalizeOptional(linkedinUrl),
+      otherSocials: normalizeOptional(otherSocials),
+    });
     return res.status(201).json(sanitizeMember(member));
   } catch (err: any) {
     if (err?.code === "P2002") {
