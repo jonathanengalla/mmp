@@ -1,6 +1,6 @@
 # UIR-03 — Finance Dashboard Data Contract Alignment
 
-**Status:** In Progress  
+**Status:** Complete  
 **Related:**
 - Backend: FIN-01 (Event Finance Integration)
 - UI Refinement: UIR-03 (this ticket)
@@ -138,19 +138,35 @@ Simple table showing:
 
 ## 5. Testing
 
-### Unit Tests
-- Test response-to-UI mapping function with mock API responses
-- Verify zero-amount scenarios are handled gracefully
-- Verify all period types render correct labels
-- Verify currency formatting (PHP with peso sign)
+### Test Coverage
 
-### Regression Tests
-- Ensure zero-amount invoices never appear in totals
-- Ensure free events never contribute to revenue
-- Verify that period changes update displayed data correctly
+**Unit Tests** (`frontend/pwa-app/src/tests/finance-helpers.test.ts`):
+- Tests `mapFinanceSummaryToDisplay` function with complete mock responses
+- Verifies mapping of `totals`, `bySource`, and `byStatus` to display format
+- Tests zero-value scenarios
+- Tests large amount currency formatting
+- Tests `getDefaultFinanceDisplayData` for loading/empty states
 
-### Test File
-- `frontend/pwa-app/src/tests/admin-finance-dashboard.test.tsx`
+**Integration Tests** (`frontend/pwa-app/src/tests/admin-finance-dashboard.test.tsx`):
+- Initial render with default period: Verifies finance summary data displays correctly
+- Period selector behavior: Verifies API calls with correct period parameter when selector changes
+- Cancelled bucket visibility: Verifies cancelled card appears when count > 0 and is hidden when count = 0
+- Error handling: Verifies graceful error display when API calls fail
+
+### Test Commands
+```bash
+cd frontend/pwa-app
+npm test finance-helpers
+npm test admin-finance-dashboard
+```
+
+### Business Behaviors Protected
+- Zero-amount invoices excluded from all totals (enforced by backend, verified in mapping)
+- Free events never contribute to revenue (backend rule, mapping reflects backend response)
+- Period changes update displayed data correctly
+- Range labels from API are displayed accurately
+- Source breakdown (DUES/DONATION/EVENT/OTHER) mapped correctly
+- Status breakdown (OUTSTANDING/PAID/CANCELLED) mapped correctly
 
 ## 6. QA Scenarios
 

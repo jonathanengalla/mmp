@@ -41,7 +41,7 @@
 | --- | --- | --- | --- |
 | UIR-01 | Shared table component rollout | ⚪ | Not started |
 | UIR-02 | Global typography token adoption | ⚪ | Not started |
-| UIR-03 | Finance dashboard data contract alignment | 🟡 | **In Progress:** Finance dashboard refactored to use FIN-01 contract. Period selector added (Year to Date, Current Month, Last 12 Months, All Time). All metrics now sourced from `/finance/summary` endpoint. Headline cards show Total Outstanding, Total Collected, and Cancelled (when > 0). Source breakdown shows Dues/Donations/Events/Other with outstanding and collected. Status breakdown shows OUTSTANDING/PAID/CANCELLED. Tests pending. See [UIR-03 spec](../specs/finance/UIR-03-finance-dashboard-data-contract.md). |
+| UIR-03 | Finance dashboard data contract alignment | 🟢 | Finance dashboard refactored to use FIN-01 contract. Period selector added (Year to Date, Current Month, Last 12 Months, All Time). All metrics now sourced from `/finance/summary` endpoint. Headline cards show Total Outstanding, Total Collected, and Cancelled (when > 0). Source breakdown shows Dues/Donations/Events/Other with outstanding and collected. Status breakdown shows OUTSTANDING/PAID/CANCELLED. **Regression tests:** Unit tests for mapping helper (`npm test finance-helpers`) + integration tests for dashboard (`npm test admin-finance-dashboard`). See [UIR-03 spec](../specs/finance/UIR-03-finance-dashboard-data-contract.md). |
 | UIR-04 | Events checkout UX and error states | ⚪ | Not started |
 | UIR-05 | Admin visibility and role-guarded UI | ⚪ | Not started |
 | UIR-06 | Heading/contrast accessibility pass | ⚪ | Not started |
@@ -59,7 +59,7 @@
 ## Finance (FIN)
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
-| FIN-01 | Finance Dashboard Contract & Metrics Alignment | 🟢 | **Backend contract complete:** Finance summary endpoint (`/api/billing/admin/finance/summary`) with time window support, source breakdown (DUES/DONATION/EVENT/OTHER), status mapping (OUTSTANDING/PAID/CANCELLED), zero-amount exclusion, tenant scoping. Response includes self-describing range labels. Tests added (`npm run test:fin-01`). Spec: `docs/specs/finance/FIN-01-event-finance-integration.md`. **Frontend alignment:** UIR-03 in progress. |
+| FIN-01 | Finance Dashboard Contract & Metrics Alignment | 🟢 | **Complete end-to-end:** Finance summary endpoint (`/api/billing/admin/finance/summary`) with time window support, source breakdown (DUES/DONATION/EVENT/OTHER), status mapping (OUTSTANDING/PAID/CANCELLED), zero-amount exclusion, tenant scoping. Response includes self-describing range labels. Backend tests (`npm run test:fin-01`). Frontend aligned via UIR-03 with regression tests (`npm test finance-helpers`, `npm test admin-finance-dashboard`). Spec: `docs/specs/finance/FIN-01-event-finance-integration.md`. |
 | FIN-02 | Member Invoice & Receipts Experience | ⚪ | Polish the member-facing invoice list: clearer labels (Dues / Donations / Events), better grouping, and basic receipt visibility so members understand what they owe and what they have already paid. |
 | FIN-03 | Treasurer Finance Dashboard & KPIs | ⚪ | Define and surface core finance KPIs for the treasurer: totals and breakdowns for Dues / Donations / Events, paid vs outstanding, and simple trend or time filters. No deep analytics yet. |
 | FIN-04 | Treasurer Exports & Audit Trail | ⚪ | Provide CSV/Excel exports and a basic audit trail that finance can use for reconciliation and annual reporting. Focus is on reliable data, not complex visualization. |
@@ -78,5 +78,5 @@
 | EVT-04 | PARTIAL | Event invoicing tools (EVT-04) implemented and functionally complete. **Manual QA gate:** 6 QA scenarios documented in `EVT-04-event-invoicing-and-post-event-tools.md` for rcme-dev verification (treat as primary gate until automation stabilized). **Automation status:** Test file `eventInvoiceHandlers.test.ts` in place with 7 guardrail tests (`npm run test:event-invoices`), but module mocking not fully stabilized and **not wired to CI**. Manual QA scenarios are the current regression guard - automation needs refinement before CI enforcement. |
 
 ---
-Last updated: 2025-01-14 15:00 (local)
+Last updated: 2025-01-14 18:30 (local)
 

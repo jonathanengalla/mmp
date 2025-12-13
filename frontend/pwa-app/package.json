@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest --environment jsdom"
+    "test": "vitest --environment jsdom",
+    "test:finance-helpers": "vitest finance-helpers",
+    "test:admin-finance-dashboard": "vitest admin-finance-dashboard"
   },
   "keywords": [],
   "author": "",
