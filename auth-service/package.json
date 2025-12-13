@@ -15,6 +15,7 @@
     "test:event-invoices": "node -r ts-node/register --test tests/eventInvoiceHandlers.test.ts",
     "test:evt01-schema": "node -r ts-node/register --test tests/evt01-schema-guard.test.ts",
     "test:evt02-registration": "node -r ts-node/register --test tests/evt02-registration-flow.test.ts",
+    "test:fin-01": "node -r ts-node/register --test tests/financeSummary.test.ts",
     "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma --skip-seed",
     "migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
     "prisma:generate": "prisma generate",

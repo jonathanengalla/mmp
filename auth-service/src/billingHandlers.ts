@@ -6,6 +6,8 @@ import { prisma } from "./db/prisma";
 import { applyTenantScope } from "./tenantGuard";
 import { toInvoiceDto } from "./eventsHandlers";
 import { generateInvoiceNumber } from "./utils/invoiceNumber";
+import { resolveFinancePeriod, FinancePeriod } from "./utils/financePeriod";
+import { mapInvoiceStatusToReporting, isOutstandingStatus, isPaidStatus, isCancelledStatus } from "./utils/invoiceStatusMapper";
 
 const sanitizeInvoice = (inv: any) => ({
   id: inv.id,
@@ -376,157 +378,159 @@ export function runPaymentRemindersHandler(_req: Request, res: Response) {
   return res.status(501).json({ error: "Payment reminders not implemented yet" });
 }
 
+/**
+ * FIN-01: Finance Dashboard Summary Handler
+ * Returns comprehensive finance metrics with time window support and source breakdown
+ */
 export const getFinanceSummaryHandler = async (req: AuthenticatedRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ error: "Unauthorized" });
     const tenantId = req.user.tenantId;
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const duesEventOtherSources = ["DUES", "EVT", "OTHER"];
-    const donationSources = ["DONATION"];
+    // Resolve time window from query params
+    let period: FinancePeriod;
+    try {
+      period = resolveFinancePeriod(
+        req.query.period as string | undefined,
+        req.query.from as string | undefined,
+        req.query.to as string | undefined
+      );
+    } catch (err: any) {
+      return res.status(400).json({ error: err.message || "Invalid period parameters" });
+    }
 
-    const activeDuesStatuses = ["ISSUED", "PARTIALLY_PAID", "PAID", "OVERDUE"] as any;
-
-    const [outstanding, overdue, paidLast30Days, totalDonations, donationsLast30Days, revenueMix, duesBilled, duesPaid] =
-      await Promise.all([
-      prisma.invoice.aggregate({
-        where: {
-          tenantId,
-          amountCents: { gt: 0 },
-          OR: [
-            {
-              source: { in: duesEventOtherSources },
-              status: { in: ["ISSUED", "PARTIALLY_PAID", "OVERDUE"] as any },
-            },
-            {
-              source: { in: donationSources },
-              status: { in: ["ISSUED", "OVERDUE"] as any },
-            },
-          ],
-        },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      prisma.invoice.aggregate({
-        where: {
-          tenantId,
-          amountCents: { gt: 0 },
-          source: { in: duesEventOtherSources.concat(donationSources) },
-          status: "OVERDUE" as any,
-        },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      prisma.invoice.aggregate({
-        where: {
-          tenantId,
-          status: "PAID",
-          amountCents: { gt: 0 },
-          updatedAt: { gte: thirtyDaysAgo },
-        },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      prisma.invoice.aggregate({
-        where: {
-          tenantId,
-          source: { in: donationSources },
-          status: "PAID",
-          amountCents: { gt: 0 },
-        },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      prisma.invoice.aggregate({
-        where: {
-          tenantId,
-          source: { in: donationSources },
-          status: "PAID",
-          amountCents: { gt: 0 },
-          updatedAt: { gte: thirtyDaysAgo },
-        },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      // Revenue mix: only PAID, grouped by source
-      prisma.invoice.groupBy({
-        by: ["source"],
-        where: {
-          tenantId,
-          status: "PAID",
-          amountCents: { gt: 0 },
-        },
-        _sum: { amountCents: true },
-        _count: true,
-      }),
-      // Dues billed total (exclude draft/void/failed)
-      prisma.invoice.aggregate({
-        where: {
-          tenantId,
-          source: "DUES",
-          status: { in: activeDuesStatuses as any },
-          amountCents: { gt: 0 },
-        },
-        _sum: { amountCents: true },
-      }),
-      // Dues paid total (payments on DUES invoices)
-      prisma.payment.aggregate({
-        where: {
-          tenantId,
-          status: PaymentStatus.SUCCEEDED,
-          invoice: {
-            source: "DUES",
-            status: { in: activeDuesStatuses as any },
-          },
-        },
-        _sum: { amountCents: true },
-      }),
-    ]);
-
-    const mixBuckets = {
-      DUES: { totalCents: 0, count: 0 },
-      EVT: { totalCents: 0, count: 0 },
-      DONATION: { totalCents: 0, count: 0 },
-      OTHER: { totalCents: 0, count: 0 },
+    // Base where clause: tenant-scoped, non-zero amounts only
+    const baseWhere = {
+      tenantId,
+      amountCents: { gt: 0 }, // Zero-amount exclusion enforced at query level
+      issuedAt: { gte: period.from, lte: period.to }, // Time window filter on issuedAt
     };
 
-    revenueMix.forEach((row) => {
-      const key = (row.source || "OTHER").toUpperCase();
-      const bucket = mixBuckets[key as keyof typeof mixBuckets] ?? mixBuckets.OTHER;
-      bucket.totalCents += row._sum.amountCents || 0;
-      bucket.count += row._count || 0;
+    // Get all invoices in period for aggregation
+    const allInvoices = await prisma.invoice.findMany({
+      where: baseWhere,
+      include: {
+        payments: {
+          where: { status: PaymentStatus.SUCCEEDED },
+        },
+      },
     });
 
+    // Calculate outstanding amounts (for partially paid invoices)
+    const calculateOutstandingAmount = (invoice: any): number => {
+      if (isPaidStatus(invoice.status)) return 0;
+      if (isCancelledStatus(invoice.status)) return 0;
+      const totalPaid = invoice.payments.reduce((sum: number, p: any) => sum + (p.amountCents || 0), 0);
+      return Math.max(invoice.amountCents - totalPaid, 0);
+    };
+
+    const calculateCollectedAmount = (invoice: any): number => {
+      if (isCancelledStatus(invoice.status)) return 0;
+      // For PAID invoices, collected = full invoice amount
+      if (isPaidStatus(invoice.status)) {
+        return invoice.amountCents;
+      }
+      // For partially paid or outstanding, collected = sum of payments
+      return invoice.payments.reduce((sum: number, p: any) => sum + (p.amountCents || 0), 0);
+    };
+
+    // Aggregate by source and status
+    const bySource: Record<string, { outstanding: { count: number; totalCents: number }; collected: { count: number; totalCents: number } }> = {
+      DUES: { outstanding: { count: 0, totalCents: 0 }, collected: { count: 0, totalCents: 0 } },
+      DONATION: { outstanding: { count: 0, totalCents: 0 }, collected: { count: 0, totalCents: 0 } },
+      EVENT: { outstanding: { count: 0, totalCents: 0 }, collected: { count: 0, totalCents: 0 } },
+      OTHER: { outstanding: { count: 0, totalCents: 0 }, collected: { count: 0, totalCents: 0 } },
+    };
+
+    const byStatus: Record<string, { count: number; totalCents: number }> = {
+      OUTSTANDING: { count: 0, totalCents: 0 },
+      PAID: { count: 0, totalCents: 0 },
+      CANCELLED: { count: 0, totalCents: 0 },
+    };
+
+    let totalOutstanding = { count: 0, totalCents: 0 };
+    let totalCollected = { count: 0, totalCents: 0 };
+    let totalCancelled = { count: 0, totalCents: 0 };
+
+    for (const invoice of allInvoices) {
+      const source = (invoice.source || "OTHER").toUpperCase();
+      const reportingStatus = mapInvoiceStatusToReporting(invoice.status);
+      const outstandingAmount = calculateOutstandingAmount(invoice);
+      const collectedAmount = calculateCollectedAmount(invoice);
+
+      // Update byStatus
+      byStatus[reportingStatus].count += 1;
+      if (reportingStatus === "OUTSTANDING") {
+        byStatus[reportingStatus].totalCents += outstandingAmount;
+      } else if (reportingStatus === "PAID") {
+        byStatus[reportingStatus].totalCents += invoice.amountCents;
+      } else {
+        byStatus[reportingStatus].totalCents += invoice.amountCents;
+      }
+
+      // Update totals
+      if (reportingStatus === "OUTSTANDING") {
+        totalOutstanding.count += 1;
+        totalOutstanding.totalCents += outstandingAmount;
+        // Also count collected amount for partially paid invoices
+        if (collectedAmount > 0) {
+          totalCollected.count += 1;
+          totalCollected.totalCents += collectedAmount;
+        }
+      } else if (reportingStatus === "PAID") {
+        totalCollected.count += 1;
+        totalCollected.totalCents += collectedAmount; // Full invoice amount for PAID
+      } else {
+        totalCancelled.count += 1;
+        totalCancelled.totalCents += invoice.amountCents;
+      }
+
+      // Update bySource (only for non-cancelled)
+      if (!isCancelledStatus(invoice.status)) {
+        const sourceKey = source === "EVT" ? "EVENT" : source;
+        const bucket = bySource[sourceKey] || bySource.OTHER;
+
+        if (outstandingAmount > 0) {
+          bucket.outstanding.count += 1;
+          bucket.outstanding.totalCents += outstandingAmount;
+        }
+
+        if (collectedAmount > 0) {
+          bucket.collected.count += 1;
+          bucket.collected.totalCents += collectedAmount;
+        }
+      }
+    }
+
+    // Build response with self-describing range
     return res.json({
-      outstanding: {
-        count: outstanding._count || 0,
-        totalCents: outstanding._sum.amountCents || 0,
+      range: {
+        type: period.type,
+        from: period.from.toISOString(),
+        to: period.to.toISOString(),
+        label: period.label,
       },
-      overdue: {
-        count: overdue._count || 0,
-        totalCents: overdue._sum.amountCents || 0,
+      totals: {
+        outstanding: totalOutstanding,
+        collected: totalCollected,
+        cancelled: totalCancelled,
       },
-      paidLast30Days: {
-        count: paidLast30Days._count || 0,
-        totalCents: paidLast30Days._sum.amountCents || 0,
+      bySource: {
+        DUES: bySource.DUES,
+        DONATION: {
+          // Donations don't have outstanding in business model
+          collected: bySource.DONATION.collected,
+        },
+        EVENT: bySource.EVENT,
+        OTHER: bySource.OTHER,
       },
-      totalDonations: {
-        count: totalDonations._count || 0,
-        totalCents: totalDonations._sum.amountCents || 0,
-      },
-      donationsLast30Days: {
-        count: donationsLast30Days._count || 0,
-        totalCents: donationsLast30Days._sum.amountCents || 0,
-      },
-      revenueMix: mixBuckets,
-      duesSummary: {
-        billedTotalCents: duesBilled._sum.amountCents || 0,
-        paidTotalCents: duesPaid._sum.amountCents || 0,
-        outstandingCents: Math.max((duesBilled._sum.amountCents || 0) - (duesPaid._sum.amountCents || 0), 0),
-      },
+      byStatus,
     });
-  } catch (err) {
+  } catch (err: any) {
     console.error("[billing] getFinanceSummaryHandler error", err);
+    if (err.message && err.message.includes("Invalid")) {
+      return res.status(400).json({ error: err.message });
+    }
     return res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -59,7 +59,7 @@
 ## Finance (FIN)
 | Code | Name | Status | Notes |
 | --- | --- | --- | --- |
-| FIN-01 | Event Finance Integration | ⚪ | Connect event invoices (source = EVT) cleanly into Finance views so the treasurer can see Dues / Donations / Events as separate slices. Focus is on alignment with EVT-01–EVT-04 and BKS-05. |
+| FIN-01 | Finance Dashboard Contract & Metrics Alignment | 🟡 | **Backend contract complete:** New finance summary endpoint with time window support, source breakdown (DUES/DONATION/EVENT/OTHER), status mapping (OUTSTANDING/PAID/CANCELLED), zero-amount exclusion, tenant scoping. Tests added (`npm run test:fin-01`). Spec: `docs/specs/finance/FIN-01-finance-dashboard-contract.md`. **Frontend alignment (UIR-03) pending.** |
 | FIN-02 | Member Invoice & Receipts Experience | ⚪ | Polish the member-facing invoice list: clearer labels (Dues / Donations / Events), better grouping, and basic receipt visibility so members understand what they owe and what they have already paid. |
 | FIN-03 | Treasurer Finance Dashboard & KPIs | ⚪ | Define and surface core finance KPIs for the treasurer: totals and breakdowns for Dues / Donations / Events, paid vs outstanding, and simple trend or time filters. No deep analytics yet. |
 | FIN-04 | Treasurer Exports & Audit Trail | ⚪ | Provide CSV/Excel exports and a basic audit trail that finance can use for reconciliation and annual reporting. Focus is on reliable data, not complex visualization. |
